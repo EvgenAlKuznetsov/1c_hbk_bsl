@@ -77,6 +77,7 @@ from onec_hbk_bsl.analysis.bsl_string_split import (
     split_commas_outside_double_quotes,
     strip_leading_val_keywords,
 )
+from onec_hbk_bsl.analysis.diagnostics_bsl148 import bsl148_function_name_spans
 from onec_hbk_bsl.analysis.diagnostics_cst import (
     diagnostics_bsl004_from_tree,
     diagnostics_bsl018_from_tree,
@@ -1334,7 +1335,7 @@ RULE_METADATA: dict[str, dict] = {
         "sonar_type": "BUG",
         "sonar_severity": "CRITICAL",
         "tags": ["error-handling", "correctness"],
-        "implemented": False,
+        "implemented": True,
     },
     "BSL149": {
         "name": "AssignAliasFieldsInQuery",
@@ -5648,7 +5649,7 @@ class DiagnosticEngine:
             "BSL145",  # StringFormatInsteadOfConcat — no BSL-LS equivalent
             "BSL146",  # ModuleInitializationCode — no BSL-LS equivalent
             # ── BSL148–BSL279 — stubs, disabled until implemented ────────────
-            "BSL148",  # AllFunctionPathMustHaveReturn — TODO
+            # "BSL148" enabled — AllFunctionPathMustHaveReturn implemented
             # "BSL149" enabled — AssignAliasFieldsInQuery implemented
             "BSL150",  # BadWords — TODO
             # "BSL151" enabled — BeginTransactionBeforeTryCatch implemented
@@ -5814,6 +5815,7 @@ class DiagnosticEngine:
         min_duplicate_uses: int = MIN_DUPLICATE_USES,
         max_module_lines: int = MAX_MODULE_LINES,
         symbol_index: Any | None = None,
+        bsl148_loops_executed_at_least_once: bool = True,
     ) -> None:
         # tree_sitter.Parser is not thread-safe — one BslParser per thread unless a
         # single parser is injected (tests). Required for free-threaded CPython / LSP.
@@ -5840,6 +5842,7 @@ class DiagnosticEngine:
         self.max_bool_ops = max_bool_ops
         self.min_duplicate_uses = min_duplicate_uses
         self.max_module_lines = max_module_lines
+        self.bsl148_loops_executed_at_least_once = bsl148_loops_executed_at_least_once
 
     def _get_parser(self) -> BslParser:
         """Return the parser for this thread (tree-sitter Parser is not thread-safe)."""
@@ -6046,6 +6049,10 @@ class DiagnosticEngine:
             _rule_tasks.append(("BSL031", lambda: self._rule_bsl031_number_of_params(path, lines, procs)))
         if self._rule_enabled("BSL032"):
             _rule_tasks.append(("BSL032", lambda: self._rule_bsl032_function_return_value(path, lines, procs)))
+        if self._rule_enabled("BSL148"):
+            _rule_tasks.append(
+                ("BSL148", lambda: self._rule_bsl148_all_function_paths_return(path, tree))
+            )
         if self._rule_enabled("BSL033"):
             _rule_tasks.append(("BSL033", lambda: self._rule_bsl033_query_in_loop(path, lines, procs, tree)))
         if self._rule_enabled("BSL034"):
@@ -7659,6 +7666,37 @@ class DiagnosticEngine:
                         ),
                     )
                 )
+        return diags
+
+    # ------------------------------------------------------------------
+    # BSL148 — AllFunctionPathMustHaveReturn
+    # ------------------------------------------------------------------
+
+    def _rule_bsl148_all_function_paths_return(self, path: str, tree: Any) -> list[Diagnostic]:
+        # BSLLS test modules may contain intentional parse noise; BSL148 skips ERROR subtrees per function.
+        root = getattr(tree, "root_node", None)
+        if root is None or not isinstance(getattr(root, "text", None), (bytes, type(None))):
+            return []
+        diags: list[Diagnostic] = []
+        for sp in bsl148_function_name_spans(
+            tree,
+            loops_executed_at_least_once=self.bsl148_loops_executed_at_least_once,
+        ):
+            diags.append(
+                Diagnostic(
+                    file=path,
+                    line=sp.line0 + 1,
+                    character=sp.col0,
+                    end_line=sp.line1 + 1,
+                    end_character=sp.col1,
+                    severity=Severity.ERROR,
+                    code="BSL148",
+                    message=(
+                        "Не все пути выполнения функции завершаются «Возврат»/«Return» "
+                        "(BSLLS AllFunctionPathMustHaveReturn)."
+                    ),
+                )
+            )
         return diags
 
     # ------------------------------------------------------------------
