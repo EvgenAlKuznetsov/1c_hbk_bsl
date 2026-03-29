@@ -86,10 +86,38 @@ def test_bsl159_invalid_all_flags_false(tmp_path: Path) -> None:
 
 
 def test_bsl159_valid_server(tmp_path: Path) -> None:
-    bsl = _write_module_xml(tmp_path, server="true")
+    # Server-side (BSLLS ``isServer``): Server + ExternalConnection + COA, no CMA
+    bsl = _write_module_xml(
+        tmp_path, server="true", ext="true", coa="true", cma="false"
+    )
     assert common_module_xml_flags_invalid(str(bsl)) is False
     engine = DiagnosticEngine(select={"BSL159"})
     assert not [d for d in engine.check_file(str(bsl)) if d.code == "BSL159"]
+
+
+def test_bsl159_invalid_server_flag_only(tmp_path: Path) -> None:
+    """``Server`` alone is not a valid BSLLS context (needs ExternalConnection + COA)."""
+    bsl = _write_module_xml(tmp_path, server="true")
+    assert common_module_xml_flags_invalid(str(bsl)) is True
+
+
+def test_bsl159_valid_client(tmp_path: Path) -> None:
+    bsl = _write_module_xml(tmp_path, coa="true", cma="true")
+    assert common_module_xml_flags_invalid(str(bsl)) is False
+
+
+def test_bsl159_valid_server_call(tmp_path: Path) -> None:
+    bsl = _write_module_xml(
+        tmp_path, server="true", servercall="true", ext="false", coa="false", cma="false"
+    )
+    assert common_module_xml_flags_invalid(str(bsl)) is False
+
+
+def test_bsl159_valid_client_server(tmp_path: Path) -> None:
+    bsl = _write_module_xml(
+        tmp_path, server="true", ext="true", coa="true", cma="true"
+    )
+    assert common_module_xml_flags_invalid(str(bsl)) is False
 
 
 def test_bsl160_fires_without_api_region(tmp_path: Path) -> None:

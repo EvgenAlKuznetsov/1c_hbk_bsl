@@ -2,7 +2,8 @@
 Common-module diagnostics aligned with BSLLS (BSL158–BSL160 and helpers).
 
 BSL158 — assignment to a name that is a *common module* metadata object (needs index).
-BSL159 — common module XML has no execution context (all platform flags false).
+BSL159 — common module XML matches no BSLLS execution context (see ``flagsCheck`` in
+``AbstractCommonModuleNameDiagnostic`` — same as raw-flag combinations, not «any tag true»).
 BSL160 — common module has methods but no export and/or no Public/Internal API region.
 """
 
@@ -30,12 +31,72 @@ def _xml_bool_tag(text: str, local: str) -> bool:
     return m is not None and m.group(1).lower() == "true"
 
 
+def _bslls_common_module_invalid_type_flags(
+    *,
+    server_call: bool,
+    server: bool,
+    external_connection: bool,
+    client_ordinary_application: bool,
+    client_managed_application: bool,
+    ordinary_app_support: bool = True,
+) -> bool:
+    """
+    Mirrors BSLLS ``CommonModuleInvalidTypeDiagnostic.flagsCheck`` /
+    ``AbstractCommonModuleNameDiagnostic`` (same boolean formulas on metadata flags).
+
+    Returns ``True`` when the module matches *no* valid context (diagnostic should fire).
+    """
+    oa = client_ordinary_application or not ordinary_app_support
+
+    def _is_client_application() -> bool:
+        return oa and client_managed_application
+
+    def _is_client_server() -> bool:
+        return (
+            not server_call
+            and server
+            and external_connection
+            and _is_client_application()
+        )
+
+    def _is_client() -> bool:
+        return (
+            not server_call
+            and not server
+            and not external_connection
+            and _is_client_application()
+        )
+
+    def _is_server_call() -> bool:
+        return (
+            server_call
+            and server
+            and not external_connection
+            and not client_ordinary_application
+            and not client_managed_application
+        )
+
+    def _is_server() -> bool:
+        return (
+            not server_call
+            and server
+            and external_connection
+            and oa
+            and not client_managed_application
+        )
+
+    ok = _is_server() or _is_server_call() or _is_client() or _is_client_server()
+    return not ok
+
+
 def common_module_xml_flags_invalid(module_bsl_path: str) -> bool | None:
     """
-    BSL159 — BSLLS ``CommonModuleInvalidType``: no execution context on the module.
+    BSL159 — BSLLS ``CommonModuleInvalidType``: metadata does not describe any allowed
+    execution context (server / server call / client / client-server).
 
-    *Invalid* when all of ``Server``, ``ServerCall``, client and external flags are
-    false. If the XML does not contain any of the known boolean property tags,
+    Uses the same four predicates as BSLLS on sibling ``<Name>.xml`` booleans
+    (``Server``, ``ServerCall``, ``ExternalConnection``, ``ClientOrdinaryApplication``,
+    ``ClientManagedApplication``). If the XML does not contain the known property tags,
     returns ``None`` (unknown / legacy layout).
     """
     xp = common_module_xml_for_module_bsl(module_bsl_path)
@@ -59,9 +120,13 @@ def common_module_xml_flags_invalid(module_bsl_path: str) -> bool | None:
     coa = _xml_bool_tag(raw, "ClientOrdinaryApplication")
     cma = _xml_bool_tag(raw, "ClientManagedApplication")
     ext = _xml_bool_tag(raw, "ExternalConnection")
-    gcm = _xml_bool_tag(raw, "GlobalClientManagedApplication")
-    any_ctx = s or sc or coa or cma or ext or gcm
-    return not any_ctx
+    return _bslls_common_module_invalid_type_flags(
+        server_call=sc,
+        server=s,
+        external_connection=ext,
+        client_ordinary_application=coa,
+        client_managed_application=cma,
+    )
 
 
 def bsl158_common_module_assign_spans(
