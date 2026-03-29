@@ -1,0 +1,65 @@
+"""BSL156 CodeOutOfRegion — procedures and module-level code inside #Область."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from onec_hbk_bsl.analysis.diagnostics import DiagnosticEngine
+
+
+def test_bsl156_no_regions_flags_line1(tmp_path: Path) -> None:
+    p = tmp_path / "m.bsl"
+    p.write_text(
+        "Процедура П() Экспорт\n"
+        "КонецПроцедуры\n",
+        encoding="utf-8",
+    )
+    engine = DiagnosticEngine(select={"BSL156"})
+    diags = [d for d in engine.check_file(str(p)) if d.code == "BSL156"]
+    assert len(diags) >= 1
+    assert any(d.line == 1 for d in diags)
+
+
+def test_bsl156_proc_inside_region_clean(tmp_path: Path) -> None:
+    p = tmp_path / "m.bsl"
+    p.write_text(
+        "#Область ПрограммныйИнтерфейс\n"
+        "Процедура П() Экспорт\n"
+        "КонецПроцедуры\n"
+        "#КонецОбласти\n",
+        encoding="utf-8",
+    )
+    engine = DiagnosticEngine(select={"BSL156"})
+    assert not [d for d in engine.check_file(str(p)) if d.code == "BSL156"]
+
+
+def test_bsl156_proc_outside_region(tmp_path: Path) -> None:
+    p = tmp_path / "m.bsl"
+    p.write_text(
+        "Процедура Снаружи() Экспорт\n"
+        "КонецПроцедуры\n"
+        "#Область Внутри\n"
+        "Процедура Внутри() Экспорт\n"
+        "КонецПроцедуры\n"
+        "#КонецОбласти\n",
+        encoding="utf-8",
+    )
+    engine = DiagnosticEngine(select={"BSL156"})
+    diags = [d for d in engine.check_file(str(p)) if d.code == "BSL156"]
+    assert any(d.line == 1 for d in diags)
+
+
+def test_bsl156_module_var_outside_region(tmp_path: Path) -> None:
+    p = tmp_path / "m.bsl"
+    p.write_text(
+        "#Область О\n"
+        "Процедура П() Экспорт\n"
+        "КонецПроцедуры\n"
+        "#КонецОбласти\n"
+        "Перем Глоб;\n",
+        encoding="utf-8",
+    )
+    engine = DiagnosticEngine(select={"BSL156"})
+    diags = [d for d in engine.check_file(str(p)) if d.code == "BSL156"]
+    lines = {d.line for d in diags}
+    assert 5 in lines

@@ -80,6 +80,8 @@ from onec_hbk_bsl.analysis.bsl_string_split import (
 from onec_hbk_bsl.analysis.diagnostics_bsl148 import bsl148_function_name_spans
 from onec_hbk_bsl.analysis.diagnostics_bsl152 import bsl152_public_region_name_spans
 from onec_hbk_bsl.analysis.diagnostics_bsl154 import bsl154_code_after_async_spans
+from onec_hbk_bsl.analysis.diagnostics_bsl155 import bsl155_code_block_before_sub
+from onec_hbk_bsl.analysis.diagnostics_bsl156 import bsl156_diagnostics
 from onec_hbk_bsl.analysis.diagnostics_cst import (
     diagnostics_bsl004_from_tree,
     diagnostics_bsl018_from_tree,
@@ -1400,7 +1402,7 @@ RULE_METADATA: dict[str, dict] = {
         "sonar_type": "CODE_SMELL",
         "sonar_severity": "MINOR",
         "tags": ["convention", "design"],
-        "implemented": False,
+        "implemented": True,
     },
     "BSL156": {
         "name": "CodeOutOfRegion",
@@ -1409,7 +1411,7 @@ RULE_METADATA: dict[str, dict] = {
         "sonar_type": "CODE_SMELL",
         "sonar_severity": "INFO",
         "tags": ["convention", "structure"],
-        "implemented": False,
+        "implemented": True,
     },
     "BSL157": {
         "name": "CommitTransactionOutsideTryCatch",
@@ -5658,8 +5660,8 @@ class DiagnosticEngine:
             # "BSL152" enabled — CachedPublic (common module XML + Public/ПрограммныйИнтерфейс region)
             # "BSL153" enabled — CanonicalSpellingKeywords implemented
             "BSL154",  # CodeAfterAsyncCall — off by default (BSLLS activatedByDefault=false)
-            "BSL155",  # CodeBlockBeforeSub — TODO
-            "BSL156",  # CodeOutOfRegion — TODO
+            # "BSL155" enabled — CodeBlockBeforeSub implemented
+            # "BSL156" enabled — CodeOutOfRegion implemented
             # "BSL157" enabled — CommitTransactionOutsideTryCatch implemented
             "BSL158",  # CommonModuleAssign — TODO
             "BSL159",  # CommonModuleInvalidType — TODO
@@ -6318,6 +6320,10 @@ class DiagnosticEngine:
             )
         if self._rule_enabled("BSL154"):
             _rule_tasks.append(("BSL154", lambda: self._rule_bsl154_code_after_async(path, lines, procs)))
+        if self._rule_enabled("BSL155"):
+            _rule_tasks.append(("BSL155", lambda: self._rule_bsl155_code_block_before_sub(path, lines, procs)))
+        if self._rule_enabled("BSL156"):
+            _rule_tasks.append(("BSL156", lambda: self._rule_bsl156_code_out_of_region(path, lines, procs)))
         if self._rule_enabled("BSL157"):
             _rule_tasks.append(("BSL157", lambda: self._rule_bsl157_commit_transaction_outside_try(path, lines)))
         if self._rule_enabled("BSL173"):
@@ -12607,6 +12613,56 @@ class DiagnosticEngine:
                         f"После асинхронного вызова «{method}» следует исполняемый код "
                         f"(BSLLS CodeAfterAsyncCall)."
                     ),
+                )
+            )
+        return diags
+
+    # ------------------------------------------------------------------
+    # BSL155 — CodeBlockBeforeSub
+    # ------------------------------------------------------------------
+
+    def _rule_bsl155_code_block_before_sub(
+        self, path: str, lines: list[str], procs: list[_ProcInfo]
+    ) -> list[Diagnostic]:
+        """Executable lines before the first procedure/function (BSLLS fileCodeBlockBeforeSub)."""
+        proc_tuples = [(p.start_idx, p.end_idx) for p in procs]
+        diags: list[Diagnostic] = []
+        for line_1, c0, c1, msg in bsl155_code_block_before_sub(lines, proc_tuples):
+            diags.append(
+                Diagnostic(
+                    file=path,
+                    line=line_1,
+                    character=c0,
+                    end_line=line_1,
+                    end_character=c1,
+                    severity=Severity.WARNING,
+                    code="BSL155",
+                    message=msg,
+                )
+            )
+        return diags
+
+    # ------------------------------------------------------------------
+    # BSL156 — CodeOutOfRegion
+    # ------------------------------------------------------------------
+
+    def _rule_bsl156_code_out_of_region(
+        self, path: str, lines: list[str], procs: list[_ProcInfo]
+    ) -> list[Diagnostic]:
+        """Module lines and procedures must lie inside #Область/#Region (BSLLS CodeOutOfRegion)."""
+        triples = [(p.start_idx, p.end_idx, p.name) for p in procs]
+        diags: list[Diagnostic] = []
+        for line_1, c0, c1, msg in bsl156_diagnostics(lines, triples):
+            diags.append(
+                Diagnostic(
+                    file=path,
+                    line=line_1,
+                    character=c0,
+                    end_line=line_1,
+                    end_character=c1,
+                    severity=Severity.INFORMATION,
+                    code="BSL156",
+                    message=msg,
                 )
             )
         return diags

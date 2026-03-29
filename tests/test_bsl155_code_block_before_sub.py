@@ -1,0 +1,33 @@
+"""BSL155 CodeBlockBeforeSub — lines before first procedure (excluding Перем-only)."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from onec_hbk_bsl.analysis.diagnostics import DiagnosticEngine
+
+
+def test_bsl155_skips_only_var_before_proc(tmp_path: Path) -> None:
+    p = tmp_path / "m.bsl"
+    p.write_text(
+        "Перем Глоб;\n"
+        "Процедура П() Экспорт\n"
+        "КонецПроцедуры\n",
+        encoding="utf-8",
+    )
+    engine = DiagnosticEngine(select={"BSL155"})
+    assert not [d for d in engine.check_file(str(p)) if d.code == "BSL155"]
+
+
+def test_bsl155_fires_executable_before_proc(tmp_path: Path) -> None:
+    p = tmp_path / "m.bsl"
+    p.write_text(
+        "а = 1;\n"
+        "Процедура П() Экспорт\n"
+        "КонецПроцедуры\n",
+        encoding="utf-8",
+    )
+    engine = DiagnosticEngine(select={"BSL155"})
+    diags = [d for d in engine.check_file(str(p)) if d.code == "BSL155"]
+    assert len(diags) == 1
+    assert diags[0].line == 1
