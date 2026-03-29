@@ -1353,7 +1353,7 @@ RULE_METADATA: dict[str, dict] = {
         "sonar_type": "CODE_SMELL",
         "sonar_severity": "MAJOR",
         "tags": ["convention"],
-        "implemented": False,
+        "implemented": True,
     },
     "BSL151": {
         "name": "BeginTransactionBeforeTryCatch",
@@ -5651,7 +5651,7 @@ class DiagnosticEngine:
             # ── BSL148–BSL279 — stubs, disabled until implemented ────────────
             # "BSL148" enabled — AllFunctionPathMustHaveReturn implemented
             # "BSL149" enabled — AssignAliasFieldsInQuery implemented
-            "BSL150",  # BadWords — TODO
+            "BSL150",  # BadWords — off by default (BSLLS activatedByDefault=false); needs bad_words_pattern
             # "BSL151" enabled — BeginTransactionBeforeTryCatch implemented
             "BSL152",  # CachedPublic — TODO
             # "BSL153" enabled — CanonicalSpellingKeywords implemented
@@ -5815,6 +5815,7 @@ class DiagnosticEngine:
         min_duplicate_uses: int = MIN_DUPLICATE_USES,
         max_module_lines: int = MAX_MODULE_LINES,
         symbol_index: Any | None = None,
+        bad_words_pattern: str = "",
         bsl148_loops_executed_at_least_once: bool = True,
     ) -> None:
         # tree_sitter.Parser is not thread-safe — one BslParser per thread unless a
@@ -5843,6 +5844,13 @@ class DiagnosticEngine:
         self.min_duplicate_uses = min_duplicate_uses
         self.max_module_lines = max_module_lines
         self.bsl148_loops_executed_at_least_once = bsl148_loops_executed_at_least_once
+        _bwp = bad_words_pattern.strip()
+        try:
+            self._bad_words_re: re.Pattern[str] | None = (
+                re.compile(_bwp, re.IGNORECASE) if _bwp else None
+            )
+        except re.error:
+            self._bad_words_re = None
 
     def _get_parser(self) -> BslParser:
         """Return the parser for this thread (tree-sitter Parser is not thread-safe)."""
@@ -6319,6 +6327,8 @@ class DiagnosticEngine:
             _rule_tasks.append(("BSL172", lambda: self._rule_bsl172_data_exchange_loading(path, lines, procs)))
         if self._rule_enabled("BSL149"):
             _rule_tasks.append(("BSL149", lambda: self._rule_bsl149_assign_alias_fields_in_query(path, lines)))
+        if self._rule_enabled("BSL150"):
+            _rule_tasks.append(("BSL150", lambda: self._rule_bsl150_bad_words(path, lines)))
         if self._rule_enabled("BSL186"):
             _rule_tasks.append(("BSL186", lambda: self._rule_bsl186_extra_commas(path, lines)))
         if self._rule_enabled("BSL190"):
@@ -7697,6 +7707,34 @@ class DiagnosticEngine:
                     ),
                 )
             )
+        return diags
+
+    # ------------------------------------------------------------------
+    # BSL150 — BadWords (pattern from ``DiagnosticEngine(bad_words_pattern=...)``)
+    # ------------------------------------------------------------------
+
+    def _rule_bsl150_bad_words(self, path: str, lines: list[str]) -> list[Diagnostic]:
+        rx = self._bad_words_re
+        if rx is None:
+            return []
+        diags: list[Diagnostic] = []
+        for idx, line in enumerate(lines):
+            if not line.strip():
+                continue
+            for m in rx.finditer(line):
+                w = m.group(0)
+                diags.append(
+                    Diagnostic(
+                        file=path,
+                        line=idx + 1,
+                        character=m.start(),
+                        end_line=idx + 1,
+                        end_character=m.end(),
+                        severity=Severity.WARNING,
+                        code="BSL150",
+                        message=f"Нежелательное слово в коде: {w!r} (BadWords).",
+                    )
+                )
         return diags
 
     # ------------------------------------------------------------------
