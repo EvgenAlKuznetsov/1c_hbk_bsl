@@ -82,6 +82,12 @@ from onec_hbk_bsl.analysis.diagnostics_bsl152 import bsl152_public_region_name_s
 from onec_hbk_bsl.analysis.diagnostics_bsl154 import bsl154_code_after_async_spans
 from onec_hbk_bsl.analysis.diagnostics_bsl155 import bsl155_code_block_before_sub
 from onec_hbk_bsl.analysis.diagnostics_bsl156 import bsl156_diagnostics
+from onec_hbk_bsl.analysis.diagnostics_common_module import (
+    bsl158_common_module_assign_spans,
+    bsl160_common_module_missing_api,
+    bsl160_module_line1_span,
+    common_module_xml_flags_invalid,
+)
 from onec_hbk_bsl.analysis.diagnostics_cst import (
     diagnostics_bsl004_from_tree,
     diagnostics_bsl018_from_tree,
@@ -1429,7 +1435,7 @@ RULE_METADATA: dict[str, dict] = {
         "sonar_type": "BUG",
         "sonar_severity": "BLOCKER",
         "tags": ["correctness", "module"],
-        "implemented": False,
+        "implemented": True,
     },
     "BSL159": {
         "name": "CommonModuleInvalidType",
@@ -1438,7 +1444,7 @@ RULE_METADATA: dict[str, dict] = {
         "sonar_type": "BUG",
         "sonar_severity": "CRITICAL",
         "tags": ["design", "module"],
-        "implemented": False,
+        "implemented": True,
     },
     "BSL160": {
         "name": "CommonModuleMissingAPI",
@@ -1447,7 +1453,7 @@ RULE_METADATA: dict[str, dict] = {
         "sonar_type": "CODE_SMELL",
         "sonar_severity": "MINOR",
         "tags": ["design", "module", "api"],
-        "implemented": False,
+        "implemented": True,
     },
     "BSL161": {
         "name": "CommonModuleNameCached",
@@ -5663,9 +5669,9 @@ class DiagnosticEngine:
             # "BSL155" enabled — CodeBlockBeforeSub implemented
             # "BSL156" enabled — CodeOutOfRegion implemented
             # "BSL157" enabled — CommitTransactionOutsideTryCatch implemented
-            "BSL158",  # CommonModuleAssign — TODO
-            "BSL159",  # CommonModuleInvalidType — TODO
-            "BSL160",  # CommonModuleMissingAPI — TODO
+            # "BSL158" enabled — CommonModuleAssign (metadata index)
+            # "BSL159" enabled — CommonModuleInvalidType (sibling module XML)
+            # "BSL160" enabled — CommonModuleMissingAPI (export + Public/Internal region)
             "BSL161",  # CommonModuleNameCached — TODO
             "BSL162",  # CommonModuleNameClient — TODO
             "BSL163",  # CommonModuleNameClientServer — TODO
@@ -6326,6 +6332,14 @@ class DiagnosticEngine:
             _rule_tasks.append(("BSL156", lambda: self._rule_bsl156_code_out_of_region(path, lines, procs)))
         if self._rule_enabled("BSL157"):
             _rule_tasks.append(("BSL157", lambda: self._rule_bsl157_commit_transaction_outside_try(path, lines)))
+        if self._rule_enabled("BSL158") and idx is not None:
+            _rule_tasks.append(("BSL158", lambda: self._rule_bsl158_common_module_assign(path, lines, idx)))
+        if self._rule_enabled("BSL159"):
+            _rule_tasks.append(("BSL159", lambda: self._rule_bsl159_common_module_invalid_type(path, lines)))
+        if self._rule_enabled("BSL160"):
+            _rule_tasks.append(
+                ("BSL160", lambda: self._rule_bsl160_common_module_missing_api(path, lines, regions, procs))
+            )
         if self._rule_enabled("BSL173"):
             _rule_tasks.append(("BSL173", lambda: self._rule_bsl173_deleting_collection_item(path, lines, procs)))
         if self._rule_enabled("BSL257"):
@@ -12666,6 +12680,101 @@ class DiagnosticEngine:
                 )
             )
         return diags
+
+    # ------------------------------------------------------------------
+    # BSL158 — CommonModuleAssign (indexed configuration)
+    # ------------------------------------------------------------------
+
+    def _rule_bsl158_common_module_assign(
+        self, path: str, lines: list[str], symbol_index: Any
+    ) -> list[Diagnostic]:
+        """Assignment to a name that is a common module object (BSLLS CommonModuleAssign)."""
+        diags: list[Diagnostic] = []
+        for line_1, c0, c1, name in bsl158_common_module_assign_spans(lines, symbol_index):
+            diags.append(
+                Diagnostic(
+                    file=path,
+                    line=line_1,
+                    character=c0,
+                    end_line=line_1,
+                    end_character=c1,
+                    severity=Severity.ERROR,
+                    code="BSL158",
+                    message=(
+                        f"Нельзя присваивать значение объекту общего модуля «{name}» "
+                        f"(BSLLS CommonModuleAssign)."
+                    ),
+                )
+            )
+        return diags
+
+    # ------------------------------------------------------------------
+    # BSL159 — CommonModuleInvalidType (sibling module XML)
+    # ------------------------------------------------------------------
+
+    def _rule_bsl159_common_module_invalid_type(
+        self, path: str, lines: list[str]
+    ) -> list[Diagnostic]:
+        """Common module descriptor has no execution context flags (BSLLS CommonModuleInvalidType)."""
+        inv = common_module_xml_flags_invalid(path)
+        if inv is not True:
+            return []
+        span = bsl160_module_line1_span(lines)
+        c0, c1 = span if span is not None else (0, 1)
+        return [
+            Diagnostic(
+                file=path,
+                line=1,
+                character=c0,
+                end_line=1,
+                end_character=c1,
+                severity=Severity.ERROR,
+                code="BSL159",
+                message=(
+                    "У общего модуля не задан контекст выполнения в метаданных "
+                    "(BSLLS CommonModuleInvalidType)."
+                ),
+            )
+        ]
+
+    # ------------------------------------------------------------------
+    # BSL160 — CommonModuleMissingAPI
+    # ------------------------------------------------------------------
+
+    def _rule_bsl160_common_module_missing_api(
+        self,
+        path: str,
+        lines: list[str],
+        regions: list[_RegionInfo],
+        procs: list[_ProcInfo],
+    ) -> list[Diagnostic]:
+        """No export and/or no Public/Internal API region (BSLLS CommonModuleMissingAPI)."""
+        if not bsl160_common_module_missing_api(
+            path,
+            [r.name for r in regions],
+            [p.is_export for p in procs],
+        ):
+            return []
+        span = bsl160_module_line1_span(lines)
+        if span is None:
+            return []
+        c0, c1 = span
+        return [
+            Diagnostic(
+                file=path,
+                line=1,
+                character=c0,
+                end_line=1,
+                end_character=c1,
+                severity=Severity.INFORMATION,
+                code="BSL160",
+                message=(
+                    "В общем модуле нет экспортных методов и/или областей "
+                    "программного интерфейса (Public/Internal) "
+                    "(BSLLS CommonModuleMissingAPI)."
+                ),
+            )
+        ]
 
     # ------------------------------------------------------------------
     # BSL157 — CommitTransactionOutsideTryCatch
