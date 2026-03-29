@@ -78,6 +78,7 @@ from onec_hbk_bsl.analysis.bsl_string_split import (
     strip_leading_val_keywords,
 )
 from onec_hbk_bsl.analysis.diagnostics_bsl148 import bsl148_function_name_spans
+from onec_hbk_bsl.analysis.diagnostics_bsl152 import bsl152_public_region_name_spans
 from onec_hbk_bsl.analysis.diagnostics_cst import (
     diagnostics_bsl004_from_tree,
     diagnostics_bsl018_from_tree,
@@ -1371,7 +1372,7 @@ RULE_METADATA: dict[str, dict] = {
         "sonar_type": "CODE_SMELL",
         "sonar_severity": "MAJOR",
         "tags": ["design", "performance"],
-        "implemented": False,
+        "implemented": True,
     },
     "BSL153": {
         "name": "CanonicalSpellingKeywords",
@@ -5653,7 +5654,7 @@ class DiagnosticEngine:
             # "BSL149" enabled — AssignAliasFieldsInQuery implemented
             "BSL150",  # BadWords — off by default (BSLLS activatedByDefault=false); needs bad_words_pattern
             # "BSL151" enabled — BeginTransactionBeforeTryCatch implemented
-            "BSL152",  # CachedPublic — TODO
+            # "BSL152" enabled — CachedPublic (common module XML + Public/ПрограммныйИнтерфейс region)
             # "BSL153" enabled — CanonicalSpellingKeywords implemented
             "BSL154",  # CodeAfterAsyncCall — TODO
             "BSL155",  # CodeBlockBeforeSub — TODO
@@ -6310,6 +6311,10 @@ class DiagnosticEngine:
             _rule_tasks.append(("BSL147", lambda: self._rule_bsl147_use_of_ui_call(path, lines, procs)))
         if self._rule_enabled("BSL151"):
             _rule_tasks.append(("BSL151", lambda: self._rule_bsl151_begin_transaction_before_try(path, lines)))
+        if self._rule_enabled("BSL152"):
+            _rule_tasks.append(
+                ("BSL152", lambda: self._rule_bsl152_cached_public(path, lines, regions, procs))
+            )
         if self._rule_enabled("BSL157"):
             _rule_tasks.append(("BSL157", lambda: self._rule_bsl157_commit_transaction_outside_try(path, lines)))
         if self._rule_enabled("BSL173"):
@@ -12539,6 +12544,40 @@ class DiagnosticEngine:
                             "перед блоком Попытка"
                         ),
                     ))
+        return diags
+
+    # ------------------------------------------------------------------
+    # BSL152 — CachedPublic (common module + ReturnValuesReuse + Public region)
+    # ------------------------------------------------------------------
+
+    def _rule_bsl152_cached_public(
+        self,
+        path: str,
+        lines: list[str],
+        regions: list[_RegionInfo],
+        procs: list[_ProcInfo],
+    ) -> list[Diagnostic]:
+        """BSLLS CachedPublic — program-interface region in a return-value-reuse common module."""
+        reg_tuples = [(r.name, r.start_idx, r.end_idx) for r in regions]
+        proc_tuples = [(p.start_idx, p.end_idx) for p in procs]
+        diags: list[Diagnostic] = []
+        for line_1, c0, c1 in bsl152_public_region_name_spans(path, lines, reg_tuples, proc_tuples):
+            diags.append(
+                Diagnostic(
+                    file=path,
+                    line=line_1,
+                    character=c0,
+                    end_line=line_1,
+                    end_character=c1,
+                    severity=Severity.WARNING,
+                    code="BSL152",
+                    message=(
+                        "Не следует размещать программный интерфейс в общем модуле "
+                        "с повторным использованием возвращаемых значений "
+                        "(BSLLS CachedPublic)."
+                    ),
+                )
+            )
         return diags
 
     # ------------------------------------------------------------------
