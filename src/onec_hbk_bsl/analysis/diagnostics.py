@@ -86,6 +86,7 @@ from onec_hbk_bsl.analysis.diagnostics_common_module import (
     bsl158_common_module_assign_spans,
     bsl160_common_module_missing_api,
     bsl160_module_line1_span,
+    common_module_name_convention_issues,
     common_module_xml_flags_invalid,
 )
 from onec_hbk_bsl.analysis.diagnostics_cst import (
@@ -1462,7 +1463,7 @@ RULE_METADATA: dict[str, dict] = {
         "sonar_type": "CODE_SMELL",
         "sonar_severity": "MINOR",
         "tags": ["convention", "naming", "module"],
-        "implemented": False,
+        "implemented": True,
     },
     "BSL162": {
         "name": "CommonModuleNameClient",
@@ -1471,7 +1472,7 @@ RULE_METADATA: dict[str, dict] = {
         "sonar_type": "CODE_SMELL",
         "sonar_severity": "MINOR",
         "tags": ["convention", "naming", "module"],
-        "implemented": False,
+        "implemented": True,
     },
     "BSL163": {
         "name": "CommonModuleNameClientServer",
@@ -1480,7 +1481,7 @@ RULE_METADATA: dict[str, dict] = {
         "sonar_type": "CODE_SMELL",
         "sonar_severity": "MINOR",
         "tags": ["convention", "naming", "module"],
-        "implemented": False,
+        "implemented": True,
     },
     "BSL164": {
         "name": "CommonModuleNameFullAccess",
@@ -1489,7 +1490,7 @@ RULE_METADATA: dict[str, dict] = {
         "sonar_type": "CODE_SMELL",
         "sonar_severity": "MINOR",
         "tags": ["convention", "naming", "module"],
-        "implemented": False,
+        "implemented": True,
     },
     "BSL165": {
         "name": "CommonModuleNameGlobal",
@@ -1498,7 +1499,7 @@ RULE_METADATA: dict[str, dict] = {
         "sonar_type": "CODE_SMELL",
         "sonar_severity": "MINOR",
         "tags": ["convention", "naming", "module"],
-        "implemented": False,
+        "implemented": True,
     },
     "BSL166": {
         "name": "CommonModuleNameGlobalClient",
@@ -1507,7 +1508,7 @@ RULE_METADATA: dict[str, dict] = {
         "sonar_type": "CODE_SMELL",
         "sonar_severity": "MINOR",
         "tags": ["convention", "naming", "module"],
-        "implemented": False,
+        "implemented": True,
     },
     "BSL167": {
         "name": "CommonModuleNameServerCall",
@@ -1516,7 +1517,7 @@ RULE_METADATA: dict[str, dict] = {
         "sonar_type": "CODE_SMELL",
         "sonar_severity": "MINOR",
         "tags": ["convention", "naming", "module"],
-        "implemented": False,
+        "implemented": True,
     },
     "BSL168": {
         "name": "CommonModuleNameWords",
@@ -1525,7 +1526,7 @@ RULE_METADATA: dict[str, dict] = {
         "sonar_type": "CODE_SMELL",
         "sonar_severity": "MINOR",
         "tags": ["convention", "naming", "module"],
-        "implemented": False,
+        "implemented": True,
     },
     "BSL169": {
         "name": "CompilationDirectiveLost",
@@ -5672,14 +5673,7 @@ class DiagnosticEngine:
             # "BSL158" enabled — CommonModuleAssign (metadata index)
             # "BSL159" enabled — CommonModuleInvalidType (sibling module XML)
             # "BSL160" enabled — CommonModuleMissingAPI (export + Public/Internal region)
-            "BSL161",  # CommonModuleNameCached — TODO
-            "BSL162",  # CommonModuleNameClient — TODO
-            "BSL163",  # CommonModuleNameClientServer — TODO
-            "BSL164",  # CommonModuleNameFullAccess — TODO
-            "BSL165",  # CommonModuleNameGlobal — TODO
-            "BSL166",  # CommonModuleNameGlobalClient — TODO
-            "BSL167",  # CommonModuleNameServerCall — TODO
-            "BSL168",  # CommonModuleNameWords — TODO
+            # "BSL161"–"BSL168" enabled — CommonModuleName* (sibling module XML + name)
             "BSL169",  # CompilationDirectiveLost — TODO
             "BSL170",  # CompilationDirectiveNeedLess — TODO
             "BSL171",  # CrazyMultilineString — TODO
@@ -6339,6 +6333,20 @@ class DiagnosticEngine:
         if self._rule_enabled("BSL160"):
             _rule_tasks.append(
                 ("BSL160", lambda: self._rule_bsl160_common_module_missing_api(path, lines, regions, procs))
+            )
+        _bsl161_168 = (
+            "BSL161",
+            "BSL162",
+            "BSL163",
+            "BSL164",
+            "BSL165",
+            "BSL166",
+            "BSL167",
+            "BSL168",
+        )
+        if any(self._rule_enabled(c) for c in _bsl161_168):
+            _rule_tasks.append(
+                ("BSL161-168", lambda: self._rule_bsl161_168_common_module_names(path, lines, _bsl161_168))
             )
         if self._rule_enabled("BSL173"):
             _rule_tasks.append(("BSL173", lambda: self._rule_bsl173_deleting_collection_item(path, lines, procs)))
@@ -12775,6 +12783,41 @@ class DiagnosticEngine:
                 ),
             )
         ]
+
+    # ------------------------------------------------------------------
+    # BSL161–BSL168 — CommonModuleName* (sibling module XML)
+    # ------------------------------------------------------------------
+
+    def _rule_bsl161_168_common_module_names(
+        self,
+        path: str,
+        lines: list[str],
+        codes: tuple[str, ...],
+    ) -> list[Diagnostic]:
+        """Common module name vs metadata flags / forbidden words (BSLLS CommonModuleName*)."""
+        issues = common_module_name_convention_issues(path)
+        if not issues:
+            return []
+        span = bsl160_module_line1_span(lines)
+        c0, c1 = span if span is not None else (0, 1)
+        enabled = {c for c in codes if self._rule_enabled(c)}
+        out: list[Diagnostic] = []
+        for code, message in issues:
+            if code not in enabled:
+                continue
+            out.append(
+                Diagnostic(
+                    file=path,
+                    line=1,
+                    character=c0,
+                    end_line=1,
+                    end_character=c1,
+                    severity=Severity.INFORMATION,
+                    code=code,
+                    message=message,
+                )
+            )
+        return out
 
     # ------------------------------------------------------------------
     # BSL157 — CommitTransactionOutsideTryCatch

@@ -10,6 +10,7 @@ import pytest
 from onec_hbk_bsl.analysis.diagnostics import DiagnosticEngine
 from onec_hbk_bsl.analysis.diagnostics_common_module import (
     common_module_has_api_region,
+    common_module_name_convention_issues,
     common_module_xml_flags_invalid,
 )
 
@@ -29,29 +30,37 @@ class _FakeIndex158:
 def _write_module_xml(
     base: Path,
     *,
+    folder_name: str = "ТестПакет",
     server: str = "false",
     servercall: str = "false",
     coa: str = "false",
     cma: str = "false",
     ext: str = "false",
     gcm: str = "false",
+    global_: str = "false",
+    privileged: str = "false",
+    rvr: str = "DontUse",
 ) -> Path:
-    bsl = base / "CommonModules" / "ТестМодуль" / "Ext" / "Module.bsl"
+    # Имя без «Модуль» — иначе BSL168 (CommonModuleNameWords) на любой такой модуль.
+    bsl = base / "CommonModules" / folder_name / "Ext" / "Module.bsl"
     bsl.parent.mkdir(parents=True)
     bsl.write_text("Процедура П() Экспорт\nКонецПроцедуры\n", encoding="utf-8")
-    xml = base / "CommonModules" / "ТестМодуль" / "ТестМодуль.xml"
+    xml = base / "CommonModules" / folder_name / f"{folder_name}.xml"
     xml.write_text(
         f"""<?xml version="1.0" encoding="UTF-8"?>
 <MetaDataObject xmlns="http://v8.1c.ru/8.3/MDClasses" version="2.20">
   <CommonModule uuid="00000000-0000-0000-0000-000000000001">
     <Properties>
-      <Name>ТестМодуль</Name>
+      <Name>{folder_name}</Name>
+      <Global>{global_}</Global>
+      <Privileged>{privileged}</Privileged>
       <Server>{server}</Server>
       <ServerCall>{servercall}</ServerCall>
       <ClientOrdinaryApplication>{coa}</ClientOrdinaryApplication>
       <ClientManagedApplication>{cma}</ClientManagedApplication>
       <ExternalConnection>{ext}</ExternalConnection>
       <GlobalClientManagedApplication>{gcm}</GlobalClientManagedApplication>
+      <ReturnValuesReuse>{rvr}</ReturnValuesReuse>
     </Properties>
   </CommonModule>
 </MetaDataObject>
@@ -171,3 +180,99 @@ def test_bsl160_no_export_triggers(
     engine = DiagnosticEngine(select={"BSL160"})
     diags = [d for d in engine.check_file(str(bsl)) if d.code == "BSL160"]
     assert (len(diags) >= 1) == expect
+
+
+def test_bsl161_cached_name(tmp_path: Path) -> None:
+    bsl = _write_module_xml(tmp_path, rvr="DuringRequest")
+    codes = {c for c, _ in common_module_name_convention_issues(str(bsl))}
+    assert "BSL161" in codes
+    engine = DiagnosticEngine(select={"BSL161"})
+    assert [d for d in engine.check_file(str(bsl)) if d.code == "BSL161"]
+
+    bsl_ok = _write_module_xml(tmp_path / "ok", folder_name="КэшПовтИсп", rvr="DuringRequest")
+    assert "BSL161" not in {c for c, _ in common_module_name_convention_issues(str(bsl_ok))}
+
+
+def test_bsl162_client_name(tmp_path: Path) -> None:
+    bsl = _write_module_xml(tmp_path, coa="true", cma="true")
+    assert "BSL162" in {c for c, _ in common_module_name_convention_issues(str(bsl))}
+    bsl_ok = _write_module_xml(tmp_path / "ok", folder_name="КлиентТест", coa="true", cma="true")
+    assert "BSL162" not in {c for c, _ in common_module_name_convention_issues(str(bsl_ok))}
+
+
+def test_bsl163_client_server_name(tmp_path: Path) -> None:
+    bsl = _write_module_xml(
+        tmp_path, server="true", ext="true", coa="true", cma="true"
+    )
+    assert "BSL163" in {c for c, _ in common_module_name_convention_issues(str(bsl))}
+    bsl_ok = _write_module_xml(
+        tmp_path / "ok",
+        folder_name="КлиентСерверТест",
+        server="true",
+        ext="true",
+        coa="true",
+        cma="true",
+    )
+    assert "BSL163" not in {c for c, _ in common_module_name_convention_issues(str(bsl_ok))}
+
+
+def test_bsl164_privileged_name(tmp_path: Path) -> None:
+    bsl = _write_module_xml(tmp_path, privileged="true", server="true", ext="true", coa="true")
+    assert "BSL164" in {c for c, _ in common_module_name_convention_issues(str(bsl))}
+    bsl_ok = _write_module_xml(
+        tmp_path / "ok",
+        folder_name="ПолныеПраваТест",
+        privileged="true",
+        server="true",
+        ext="true",
+        coa="true",
+    )
+    assert "BSL164" not in {c for c, _ in common_module_name_convention_issues(str(bsl_ok))}
+
+
+def test_bsl165_global_name(tmp_path: Path) -> None:
+    bsl = _write_module_xml(tmp_path, global_="true", coa="true", cma="true")
+    assert "BSL165" in {c for c, _ in common_module_name_convention_issues(str(bsl))}
+    bsl_ok = _write_module_xml(
+        tmp_path / "ok", folder_name="ГлобальныйТест", global_="true", coa="true", cma="true"
+    )
+    assert "BSL165" not in {c for c, _ in common_module_name_convention_issues(str(bsl_ok))}
+
+
+def test_bsl166_global_client_name(tmp_path: Path) -> None:
+    bsl = _write_module_xml(
+        tmp_path, folder_name="ГлобальныйСервис", global_="true", coa="true", cma="true"
+    )
+    assert "BSL166" in {c for c, _ in common_module_name_convention_issues(str(bsl))}
+    bsl_ok = _write_module_xml(
+        tmp_path / "ok",
+        folder_name="ГлобальныйКлиентТест",
+        global_="true",
+        coa="true",
+        cma="true",
+    )
+    assert "BSL166" not in {c for c, _ in common_module_name_convention_issues(str(bsl_ok))}
+
+
+def test_bsl167_server_call_name(tmp_path: Path) -> None:
+    bsl = _write_module_xml(
+        tmp_path, server="true", servercall="true", ext="false", coa="false", cma="false"
+    )
+    assert "BSL167" in {c for c, _ in common_module_name_convention_issues(str(bsl))}
+    bsl_ok = _write_module_xml(
+        tmp_path / "ok",
+        folder_name="ВызовСервераТест",
+        server="true",
+        servercall="true",
+        ext="false",
+        coa="false",
+        cma="false",
+    )
+    assert "BSL167" not in {c for c, _ in common_module_name_convention_issues(str(bsl_ok))}
+
+
+def test_bsl168_forbidden_word_in_name(tmp_path: Path) -> None:
+    bsl = _write_module_xml(tmp_path, folder_name="ТестМодуль", server="true", ext="true", coa="true")
+    assert "BSL168" in {c for c, _ in common_module_name_convention_issues(str(bsl))}
+    engine = DiagnosticEngine(select={"BSL168"})
+    assert [d for d in engine.check_file(str(bsl)) if d.code == "BSL168"]

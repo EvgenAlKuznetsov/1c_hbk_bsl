@@ -49,6 +49,16 @@ def common_module_xml_for_module_bsl(module_bsl_path: str) -> Path | None:
     return xml if xml.is_file() else None
 
 
+def return_values_reuse_cached_from_xml_text(raw: str) -> bool:
+    """True when ``ReturnValuesReuse`` is DuringRequest or DuringSession (BSLLS cached)."""
+    m = _RVR_RE.search(raw)
+    if not m:
+        return False
+    val = m.group(1).strip().casefold()
+    val = val.split(":")[-1].strip()
+    return val in _CACHED_REUSE_VALUES
+
+
 def common_module_bslls_cached_reuse(module_bsl_path: str) -> bool:
     """True when sibling XML has ReturnValuesReuse DuringRequest or DuringSession."""
     xp = common_module_xml_for_module_bsl(module_bsl_path)
@@ -58,12 +68,7 @@ def common_module_bslls_cached_reuse(module_bsl_path: str) -> bool:
         raw = xp.read_text(encoding="utf-8-sig", errors="replace")
     except OSError:
         return False
-    m = _RVR_RE.search(raw)
-    if not m:
-        return False
-    val = m.group(1).strip().casefold()
-    val = val.split(":")[-1].strip()
-    return val in _CACHED_REUSE_VALUES
+    return return_values_reuse_cached_from_xml_text(raw)
 
 
 def _is_public_program_interface_region(name: str) -> bool:
