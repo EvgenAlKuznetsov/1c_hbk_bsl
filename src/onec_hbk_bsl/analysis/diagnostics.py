@@ -4213,12 +4213,6 @@ _RE_GOTO = re.compile(
     re.IGNORECASE,
 )
 
-# BSL113 — assignment (=) inside Если/ИначеЕсли condition
-_RE_ASSIGN_IN_COND = re.compile(
-    r"^\s*(?:Если|ИначеЕсли|ElseIf|If)\b.*(?<![<>!])=(?![=>])",
-    re.IGNORECASE,
-)
-
 # Magic number: numeric literal not 0/1/-1, not in a comment or string
 # A simplified heuristic: standalone number after =, (, or operator
 _RE_MAGIC_NUMBER = re.compile(
@@ -6229,8 +6223,8 @@ class DiagnosticEngine:
             _rule_tasks.append(("BSL111", lambda: self._rule_bsl111_mixed_language_identifiers(path, lines)))
         if self._rule_enabled("BSL112"):
             _rule_tasks.append(("BSL112", lambda: self._rule_bsl112_unterminated_transaction(path, lines)))
-        # BSL113 (AssignmentInCondition) removed — not applicable to BSL
-        # where '=' is always comparison, never assignment-as-expression.
+        if self._rule_enabled("BSL113"):
+            _rule_tasks.append(("BSL113", lambda: self._rule_bsl113_assignment_in_condition(path, lines)))
         if self._rule_enabled("BSL114"):
             _rule_tasks.append(("BSL114", lambda: self._rule_bsl114_empty_module(path, lines)))
         if self._rule_enabled("BSL115"):
@@ -11173,31 +11167,8 @@ class DiagnosticEngine:
     def _rule_bsl113_assignment_in_condition(
         self, path: str, lines: list[str]
     ) -> list[Diagnostic]:
-        """Flag Если/ИначеЕсли lines that look like they use = for assignment."""
-        diags: list[Diagnostic] = []
-        for idx, line in enumerate(lines):
-            if line.strip().startswith("//"):
-                continue
-            if _RE_ASSIGN_IN_COND.match(line):
-                # Exclude lines that already contain a comparison operator (<>, >=, <=)
-                if re.search(r'<>|>=|<=', line):
-                    continue
-                diags.append(
-                    Diagnostic(
-                        file=path,
-                        line=idx + 1,
-                        character=len(line) - len(line.lstrip()),
-                        end_line=idx + 1,
-                        end_character=len(line.rstrip()),
-                        severity=Severity.WARNING,
-                        code="BSL113",
-                        message=(
-                            "Possible assignment inside condition — "
-                            "use a comparison operator instead of '='."
-                        ),
-                    )
-                )
-        return diags
+        """BSLLS ``AssignmentInCondition`` — in BSL ``=`` in ``Если`` is comparison, not assignment."""
+        return []
 
     # ------------------------------------------------------------------
     # BSL114 — Empty module
