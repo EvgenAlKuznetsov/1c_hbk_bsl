@@ -79,6 +79,7 @@ from onec_hbk_bsl.analysis.bsl_string_split import (
 )
 from onec_hbk_bsl.analysis.diagnostics_bsl148 import bsl148_function_name_spans
 from onec_hbk_bsl.analysis.diagnostics_bsl152 import bsl152_public_region_name_spans
+from onec_hbk_bsl.analysis.diagnostics_bsl154 import bsl154_code_after_async_spans
 from onec_hbk_bsl.analysis.diagnostics_cst import (
     diagnostics_bsl004_from_tree,
     diagnostics_bsl018_from_tree,
@@ -1390,7 +1391,7 @@ RULE_METADATA: dict[str, dict] = {
         "sonar_type": "BUG",
         "sonar_severity": "MAJOR",
         "tags": ["async", "correctness"],
-        "implemented": False,
+        "implemented": True,
     },
     "BSL155": {
         "name": "CodeBlockBeforeSub",
@@ -5656,7 +5657,7 @@ class DiagnosticEngine:
             # "BSL151" enabled — BeginTransactionBeforeTryCatch implemented
             # "BSL152" enabled — CachedPublic (common module XML + Public/ПрограммныйИнтерфейс region)
             # "BSL153" enabled — CanonicalSpellingKeywords implemented
-            "BSL154",  # CodeAfterAsyncCall — TODO
+            "BSL154",  # CodeAfterAsyncCall — off by default (BSLLS activatedByDefault=false)
             "BSL155",  # CodeBlockBeforeSub — TODO
             "BSL156",  # CodeOutOfRegion — TODO
             # "BSL157" enabled — CommitTransactionOutsideTryCatch implemented
@@ -6315,6 +6316,8 @@ class DiagnosticEngine:
             _rule_tasks.append(
                 ("BSL152", lambda: self._rule_bsl152_cached_public(path, lines, regions, procs))
             )
+        if self._rule_enabled("BSL154"):
+            _rule_tasks.append(("BSL154", lambda: self._rule_bsl154_code_after_async(path, lines, procs)))
         if self._rule_enabled("BSL157"):
             _rule_tasks.append(("BSL157", lambda: self._rule_bsl157_commit_transaction_outside_try(path, lines)))
         if self._rule_enabled("BSL173"):
@@ -12575,6 +12578,34 @@ class DiagnosticEngine:
                         "Не следует размещать программный интерфейс в общем модуле "
                         "с повторным использованием возвращаемых значений "
                         "(BSLLS CachedPublic)."
+                    ),
+                )
+            )
+        return diags
+
+    # ------------------------------------------------------------------
+    # BSL154 — CodeAfterAsyncCall (client command / form / managed app modules)
+    # ------------------------------------------------------------------
+
+    def _rule_bsl154_code_after_async(
+        self, path: str, lines: list[str], procs: list[_ProcInfo]
+    ) -> list[Diagnostic]:
+        """BSLLS CodeAfterAsyncCall — code after async platform call (procedure-body heuristic)."""
+        proc_tuples = [(p.start_idx, p.end_idx) for p in procs]
+        diags: list[Diagnostic] = []
+        for line_1, c0, c1, method in bsl154_code_after_async_spans(path, lines, proc_tuples):
+            diags.append(
+                Diagnostic(
+                    file=path,
+                    line=line_1,
+                    character=c0,
+                    end_line=line_1,
+                    end_character=c1,
+                    severity=Severity.WARNING,
+                    code="BSL154",
+                    message=(
+                        f"После асинхронного вызова «{method}» следует исполняемый код "
+                        f"(BSLLS CodeAfterAsyncCall)."
                     ),
                 )
             )
