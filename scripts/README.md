@@ -19,4 +19,36 @@
 
 ## Паритет с BSLLS (форматтер и диагностики)
 
-Скрипт **`run_bslls_parity.sh`** вызывает проверки из skill `.cursor/skills/bsl-ast-mcp-skill/checks/` (JAR в `.nosync/` или `BSLLS_JAR`). Отчёты — в **`.nosync/reports/`**. Подробности: [docs/FORMATTER_DIAGNOSTICS.md](../docs/FORMATTER_DIAGNOSTICS.md).
+Скрипт **`run_bslls_parity.sh`** теперь запускает встроенный parity-runner из репозитория. Для больших внешних корпусов используйте **`dev_corpus_parity.py`**. Отчёты пишутся в **`.nosync/reports/dev-corpus/`**. Подробности: [docs/FORMATTER_DIAGNOSTICS.md](../docs/FORMATTER_DIAGNOSTICS.md).
+
+## Dev-only корпус
+
+Для большого внешнего корпуса, который не должен попадать в `tests/fixtures`, используйте **`dev_corpus_bench.py`**.
+
+Примеры:
+
+```bash
+python scripts/dev_corpus_bench.py /Users/maxon/git/config --limit=200
+python scripts/dev_corpus_bench.py /Users/maxon/git/config --sample=500 --profile strict-bslls
+```
+
+Скрипт считает:
+- суммарное время диагностик
+- суммарное время форматирования
+- сколько файлов меняет форматтер
+- throughput по файлам, строкам и мегабайтам
+
+Это именно исследовательский / development-only прогон, не тестовый fixture pipeline.
+
+Для parity-сверки с Java BSLLS:
+
+```bash
+python scripts/dev_corpus_parity.py /Users/maxon/git/config --limit=20
+python scripts/dev_corpus_parity.py /Users/maxon/git/config --sample=100 --profile strict-bslls
+```
+
+Скрипт:
+- сам находит `exec.jar` в `.nosync/bsl-language-server/build/libs` или берёт `BSLLS_JAR`
+- сравнивает нормализованные diagnostics нашего движка и BSLLS
+- сравнивает итоговый текст full-document formatting
+- сохраняет JSON-отчёт для разбора несовпадений
