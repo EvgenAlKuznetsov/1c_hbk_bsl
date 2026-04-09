@@ -7,14 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-
-- **BSL007 (UnusedLocalVariable):** как у BSLLS — неиспользуемые присваивания **вне процедур** и **неявные локальные** ``Имя =`` в теле метода; в качестве чтения **не** считается вхождение только в LHS ``Имя =`` на той же строке. Смоук-паритет с BSLLS на `tests/fixtures/format_parity` — `scripts/run_bslls_parity.sh` / `compare_diag_two_servers.py`.
-- **Форматтер / BSL055 / BSL136:** не более **одной** пустой строки подряд после полного `format` (как `DiagnosticEngine.MAX_BLANK_LINES` и BSLLS ConsecutiveEmptyLines); пробел перед хвостовым `//` на строке кода. Документация: [docs/FORMATTER_DIAGNOSTICS.md](docs/FORMATTER_DIAGNOSTICS.md).
-- **Toolchain:** минимальная версия Python **3.14** (`requires-python`); CI, smoke PyInstaller и релизные бинарники собираются на **3.14**; Ruff `target-version = py314`, `ruff>=0.9`.
+## [0.7.13] - 2026-04-09
 
 ### Added
-- Документация сверки с BSLLS и клиент/серверный контекст правил: [docs/BSLLS_PARITY.md](docs/BSLLS_PARITY.md), [docs/CLIENT_SERVER_DIAGNOSTICS.md](docs/CLIENT_SERVER_DIAGNOSTICS.md); ссылки из [architecture.md](docs/architecture.md) и [BSLLS_BASELINE.md](docs/BSLLS_BASELINE.md).
+
+- **BSL210** (`LogicalOrInTheWhereSectionOfQuery`): эвристика для встроенных запросов (продолжения `|…`, литералы); совпадение с BSLLS по типичным многострочным `ГДЕ` + `ИЛИ`.
+
+### Changed
+
+- **BSL256 (Typo):** вместо LanguageTool — `pyspellchecker` + `pymorphy3` и исключения из `bslls_typo_data` / `TypoDiagnostic_ru.properties`; зависимость `language-tool-python` убрана.
+- **BSL254:** включён паритет с BSLLS через индекс вызовов клиент/сервер.
+- **Форматтер (`strict-bslls`):** как BSLLS CLI — табы по умолчанию, пробел после `,` в коде, пустые строки с отступом; профиль `compat` по-прежнему с пробелами при явном выборе.
+- **LSP / MCP:** `insertSpaces` из запроса форматирования или профиль по умолчанию (для `[bsl]` в расширении — табы); убран принудительный режим «только пробелы» в code action и MCP.
+
+### Docs
+
+- README: пример `editor.insertSpaces` для `[bsl]`; описание `onecHbkBsl.format.indentSize` в `vscode-extension/package.json`.
 
 ## [0.7.12] - 2026-03-29
 
