@@ -77,6 +77,7 @@ from onec_hbk_bsl.analysis.bsl_string_split import (
     split_commas_outside_double_quotes,
     strip_leading_val_keywords,
 )
+from onec_hbk_bsl.analysis.bslls_parity import merge_profile_with_select
 from onec_hbk_bsl.analysis.diagnostics_bsl148 import bsl148_function_name_spans
 from onec_hbk_bsl.analysis.diagnostics_bsl152 import bsl152_public_region_name_spans
 from onec_hbk_bsl.analysis.diagnostics_bsl154 import bsl154_code_after_async_spans
@@ -2903,6 +2904,35 @@ class Severity(IntEnum):
     HINT = 4
 
 
+_BSLLS_LSP_HINT_RULE_NAMES: frozenset[str] = frozenset(
+    {
+        "CanonicalSpellingKeywords",
+        "CodeOutOfRegion",
+        "CommandModuleExportMethods",
+        "CommonModuleNameWords",
+        "ConsecutiveEmptyLines",
+        "DeprecatedAttributes8312",
+        "DeprecatedMethods8310",
+        "DeprecatedMethods8317",
+        "DeprecatedTypeManagedForm",
+        "DuplicateRegion",
+        "EmptyRegion",
+        "EmptyStatement",
+        "FormDataToValue",
+        "FunctionNameStartsWithGet",
+        "IncorrectLineBreak",
+        "NonStandardRegion",
+        "PublicMethodsDescription",
+        "RedundantAccessToObject",
+        "SpaceAtStartComment",
+        "UsageWriteLogEvent",
+        "UselessTernaryOperator",
+        "UsingServiceTag",
+        "YoLetterUsage",
+    }
+)
+
+
 @dataclass
 class Diagnostic:
     """A single diagnostic issue found in a BSL file."""
@@ -2936,6 +2966,21 @@ class Diagnostic:
             f"{self.file}:{self.line}:{self.character}: "
             f"{self.severity.name[0]} {self.code} {self.message}"
         )
+
+
+def lsp_compat_severity(code: str, severity: Severity) -> Severity:
+    """
+    Map internal severities to BSLLS-like LSP-facing severities.
+
+    BSLLS exposes ``CODE_SMELL + INFO`` as LSP ``Hint``. Internally we keep the
+    original severity for CLI/text reports, but LSP-facing parity should use the
+    hint level for such diagnostics.
+    """
+    meta = RULE_METADATA.get(code, {})
+    rule_name = str(meta.get("name") or code)
+    if severity == Severity.INFORMATION and rule_name in _BSLLS_LSP_HINT_RULE_NAMES:
+        return Severity.HINT
+    return severity
 
 
 # ---------------------------------------------------------------------------
@@ -3428,6 +3473,13 @@ def parse_env_rule_filters() -> tuple[set[str] | None, set[str] | None]:
     select = normalize_rule_code_set(raw_sel.split(",")) if raw_sel else None
     ignore = normalize_rule_code_set(raw_ign.split(",")) if raw_ign else None
     return select, ignore
+
+
+def parse_env_rule_profile() -> str | None:
+    """Read ``BSL_PROFILE`` from the environment."""
+    from onec_hbk_bsl.analysis.bslls_parity import normalize_rule_profile
+
+    return normalize_rule_profile(os.environ.get("BSL_PROFILE", ""))
 
 
 # Deprecated dialog: Предупреждение(...) / Warning(...)
@@ -5806,6 +5858,7 @@ class DiagnosticEngine:
         parser: BslParser | None = None,
         select: set[str] | None = None,
         ignore: set[str] | None = None,
+        profile: str | None = None,
         *,
         max_proc_lines: int = MAX_PROC_LINES,
         max_returns: int = MAX_RETURNS,
@@ -5827,8 +5880,11 @@ class DiagnosticEngine:
         self._injected_parser: BslParser | None = parser
         self._parser_tls = threading.local()
         self._symbol_index = symbol_index
-        self._select: set[str] | None = (
-            normalize_rule_code_set(select) if select else None
+        _user_select = normalize_rule_code_set(select) if select else None
+        self._select: set[str] | None = merge_profile_with_select(
+            profile,
+            _user_select,
+            _BSLLS_NAME_TO_CODE,
         )
         # Instrumentation for benchmarks/debug: per-thread (free-threading safe).
         self._metrics_tls = threading.local()

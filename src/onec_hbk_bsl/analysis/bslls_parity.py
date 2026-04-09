@@ -1,0 +1,198 @@
+"""BSLLS parity matrix and rule-profile helpers.
+
+This module centralizes the mapping between the local diagnostics registry and
+the reference BSLLS rule names. It is the runtime source of truth for:
+
+- strict BSLLS-compatible rule profiles
+- machine-readable parity matrix generation for docs/tests
+- categorisation of local-only and duplicate rules
+"""
+
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass
+from pathlib import Path
+from typing import Any
+
+STRICT_BSLLS_PROFILE = "strict-bslls"
+COMPAT_PROFILE = "compat"
+SUPPORTED_PROFILES = frozenset({STRICT_BSLLS_PROFILE, COMPAT_PROFILE})
+BSLLS_OS_ONLY_NAMES = frozenset(
+    {
+        "UnusedParameters",
+    }
+)
+BSLLS_DEFAULT_DISABLED_NAMES = frozenset(
+    {
+        "BadWords",
+        "CodeAfterAsyncCall",
+        "DenyIncompleteValues",
+        "FieldsFromJoinsWithoutIsNull",
+        "FileSystemAccess",
+        "FunctionNameStartsWithGet",
+        "FunctionOutParameter",
+        "InternetAccess",
+        "MissingTempStorageDeletion",
+        "TernaryOperatorUsage",
+        "TooManyReturns",
+        "UseSystemInformation",
+        "UsingLikeInQuery",
+    }
+)
+
+
+@dataclass(frozen=True, slots=True)
+class ParityRow:
+    bsl_code: str | None
+    current_name: str | None
+    bslls_name: str | None
+    exists_in_bslls: bool
+    has_runtime_branch: bool
+    default_enabled: bool
+    implemented_flag: bool | None
+    category: str
+
+
+def normalize_rule_profile(profile: str | None) -> str | None:
+    """Return canonical profile name or ``None`` when unset/unknown."""
+    if not profile:
+        return None
+    p = str(profile).strip().casefold()
+    if not p:
+        return None
+    if p in {"strict", "strict-bslls", "bslls", "bslls-core"}:
+        return STRICT_BSLLS_PROFILE
+    if p in {"compat", "compatibility", "local", "legacy"}:
+        return COMPAT_PROFILE
+    return None
+
+
+def strict_bslls_rule_codes(bslls_name_to_code: dict[str, str]) -> frozenset[str]:
+    """Canonical BSLLS-compatible rule set aligned with BSLLS default BSL profile."""
+    return frozenset(
+        code
+        for name, code in bslls_name_to_code.items()
+        if name not in BSLLS_OS_ONLY_NAMES and name not in BSLLS_DEFAULT_DISABLED_NAMES
+    )
+
+
+def select_codes_for_profile(
+    profile: str | None,
+    bslls_name_to_code: dict[str, str],
+) -> set[str] | None:
+    """Return an implicit select-set for *profile*, or ``None`` for compat/all."""
+    p = normalize_rule_profile(profile)
+    if p == STRICT_BSLLS_PROFILE:
+        return set(strict_bslls_rule_codes(bslls_name_to_code))
+    return None
+
+
+def merge_profile_with_select(
+    profile: str | None,
+    select: set[str] | None,
+    bslls_name_to_code: dict[str, str],
+) -> set[str] | None:
+    """
+    Combine explicit ``select`` with profile defaults.
+
+    In ``strict-bslls`` mode, explicit selection narrows the canonical BSLLS set
+    instead of expanding it with local-only rules.
+    """
+    profile_select = select_codes_for_profile(profile, bslls_name_to_code)
+    if profile_select is None:
+        return set(select) if select else None
+    if not select:
+        return profile_select
+    return set(select) & profile_select
+
+
+def build_parity_rows(
+    *,
+    rule_metadata: dict[str, dict[str, Any]],
+    bslls_name_to_code: dict[str, str],
+    runtime_rule_codes: set[str],
+    default_disabled: set[str] | frozenset[str],
+    bslls_names: set[str] | None = None,
+) -> list[ParityRow]:
+    """
+    Build a machine-readable parity matrix.
+
+    ``bslls_names`` may include names discovered from the Java BSLLS project. If
+    omitted, the canonical mapping keys are used as the known BSLLS set.
+    """
+    canonical_names = set(bslls_name_to_code)
+    if bslls_names:
+        canonical_names |= set(bslls_names)
+
+    rows: list[ParityRow] = []
+    seen_current_names = {str(meta.get("name")) for meta in rule_metadata.values() if meta.get("name")}
+
+    for code in sorted(rule_metadata):
+        meta = rule_metadata[code]
+        current_name = str(meta.get("name", "")) or None
+        canonical_code = bslls_name_to_code.get(current_name or "")
+        exists_in_bslls = bool(current_name and current_name in canonical_names)
+        has_runtime_branch = code in runtime_rule_codes
+        default_enabled = code not in default_disabled
+        implemented_flag = meta.get("implemented")
+
+        if exists_in_bslls and canonical_code == code:
+            category = "parity"
+        elif exists_in_bslls:
+            category = "alias/duplicate"
+        else:
+            category = "local-only"
+
+        if not has_runtime_branch and exists_in_bslls:
+            category = "declared-not-run"
+        elif has_runtime_branch and implemented_flag is False:
+            category = "run-but-marked-false"
+
+        rows.append(
+            ParityRow(
+                bsl_code=code,
+                current_name=current_name,
+                bslls_name=current_name if exists_in_bslls else None,
+                exists_in_bslls=exists_in_bslls,
+                has_runtime_branch=has_runtime_branch,
+                default_enabled=default_enabled,
+                implemented_flag=implemented_flag if isinstance(implemented_flag, bool) else None,
+                category=category,
+            )
+        )
+
+    missing_names = sorted(canonical_names - seen_current_names)
+    for name in missing_names:
+        rows.append(
+            ParityRow(
+                bsl_code=None,
+                current_name=None,
+                bslls_name=name,
+                exists_in_bslls=True,
+                has_runtime_branch=False,
+                default_enabled=False,
+                implemented_flag=None,
+                category="missing-vs-bslls",
+            )
+        )
+
+    return rows
+
+
+def parity_rows_as_jsonable(rows: list[ParityRow]) -> list[dict[str, Any]]:
+    """Convert dataclass rows to plain dicts for JSON output."""
+    return [asdict(row) for row in rows]
+
+
+def discover_bslls_names_from_repo(root: str | Path) -> set[str]:
+    """Extract concrete BSLLS diagnostic names from a local Java checkout."""
+    diag_dir = Path(root) / "src/main/java/com/github/_1c_syntax/bsl/languageserver/diagnostics"
+    names: set[str] = set()
+    if not diag_dir.is_dir():
+        return names
+    for file in diag_dir.glob("*Diagnostic.java"):
+        stem = file.stem
+        if stem.startswith("Abstract") or stem == "BSLDiagnostic":
+            continue
+        names.add(stem.removesuffix("Diagnostic"))
+    return names

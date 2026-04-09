@@ -18,6 +18,7 @@ from onec_hbk_bsl.analysis.diagnostics import (
     RULE_METADATA,
     Diagnostic,
     DiagnosticEngine,
+    lsp_compat_severity,
 )
 from onec_hbk_bsl.analysis.formatter import BslFormatter
 
@@ -93,7 +94,9 @@ def normalize_our_diagnostics(
                 file=_relative_file(d.file, workspace_root),
                 line=int(d.line),
                 character=int(d.character),
-                severity=str(getattr(d.severity, "name", d.severity)).upper(),
+                severity=str(
+                    getattr(lsp_compat_severity(d.code, d.severity), "name", d.severity)
+                ).upper(),
                 code=code,
                 code_source=d.code,
                 message=d.message,

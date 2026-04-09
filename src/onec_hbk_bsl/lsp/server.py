@@ -25,6 +25,7 @@ Run with:
 
 from __future__ import annotations
 
+import atexit
 import logging
 import os
 import re as _re
@@ -159,7 +160,9 @@ from onec_hbk_bsl.analysis.diagnostics import (
     _calc_mccabe_complexity,
     _find_procedures_from_tree,
     display_name_for_rule_code,
+    lsp_compat_severity,
     parse_env_rule_filters,
+    parse_env_rule_profile,
 )
 from onec_hbk_bsl.analysis.formatter import (
     _DEDENT_BEFORE,
@@ -284,10 +287,12 @@ class BslLanguageServer(LanguageServer):
         db_path = resolve_index_db_path(os.getcwd())
         self.symbol_index = SymbolIndex(db_path=db_path)
         _sel, _ign = parse_env_rule_filters()
+        _profile = parse_env_rule_profile()
         self.diagnostics_engine = DiagnosticEngine(
             symbol_index=self.symbol_index,
             select=_sel,
             ignore=_ign,
+            profile=_profile,
         )
         # quiet=True: suppress Rich progress bar that would corrupt the JSON-RPC stdio pipe.
         self.indexer = IncrementalIndexer(index=self.symbol_index, quiet=True)
@@ -311,6 +316,14 @@ class BslLanguageServer(LanguageServer):
         self._reindex_pending = False
         # Set in initialize from ClientCapabilities.text_document.diagnostic (LSP 3.17 pull).
         self.client_pull_diagnostics: bool = False
+        atexit.register(self.close)
+
+    def close(self) -> None:
+        """Best-effort cleanup for interpreter shutdown and client disconnects."""
+        try:
+            self.symbol_index.close()
+        except Exception:
+            logger.debug("LSP: symbol index close failed", exc_info=True)
 
     def _thread_bsl_parser(self) -> BslParser:
         """Return a BSL parser for this thread (underlying tree-sitter Parser is not thread-safe)."""
@@ -632,7 +645,10 @@ def _build_lsp_diagnostics_inner(ls: BslLanguageServer, uri: str, path: str) -> 
                     start=Position(line=first.line - 1, character=first.character),
                     end=Position(line=first.end_line - 1, character=first.end_character),
                 ),
-                severity=_SEV_MAP.get(first.severity, DiagnosticSeverity.Warning),
+                severity=_SEV_MAP.get(
+                    lsp_compat_severity(code, first.severity),
+                    DiagnosticSeverity.Warning,
+                ),
                 code=pub,
                 code_description=code_desc,
                 message=msg,
@@ -3193,8 +3209,5 @@ def on_bsl_reindex_file(ls: BslLanguageServer, params: dict) -> dict:  # type: i
 
 def start_lsp_server() -> None:
     """Start the BSL LSP server on stdio (called from __main__)."""
-    from onec_hbk_bsl.lsp.pygls_content_length import apply_pygls_utf8_content_length_patch
-
-    apply_pygls_utf8_content_length_patch()
     logger.info("Starting BSL LSP server (pygls) on stdio")
     server.start_io()
