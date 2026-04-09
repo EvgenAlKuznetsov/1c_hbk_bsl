@@ -21,6 +21,8 @@ from onec_hbk_bsl.analysis.diagnostics import (
     lsp_compat_severity,
 )
 from onec_hbk_bsl.analysis.formatter import BslFormatter
+from onec_hbk_bsl.indexer.incremental import IncrementalIndexer
+from onec_hbk_bsl.indexer.symbol_index import SymbolIndex
 
 BSL_SUFFIXES = frozenset({".bsl", ".os"})
 _CODE_TO_BSLLS_NAME = {code: name for name, code in _BSLLS_NAME_TO_CODE.items()}
@@ -257,16 +259,22 @@ def compare_with_bslls(
     config_path: Path | None,
     jar_path: Path,
 ) -> dict[str, Any]:
-    engine = DiagnosticEngine(profile=profile)
     formatter = BslFormatter(profile=profile)
 
     our_diags: list[Diagnostic] = []
     formatting: dict[str, dict[str, Any]] = {}
-    for path in files:
-        rel = _relative_file(path, workspace_root)
-        content = path.read_text(encoding="utf-8", errors="ignore")
-        our_diags.extend(engine.check_content(str(path), content))
-        formatting[rel] = {"ours": formatter.format(content)}
+    with tempfile.TemporaryDirectory(prefix="onec-parity-index-") as tmp:
+        idx = SymbolIndex(db_path=str(Path(tmp) / "index.sqlite"))
+        indexer = IncrementalIndexer(index=idx, quiet=True)
+        for path in files:
+            indexer.index_file(str(path))
+        engine = DiagnosticEngine(profile=profile, symbol_index=idx)
+        for path in files:
+            rel = _relative_file(path, workspace_root)
+            content = path.read_text(encoding="utf-8", errors="ignore")
+            our_diags.extend(engine.check_content(str(path), content, symbol_index=idx))
+            formatting[rel] = {"ours": formatter.format(content)}
+        idx.close()
 
     our_diag_norm = normalize_our_diagnostics(our_diags, workspace_root=workspace_root)
     raw_bslls_diags = _run_bslls_analyze(

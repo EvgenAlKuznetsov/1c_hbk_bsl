@@ -2301,7 +2301,7 @@ RULE_METADATA: dict[str, dict] = {
         "sonar_type": "CODE_SMELL",
         "sonar_severity": "MAJOR",
         "tags": ["performance", "design"],
-        "implemented": False,
+        "implemented": True,
     },
     "BSL255": {
         "name": "TryNumber",
@@ -3807,6 +3807,89 @@ def _is_client_notify_completion_export_handler(proc: _ProcInfo, lines: list[str
         return False
     n = proc.name.strip().casefold()
     return n.endswith("завершение") or n.endswith("completion")
+
+
+def _proc_param_name_span(header_line: str, param_name: str) -> tuple[int, int] | None:
+    open_paren = header_line.find("(")
+    close_paren = header_line.rfind(")")
+    if open_paren < 0:
+        return None
+    haystack = header_line[open_paren + 1 : close_paren if close_paren > open_paren else None]
+    m = re.search(rf"\b{re.escape(param_name)}\b", haystack, re.IGNORECASE)
+    if not m:
+        return None
+    start = open_paren + 1 + m.start()
+    return start, open_paren + 1 + m.end()
+
+
+def _proc_assigned_param_names(lines: list[str], proc: _ProcInfo) -> set[str]:
+    assigned: set[str] = set()
+    body_start = _proc_body_start_line_idx_fallback(lines, proc)
+    for li in range(body_start, min(proc.end_idx, len(lines))):
+        line = lines[li]
+        if _RE_LINE_COMMENT.match(line) or not line.strip():
+            continue
+        am = _RE_BSL240_ASSIGN.match(line)
+        if am:
+            assigned.add(am.group(1).casefold())
+    return assigned
+
+
+def _proc_by_name_and_line(
+    procs: list[_ProcInfo], name: str, line_1based: int
+) -> _ProcInfo | None:
+    line_idx = max(0, line_1based - 1)
+    for proc in procs:
+        if proc.name.casefold() == name.casefold() and proc.start_idx <= line_idx <= proc.end_idx:
+            return proc
+    return None
+
+
+def _load_file_lines_cached(
+    path: str,
+    cache: dict[str, list[str]],
+) -> list[str] | None:
+    if path in cache:
+        return cache[path]
+    try:
+        cache[path] = Path(path).read_text(encoding="utf-8", errors="ignore").splitlines()
+    except OSError:
+        cache[path] = []
+    return cache[path]
+
+
+def _parse_procs_cached(
+    path: str,
+    cache: dict[str, list[_ProcInfo]],
+    file_lines_cache: dict[str, list[str]],
+) -> list[_ProcInfo]:
+    if path in cache:
+        return cache[path]
+    lines = _load_file_lines_cached(path, file_lines_cache) or []
+    cache[path] = _find_procedures("\n".join(lines))
+    return cache[path]
+
+
+def _caller_is_client_method(
+    caller_file: str,
+    caller_name: str | None,
+    caller_line: int,
+    *,
+    current_path: str,
+    current_lines: list[str],
+    current_procs: list[_ProcInfo],
+    file_lines_cache: dict[str, list[str]],
+    proc_cache: dict[str, list[_ProcInfo]],
+) -> bool:
+    if not caller_name:
+        return False
+    if caller_file == current_path:
+        proc = _proc_by_name_and_line(current_procs, caller_name, caller_line)
+        return proc is not None and _procedure_compiler_execution_context(current_lines, proc) == "client"
+    caller_lines = _load_file_lines_cached(caller_file, file_lines_cache) or []
+    caller_procs = _parse_procs_cached(caller_file, proc_cache, file_lines_cache)
+    proc = _proc_by_name_and_line(caller_procs, caller_name, caller_line)
+    return proc is not None and _procedure_compiler_execution_context(caller_lines, proc) == "client"
 
 
 def _proc_containing_line(procs: list[_ProcInfo], line_idx: int) -> _ProcInfo | None:
@@ -5823,7 +5906,7 @@ class DiagnosticEngine:
             "BSL251",  # TernaryOperatorUsage — TODO
             "BSL252",  # ThisObjectAssign — TODO
             "BSL253",  # TimeoutsInExternalResources — TODO
-            "BSL254",  # TransferringParametersBetweenClientAndServer — requires cross-reference analysis (which callers are &НаКлиенте); without it produces 32 FP, 0 TP on 30-file sample
+            # "BSL254" enabled — TransferringParametersBetweenClientAndServer implemented via call index
             # "BSL255" enabled — TryNumber implemented
             # "BSL256" enabled — Typo (homoglyph Latin/Cyrillic in identifiers; BSLLS priority over BSL208)
             # "BSL257" enabled — UnaryPlusInConcatenation implemented
@@ -13951,35 +14034,69 @@ class DiagnosticEngine:
         self, path: str, lines: list[str], procs: list[_ProcInfo]
     ) -> list[Diagnostic]:
         """
-        BSLLS: параметры без ``Знач`` при вызовах клиент/сервер в общих командах.
-
-        Ограничение: только серверные процедуры/функции (см. ``_procedure_compiler_execution_context``).
+        BSLLS: параметры без ``Знач`` только у серверных методов, которые
+        реально вызываются из ``&НаКлиенте`` прямым вызовом.
         """
+        if self._symbol_index is None:
+            return []
+
         diags: list[Diagnostic] = []
+        file_lines_cache: dict[str, list[str]] = {path: lines}
+        proc_cache: dict[str, list[_ProcInfo]] = {path: procs}
         for proc in procs:
             if _procedure_compiler_execution_context(lines, proc) != "server":
                 continue
             if not proc.params:
                 continue
-            missing_val = [p for p in proc.params if p and p not in proc.val_params]
+            missing_val = [p for p in proc.params if p and p.casefold() not in {n.casefold() for n in proc.val_params}]
             if not missing_val:
                 continue
-            header_line = lines[proc.start_idx] if proc.start_idx < len(lines) else ""
-            diags.append(
-                Diagnostic(
-                    file=path,
-                    line=proc.start_idx + 1,
-                    character=proc.header_col,
-                    end_line=proc.start_idx + 1,
-                    end_character=len(header_line.rstrip()),
-                    severity=Severity.INFORMATION,
-                    code="BSL254",
-                    message=(
-                        "Установите модификатор «Знач» для параметров, передаваемых между клиентом и сервером "
-                        f"({', '.join(missing_val)})"
-                    ),
-                )
+            callers = getattr(self._symbol_index, "find_callers", lambda *_args, **_kwargs: [])(
+                proc.name,
+                limit=200,
             )
+            client_callers = [
+                row
+                for row in callers
+                if _caller_is_client_method(
+                    str(row.get("caller_file") or ""),
+                    row.get("caller_name"),
+                    int(row.get("caller_line") or 0),
+                    current_path=path,
+                    current_lines=lines,
+                    current_procs=procs,
+                    file_lines_cache=file_lines_cache,
+                    proc_cache=proc_cache,
+                )
+            ]
+            if not client_callers:
+                continue
+            header_line = lines[proc.start_idx] if proc.start_idx < len(lines) else ""
+            assigned = _proc_assigned_param_names(lines, proc)
+            for param_name in missing_val:
+                if param_name.casefold() in assigned:
+                    continue
+                span = _proc_param_name_span(header_line, param_name)
+                if span is None:
+                    c0 = proc.header_col
+                    c1 = len(header_line.rstrip())
+                else:
+                    c0, c1 = span
+                diags.append(
+                    Diagnostic(
+                        file=path,
+                        line=proc.start_idx + 1,
+                        character=c0,
+                        end_line=proc.start_idx + 1,
+                        end_character=c1,
+                        severity=Severity.WARNING,
+                        code="BSL254",
+                        message=(
+                            f'Установите модификатор "Знач" для параметра {param_name} '
+                            f"метода {proc.name}"
+                        ),
+                    )
+                )
         return diags
 
     # ------------------------------------------------------------------

@@ -16,6 +16,8 @@ from onec_hbk_bsl.analysis.diagnostics import (
     DiagnosticEngine,
     path_is_likely_form_module_bsl,
 )
+from onec_hbk_bsl.indexer.incremental import IncrementalIndexer
+from onec_hbk_bsl.indexer.symbol_index import SymbolIndex
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -2525,16 +2527,81 @@ class TestBsl062UnusedParameter:
 
 
 class TestBsl254TransferringParameters:
-    def test_server_parameter_without_val_reported(self, tmp_path: Path) -> None:
-        """На сервере параметры границы клиент/сервер должны иметь Знач (не только CommonCommands)."""
-        content = """\
-            &НаСервере
-            Функция Данные(Ссылка)
-                Возврат 1;
-            КонецФункции
-        """
-        diags = _check(content, tmp_path, select={"BSL254"})
-        assert "BSL254" in _codes(diags)
+    def _check_indexed(
+        self,
+        tmp_path: Path,
+        files: dict[str, str],
+        *,
+        target: str,
+    ) -> list[Diagnostic]:
+        idx = SymbolIndex(db_path=":memory:")
+        indexer = IncrementalIndexer(index=idx, quiet=True)
+        try:
+            for name, content in files.items():
+                path = tmp_path / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(textwrap.dedent(content), encoding="utf-8")
+                indexer.index_file(str(path))
+            engine = DiagnosticEngine(select={"BSL254"}, symbol_index=idx)
+            return engine.check_file(str(tmp_path / target))
+        finally:
+            idx.close()
+
+    def test_only_server_method_called_from_client_is_reported(self, tmp_path: Path) -> None:
+        diags = self._check_indexed(
+            tmp_path,
+            {
+                "Module.bsl": """\
+                    &НаКлиенте
+                    Процедура Клиент()
+                        Сервер(Документ);
+                    КонецПроцедуры
+
+                    &НаСервере
+                    Процедура Сервер(Документ)
+                        Возврат;
+                    КонецПроцедуры
+                """,
+            },
+            target="Module.bsl",
+        )
+        assert _codes(diags) == ["BSL254"]
+        assert diags[0].message == 'Установите модификатор "Знач" для параметра Документ метода Сервер'
+
+    def test_server_method_without_client_call_is_not_reported(self, tmp_path: Path) -> None:
+        diags = self._check_indexed(
+            tmp_path,
+            {
+                "Module.bsl": """\
+                    &НаСервере
+                    Процедура Сервер(Документ)
+                        Возврат;
+                    КонецПроцедуры
+                """,
+            },
+            target="Module.bsl",
+        )
+        assert "BSL254" not in _codes(diags)
+
+    def test_reassigned_parameter_is_not_reported(self, tmp_path: Path) -> None:
+        diags = self._check_indexed(
+            tmp_path,
+            {
+                "Module.bsl": """\
+                    &НаКлиенте
+                    Процедура Клиент()
+                        Сервер(Документ);
+                    КонецПроцедуры
+
+                    &НаСервере
+                    Процедура Сервер(Документ)
+                        Документ = Неопределено;
+                    КонецПроцедуры
+                """,
+            },
+            target="Module.bsl",
+        )
+        assert "BSL254" not in _codes(diags)
 
 
 # ---------------------------------------------------------------------------
