@@ -1395,10 +1395,11 @@ class TestOnTypeFormatting:
         params.text_document.uri = "file:///test.bsl"
         params.position.line = 1
         params.options.tab_size = 4
+        params.options.insert_spaces = False
         result = on_type_formatting(ls, params)
         assert result is not None
-        # Should produce 4-space indent
-        assert any(e.new_text == "    " for e in result)
+        # [bsl] defaults to tabs (see vscode-extension package.json)
+        assert any(e.new_text == "\t" for e in result)
 
     def test_dedents_konets_procedure(self, tmp_path, monkeypatch) -> None:
         from unittest.mock import MagicMock
@@ -1412,6 +1413,7 @@ class TestOnTypeFormatting:
         params.text_document.uri = "file:///test.bsl"
         params.position.line = 1
         params.options.tab_size = 4
+        params.options.insert_spaces = False
         result = on_type_formatting(ls, params)
         assert result is not None
         assert any(e.new_text == "" for e in result)
@@ -1439,9 +1441,26 @@ class TestOnTypeFormatting:
         params.text_document.uri = "file:///test.bsl"
         params.position.line = 2  # blank line inside Если
         params.options.tab_size = 4
+        params.options.insert_spaces = False
         result = on_type_formatting(ls, params)
         assert result is not None
-        assert any(e.new_text == "        " for e in result)  # 8 spaces (2 levels)
+        assert any(e.new_text == "\t\t" for e in result)  # 2 tab levels
+
+    def test_insert_spaces_true_uses_spaces(self, tmp_path, monkeypatch) -> None:
+        from unittest.mock import MagicMock
+
+        from onec_hbk_bsl.lsp.server import on_type_formatting
+        ls = self._make_server(tmp_path, monkeypatch)
+        content = "Процедура Тест()\n\nКонецПроцедуры\n"
+        ls._docs["file:///test.bsl"] = content
+        params = MagicMock()
+        params.text_document.uri = "file:///test.bsl"
+        params.position.line = 1
+        params.options.tab_size = 4
+        params.options.insert_spaces = True
+        result = on_type_formatting(ls, params)
+        assert result is not None
+        assert any(e.new_text == "    " for e in result)
 
 
 # ---------------------------------------------------------------------------

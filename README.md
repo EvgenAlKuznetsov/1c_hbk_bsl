@@ -50,7 +50,8 @@ ext install mussolene.1c-hbk-bsl
   "[bsl]": {
     "editor.formatOnSave": true,
     "editor.defaultFormatter": "mussolene.1c-hbk-bsl",
-    "editor.tabSize": 4
+    "editor.tabSize": 4,
+    "editor.insertSpaces": false
   },
   "onecHbkBsl.indexDbPath": "/path/to/custom/onec-hbk-bsl_index.sqlite"
 }

@@ -1068,9 +1068,7 @@ def create_mcp_app() -> FastMCP:
         except OSError as exc:
             return {"error": str(exc), "file_path": path}
 
-        formatted = default_formatter.format(
-            original, indent_size=indent_size, insert_spaces=True
-        )
+        formatted = default_formatter.format(original, indent_size=indent_size)
         changed = formatted != original
 
         result: dict = {

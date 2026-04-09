@@ -2169,7 +2169,7 @@ def on_formatting(
     if not content:
         return None
     indent_size = params.options.tab_size if params.options else 4
-    insert_spaces = _resolve_insert_spaces(params.options, default=True)
+    insert_spaces = _resolve_insert_spaces(params.options)
     try:
         formatted = default_formatter.format(
             content,
@@ -2203,7 +2203,7 @@ def on_range_formatting(
     if not content:
         return None
     indent_size = params.options.tab_size if params.options else 4
-    insert_spaces = _resolve_insert_spaces(params.options, default=True)
+    insert_spaces = _resolve_insert_spaces(params.options)
     r = params.range
     start_line = max(0, int(r.start.line))
     end_line = max(0, int(r.end.line))
@@ -2264,7 +2264,7 @@ def on_type_formatting(
         return None
 
     indent_size = (params.options.tab_size if params.options else None) or 4
-    insert_spaces = _resolve_insert_spaces(params.options, default=True)
+    insert_spaces = _resolve_insert_spaces(params.options)
     lines = content.splitlines()
 
     # position.line is the newly-created line (where the cursor landed after Enter).
@@ -2273,11 +2273,16 @@ def on_type_formatting(
         return None
 
     # Compute expected indent level for the new line (full document AST + continuation)
+    effective_insert = (
+        insert_spaces
+        if insert_spaces is not None
+        else default_formatter._default_insert_spaces(default_formatter.profile, None)
+    )
     indent_level = default_formatter._indent_at(
         lines,
         new_line_idx,
         indent_size,
-        insert_spaces=insert_spaces,
+        insert_spaces=effective_insert,
         full_text=content,
     )
 
@@ -2290,7 +2295,11 @@ def on_type_formatting(
         if first_kw in _DEDENT_BEFORE:
             indent_level = max(0, indent_level - 1)
 
-    wanted = (" " * (indent_level * indent_size)) if insert_spaces else ("\t" * indent_level)
+    wanted = (
+        (" " * (indent_level * indent_size))
+        if effective_insert
+        else ("\t" * indent_level)
+    )
 
     # Current leading whitespace on the new line
     current_indent_len = len(current_line) - len(stripped) if stripped else len(current_line)
@@ -2310,14 +2319,19 @@ def on_type_formatting(
     ]
 
 
-def _resolve_insert_spaces(options: Any, default: bool = False) -> bool:
-    """Resolve LSP formatting option safely with sane default."""
+def _resolve_insert_spaces(options: Any) -> bool | None:
+    """Return ``textDocument/formatting`` insertSpaces when the client sent it.
+
+    ``None`` means: let :class:`~onec_hbk_bsl.analysis.formatter.BslFormatter`
+    pick the default for its profile (``strict-bslls`` → tabs, same as BSLLS CLI
+    and :file:`vscode-extension/package.json` ``[bsl].editor.insertSpaces`` false).
+    """
     if options is None:
-        return default
+        return None
     value = getattr(options, "insert_spaces", None)
     if isinstance(value, bool):
         return value
-    return default
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -2984,7 +2998,7 @@ def on_code_action(
     if content:
         try:
             from onec_hbk_bsl.analysis.formatter import default_formatter
-            formatted = default_formatter.format(content, insert_spaces=True)
+            formatted = default_formatter.format(content)
             if formatted != content:
                 actions.append(CodeAction(
                     title="Переформатировать документ",

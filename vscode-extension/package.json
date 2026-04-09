@@ -145,7 +145,7 @@
         "onecHbkBsl.format.indentSize": {
           "type": "number",
           "default": 4,
-          "description": "Number of spaces per indentation level when formatting BSL code."
+          "description": "Indent width for BSL: with editor.insertSpaces=true, spaces per level; with insertSpaces=false (default for [bsl]), logical indent width / tab display (LSP uses the editor tabSize from the formatting request)."
         },
         "onecHbkBsl.inlayHints.enabled": {
           "type": "boolean",
