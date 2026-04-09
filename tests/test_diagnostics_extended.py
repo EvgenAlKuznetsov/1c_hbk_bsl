@@ -2324,6 +2324,49 @@ class TestBsl149AssignAliasFieldsInQuery:
 
 
 # ---------------------------------------------------------------------------
+# BSL210 — LogicalOrInTheWhereSectionOfQuery
+# ---------------------------------------------------------------------------
+
+
+class TestBsl210LogicalOrInWhereSection:
+    def test_multiline_where_with_two_or_detected(self, tmp_path: Path) -> None:
+        content = '''\
+            ТекстЗапроса = "ВЫБРАТЬ
+            |   Т.Ссылка
+            |ИЗ
+            |   Документ.РасходнаяНакладная КАК Т
+            |ГДЕ
+            |   Т.Проведен
+            |   ИЛИ Т.ПометкаУдаления
+            |   ИЛИ Т.Номер = 0
+            |УПОРЯДОЧИТЬ ПО
+            |   Т.Дата";
+        '''
+        diags = _check(content, tmp_path, select={"BSL210"})
+        bsl210 = [d for d in diags if d.code == "BSL210"]
+        assert len(bsl210) == 2
+        lines = sorted({d.line for d in bsl210})
+        assert lines[0] + 1 == lines[1]
+
+    def test_no_where_no_bsl210(self, tmp_path: Path) -> None:
+        content = '''\
+            ТекстЗапроса = "ВЫБРАТЬ
+            |   Код
+            |ИЗ
+            |   Справочник.Номенклатура";
+        '''
+        diags = _check(content, tmp_path, select={"BSL210"})
+        assert "BSL210" not in _codes(diags)
+
+    def test_single_line_literal_or_in_where(self, tmp_path: Path) -> None:
+        content = (
+            'А = "ВЫБРАТЬ Ссылка ИЗ Документ.РасходнаяНакладная ГДЕ Номер = 1 ИЛИ Номер = 2";\n'
+        )
+        diags = _check(content, tmp_path, select={"BSL210"})
+        assert _codes(diags).count("BSL210") == 1
+
+
+# ---------------------------------------------------------------------------
 # BSL004 — empty «Тогда» (BSLLS EmptyCodeBlock) vs BSL059
 # ---------------------------------------------------------------------------
 

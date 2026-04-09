@@ -151,6 +151,7 @@ _CODES_EMIT_DIAGNOSTIC_INSIDE_STRING_LITERAL: frozenset[str] = frozenset(
         "BSL256",
         # Query-text rules fire on continuation lines (|...) inside string literals.
         "BSL149",
+        "BSL210",
         "BSL235",
     }
 )
@@ -1908,7 +1909,7 @@ RULE_METADATA: dict[str, dict] = {
         "sonar_type": "CODE_SMELL",
         "sonar_severity": "MINOR",
         "tags": ["query", "performance"],
-        "implemented": False,
+        "implemented": True,
     },
     "BSL211": {
         "name": "MetadataObjectNameLength",
@@ -3992,6 +3993,83 @@ _RE_BSL149_CONTINUATION = re.compile(r"^\s*\|")
 # Inline query comment
 _RE_BSL149_INLINE_COMMENT = re.compile(r"\s*//.*$")
 
+# BSL210 — LogicalOrInTheWhereSectionOfQuery
+_RE_BSL210_OR = re.compile(r"\b(?:ИЛИ|OR)\b", re.IGNORECASE)
+_RE_BSL210_LINE_IS_WHERE = re.compile(r"^\s*(?:ГДЕ|WHERE)\b", re.IGNORECASE)
+_RE_BSL210_LINE_ENDS_WHERE = re.compile(
+    r"^\s*(?:СГРУППИРОВАТЬ|GROUP\s+BY|УПОРЯДОЧИТЬ|ORDER\s+BY|ИМЕЮЩИЕ|HAVING|"
+    r"ИТОГИ|TOTALS|АВТОУПРЯДОЧИВАНИЕ|AUTOORDER|"
+    r"ДЛЯ\s+ИЗМЕНЕНИЯ|FOR\s+UPDATE)\b",
+    re.IGNORECASE,
+)
+_RE_BSL210_POST_WHERE_KEYWORD = re.compile(
+    r"\b(?:СГРУППИРОВАТЬ|GROUP\s+BY|УПОРЯДОЧИТЬ|ORDER\s+BY|ИМЕЮЩИЕ|HAVING|"
+    r"ИТОГИ|TOTALS|АВТОУПРЯДОЧИВАНИЕ|AUTOORDER|ДЛЯ\s+ИЗМЕНЕНИЯ|FOR\s+UPDATE|"
+    r"ОБЪЕДИНИТЬ|UNION)\b",
+    re.IGNORECASE,
+)
+_BSL210_MESSAGE = "Логическое ИЛИ в секции ГДЕ запроса"
+
+
+def _bsl210_where_clause_region_bounds(lit: str, where_match: re.Match) -> tuple[int, int]:
+    """Return [start, end) covering the WHERE clause starting at *where_match* (keyword inclusive)."""
+    i = where_match.end()
+    depth = 0
+    n = len(lit)
+    while i < n:
+        c = lit[i]
+        if c == "(":
+            depth += 1
+        elif c == ")":
+            depth -= 1
+            if depth < 0:
+                depth = 0
+        if depth == 0 and i > where_match.end() and _RE_BSL210_POST_WHERE_KEYWORD.match(lit, i):
+            return (where_match.start(), i)
+        i += 1
+    return (where_match.start(), n)
+
+
+def _bsl210_or_spans_in_query_literal(lit: str) -> list[tuple[int, int]]:
+    """Char spans (start, end exclusive) of ИЛИ/OR inside WHERE clauses of *lit*."""
+    out: list[tuple[int, int]] = []
+    pos = 0
+    while True:
+        m = _RE_QUERY_WHERE.search(lit, pos)
+        if not m:
+            break
+        _, re_ = _bsl210_where_clause_region_bounds(lit, m)
+        body = lit[m.end() : re_]
+        base = m.end()
+        for om in _RE_BSL210_OR.finditer(body):
+            out.append((base + om.start(), base + om.end()))
+        pos = re_
+    return out
+
+
+def _bsl210_iter_double_quoted_segments(line: str):
+    """Yield (opening_quote_index, inner_text) for each BSL string literal on *line*."""
+    i = 0
+    n = len(line)
+    while i < n:
+        if line[i] != '"':
+            i += 1
+            continue
+        q = i
+        i += 1
+        buf: list[str] = []
+        while i < n:
+            if line[i] == '"':
+                if i + 1 < n and line[i + 1] == '"':
+                    buf.append('"')
+                    i += 2
+                    continue
+                break
+            buf.append(line[i])
+            i += 1
+        yield q, "".join(buf)
+        i += 1
+
 
 def _bsl149_strip_leading_select_modifiers(text: str) -> str:
     """Strip РАЗЛИЧНЫЕ/DISTINCT, ПЕРВЫЕ/TOP N from the start of a SELECT field list."""
@@ -5808,7 +5886,7 @@ class DiagnosticEngine:
             "BSL207",  # JoinWithVirtualTable — TODO
             # "BSL208" enabled — LatinAndCyrillicSymbolInWord implemented
             "BSL209",  # LogicalOrInJoinQuerySection — TODO
-            "BSL210",  # LogicalOrInTheWhereSectionOfQuery — TODO
+            # "BSL210" enabled — LogicalOrInTheWhereSectionOfQuery implemented
             "BSL211",  # MetadataObjectNameLength — TODO
             "BSL212",  # MissedRequiredParameter — TODO
             "BSL213",  # MissingCommonModuleMethod — TODO
@@ -6461,6 +6539,10 @@ class DiagnosticEngine:
             _rule_tasks.append(("BSL172", lambda: self._rule_bsl172_data_exchange_loading(path, lines, procs)))
         if self._rule_enabled("BSL149"):
             _rule_tasks.append(("BSL149", lambda: self._rule_bsl149_assign_alias_fields_in_query(path, lines)))
+        if self._rule_enabled("BSL210"):
+            _rule_tasks.append(
+                ("BSL210", lambda: self._rule_bsl210_logical_or_in_where(path, lines))
+            )
         if self._rule_enabled("BSL150"):
             _rule_tasks.append(("BSL150", lambda: self._rule_bsl150_bad_words(path, lines)))
         if self._rule_enabled("BSL186"):
@@ -13257,6 +13339,143 @@ class DiagnosticEngine:
             # ── Check fields on this line ─────────────────────────────────────
             _bsl149_append_missing_alias_diags(path, idx, line, content, diags)
 
+        return diags
+
+    # ------------------------------------------------------------------
+    # BSL210 — LogicalOrInTheWhereSectionOfQuery
+    # ------------------------------------------------------------------
+
+    def _rule_bsl210_logical_or_in_where(
+        self, path: str, lines: list[str]
+    ) -> list[Diagnostic]:
+        """Flag ИЛИ/OR inside embedded-query WHERE sections (BSLLS parity heuristic)."""
+        diags: list[Diagnostic] = []
+        in_query = False
+        gp = 0
+        where_stack: list[int] = []
+
+        for idx, line in enumerate(lines):
+            stripped = line.rstrip()
+            if not _RE_BSL149_CONTINUATION.match(stripped):
+                if in_query:
+                    in_query = False
+                    gp = 0
+                    where_stack.clear()
+                diags.extend(self._bsl210_scan_line_literal_queries(path, idx, line))
+                m_sel = _RE_BSL149_SELECT.search(stripped)
+                if m_sel:
+                    tail = stripped[m_sel.end() :]
+                    if not _RE_BSL149_CLAUSE_AFTER_FIELDS.search(tail):
+                        in_query = True
+                        gp = 0
+                        where_stack.clear()
+                continue
+
+            if not in_query:
+                if _RE_BSL149_SELECT.search(stripped):
+                    in_query = True
+                    gp = 0
+                    where_stack.clear()
+                else:
+                    continue
+
+            raw_content = stripped.lstrip()
+            if raw_content.startswith("|"):
+                raw_content = raw_content[1:]
+            content = _RE_BSL149_INLINE_COMMENT.sub("", raw_content).rstrip()
+
+            line_rs = line.rstrip()
+            pipe_pos = line_rs.find("|")
+            if pipe_pos < 0:
+                continue
+            after_pipe = line_rs[pipe_pos + 1 :]
+            leading_ws = len(after_pipe) - len(after_pipe.lstrip())
+            content_base = pipe_pos + 1 + leading_ws
+
+            tail_has_semi = ";" in content
+            head = content[: content.index(";")].rstrip() if tail_has_semi else content
+
+            if '"' in content:
+                in_query = False
+                gp = 0
+                where_stack.clear()
+                continue
+
+            if tail_has_semi and not head:
+                where_stack.clear()
+                gp = 0
+                continue
+
+            if not head:
+                continue
+
+            if _RE_BSL149_UNION.search(head):
+                where_stack.clear()
+                continue
+
+            if where_stack and _RE_BSL210_LINE_ENDS_WHERE.match(head):
+                if gp == where_stack[-1]:
+                    where_stack.pop()
+
+            if _RE_BSL210_LINE_IS_WHERE.match(head):
+                where_stack.append(gp)
+
+            if where_stack:
+                for om in _RE_BSL210_OR.finditer(head):
+                    diags.append(
+                        Diagnostic(
+                            file=path,
+                            line=idx + 1,
+                            character=content_base + om.start(),
+                            end_line=idx + 1,
+                            end_character=content_base + om.end(),
+                            severity=Severity.WARNING,
+                            code="BSL210",
+                            message=_BSL210_MESSAGE,
+                        )
+                    )
+
+            gp += head.count("(") - head.count(")")
+            if gp < 0:
+                gp = 0
+            while where_stack and gp < where_stack[-1]:
+                where_stack.pop()
+
+            if tail_has_semi:
+                where_stack.clear()
+                gp = 0
+
+        return diags
+
+    def _bsl210_scan_line_literal_queries(
+        self, path: str, idx: int, line: str
+    ) -> list[Diagnostic]:
+        """One-line (or same-line) literals: ВЫБРАТЬ ... ГДЕ ... ИЛИ ..."""
+        if _RE_COMMENT_LINE.match(line):
+            return []
+        diags: list[Diagnostic] = []
+        for quote_pos, literal in _bsl210_iter_double_quoted_segments(line):
+            if not (
+                _RE_BSL149_SELECT.search(literal)
+                and _RE_QUERY_WHERE.search(literal)
+            ):
+                continue
+            offset_base = 0
+            for part in literal.split(";"):
+                for start, end in _bsl210_or_spans_in_query_literal(part):
+                    diags.append(
+                        Diagnostic(
+                            file=path,
+                            line=idx + 1,
+                            character=quote_pos + 1 + offset_base + start,
+                            end_line=idx + 1,
+                            end_character=quote_pos + 1 + offset_base + end,
+                            severity=Severity.WARNING,
+                            code="BSL210",
+                            message=_BSL210_MESSAGE,
+                        )
+                    )
+                offset_base += len(part) + 1
         return diags
 
     # ------------------------------------------------------------------
