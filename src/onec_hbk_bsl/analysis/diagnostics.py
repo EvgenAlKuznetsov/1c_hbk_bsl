@@ -68,6 +68,7 @@ from enum import IntEnum
 from pathlib import Path
 from typing import Any
 
+from onec_hbk_bsl.analysis import bslls_typo
 from onec_hbk_bsl.analysis.bsl_string_regions import (
     diagnostic_overlaps_string_literal,
     double_quoted_string_ranges,
@@ -146,6 +147,8 @@ _CODES_EMIT_DIAGNOSTIC_INSIDE_STRING_LITERAL: frozenset[str] = frozenset(
         "BSL142",
         "BSL145",
         "BSL148",
+        # BSLLS Typo checks string literal contents.
+        "BSL256",
         # Query-text rules fire on continuation lines (|...) inside string literals.
         "BSL149",
         "BSL235",
@@ -4229,64 +4232,6 @@ def _module_export_var_has_preceding_description(lines: list[str], var_line_idx:
     return False
 
 
-# BSLLS: Typo (BSL256) vs LatinAndCyrillicSymbolInWord (BSL208). When every Cyrillic
-# letter in an identifier is a Latin homoglyph, BSLLS reports Typo — not mixed-script.
-_CYR_HOMOGLYPH_TO_LATIN: dict[str, str] = {
-    "а": "a",
-    "А": "A",
-    "е": "e",
-    "Е": "E",
-    "о": "o",
-    "О": "O",
-    "р": "p",
-    "Р": "P",
-    "с": "c",
-    "С": "C",
-    "х": "x",
-    "Х": "X",
-    "м": "m",
-    "М": "M",
-    "т": "t",
-    "Т": "T",
-    "у": "y",
-    "У": "Y",
-    "і": "i",
-    "І": "I",
-    "к": "k",
-    "К": "K",
-    "д": "d",
-    "Д": "D",
-}
-
-
-def _try_homoglyph_latinize_identifier(word: str) -> str | None:
-    """
-    If every Cyrillic character is a known Latin lookalike, return the Latin form.
-
-    If any Cyrillic letter is not in the homoglyph map, return None (intentional
-    mixed-script name → BSL208).
-    """
-    out: list[str] = []
-    for c in word:
-        if c in _CYR_HOMOGLYPH_TO_LATIN:
-            out.append(_CYR_HOMOGLYPH_TO_LATIN[c])
-        elif "\u0400" <= c <= "\u04ff" or c in "ёЁ":
-            return None
-        else:
-            out.append(c)
-    s = "".join(out)
-    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", s):
-        return None
-    return s
-
-
-def _mixed_script_identifier_is_homoglyph_typo(word: str) -> bool:
-    """True when identifier mixes scripts only via confusable Cyrillic letters (BSLLS Typo)."""
-    if not re.search(r"[a-zA-Z]", word) or not re.search(r"[А-ЯЁа-яё]", word):
-        return False
-    return _try_homoglyph_latinize_identifier(word) is not None
-
-
 # Standard technology acronyms used in 1C BSL identifiers — mixing Cyrillic base with a
 # Latin acronym (e.g. HTTPЗапрос, JSONЗапись, XMLЧтение) is the accepted 1C platform
 # convention, not a coding error.  BSLLS skips these implicitly via its built-in type
@@ -6533,12 +6478,13 @@ class DiagnosticEngine:
         if self._rule_enabled("BSL183"):
             _rule_tasks.append(("BSL183", lambda: self._rule_bsl183_execute_external_code(path, lines)))
         if self._rule_enabled("BSL208") or self._rule_enabled("BSL256"):
-            _rule_tasks.append(
-                (
-                    "BSL208_BSL256",
-                    lambda: self._rule_bsl208_bsl256_latin_cyrillic_and_typo(path, lines, procs),
-                )
-            )
+            def _task_bsl208_bsl256() -> list[Diagnostic]:
+                out = self._rule_bsl208_bsl256_latin_cyrillic_and_typo(path, lines, procs)
+                if self._rule_enabled("BSL256"):
+                    out.extend(self._rule_bsl256_bslls_typo_spellcheck(path, tree))
+                return out
+
+            _rule_tasks.append(("BSL208_BSL256", _task_bsl208_bsl256))
         if self._rule_enabled("BSL230"):
             _rule_tasks.append(("BSL230", lambda: self._rule_bsl230_pairing_broken_transaction(path, lines, procs)))
         if self._rule_enabled("BSL240"):
@@ -14178,16 +14124,17 @@ class DiagnosticEngine:
 
     # ------------------------------------------------------------------
     # BSL208 — LatinAndCyrillicSymbolInWord
-    # BSL256 — Typo (homoglyph Cyrillic in Latin-looking identifier; BSLLS priority)
+    # BSL256 — Typo (BSLLS-style: pyspellchecker + pymorphy3, bundled BSLLS exceptions)
     # ------------------------------------------------------------------
 
     def _rule_bsl208_bsl256_latin_cyrillic_and_typo(
         self, path: str, lines: list[str], procs: list[Any]
     ) -> list[Diagnostic]:
         """
-        Mixed Latin/Cyrillic identifiers: BSLLS often reports **Typo** (BSL256) when
-        Cyrillic letters are Latin homoglyphs in an otherwise Latin name; intentional
-        mixed-script names get **LatinAndCyrillicSymbolInWord** (BSL208).
+        Mixed Latin/Cyrillic identifiers for **LatinAndCyrillicSymbolInWord** (BSL208).
+
+        Spell-check **Typo** is implemented in :meth:`_rule_bsl256_bslls_typo_spellcheck`
+        (Python-only engine; see :mod:`onec_hbk_bsl.analysis.bslls_typo`).
         """
         diags: list[Diagnostic] = []
         _re_word = re.compile(r"\b[a-zA-ZА-ЯЁа-яё_][a-zA-ZА-ЯЁа-яё0-9_]*\b", re.UNICODE)
@@ -14196,7 +14143,6 @@ class DiagnosticEngine:
         _re_comment = re.compile(r"^\s*//")
         # Emit at most once per unique identifier per file (BSL LS behaviour)
         seen_bsl208: set[str] = set()
-        seen_bsl256: set[str] = set()
 
         for idx, line in enumerate(lines):
             if _re_comment.match(line):
@@ -14219,25 +14165,7 @@ class DiagnosticEngine:
                     _re_has_latin.search(word) and _re_has_cyrillic.search(word)
                 ):
                     continue
-                if _mixed_script_identifier_is_homoglyph_typo(word):
-                    if self._rule_enabled("BSL256") and word not in seen_bsl256:
-                        seen_bsl256.add(word)
-                        diags.append(
-                            Diagnostic(
-                                file=path,
-                                line=idx + 1,
-                                character=m.start(),
-                                end_line=idx + 1,
-                                end_character=m.end(),
-                                severity=Severity.INFORMATION,
-                                code="BSL256",
-                                message=(
-                                    f"В идентификаторе «{word}» буквы, похожие на латиницу "
-                                    "(возможная опечатка — смешение алфавитов)"
-                                ),
-                            )
-                        )
-                elif self._rule_enabled("BSL208") and word not in seen_bsl208:
+                if self._rule_enabled("BSL208") and word not in seen_bsl208:
                     seen_bsl208.add(word)
                     diags.append(
                         Diagnostic(
@@ -14255,6 +14183,30 @@ class DiagnosticEngine:
                         )
                     )
         return diags
+
+    def _rule_bsl256_bslls_typo_spellcheck(self, path: str, tree: Any) -> list[Diagnostic]:
+        """BSLLS-style Typo: bundled ``TypoDiagnostic_ru.properties`` + Python spell/morphology."""
+        if not self._rule_enabled("BSL256"):
+            return []
+        root = getattr(tree, "root_node", None)
+        if root is None or not hasattr(root, "text"):
+            return []
+        if not isinstance(root.text, (bytes, bytearray)):
+            return []
+        rows = bslls_typo.spellcheck_typo_diagnostics(path=path, tree=tree)
+        return [
+            Diagnostic(
+                file=d["file"],
+                line=d["line"],
+                character=d["character"],
+                end_line=d["end_line"],
+                end_character=d["end_character"],
+                severity=Severity.INFORMATION,
+                code=d["code"],
+                message=d["message"],
+            )
+            for d in rows
+        ]
 
     # ------------------------------------------------------------------
     # BSL230 — PairingBrokenTransaction

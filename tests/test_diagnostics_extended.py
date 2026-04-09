@@ -11,6 +11,8 @@ from __future__ import annotations
 import textwrap
 from pathlib import Path
 
+import pytest
+
 from onec_hbk_bsl.analysis.diagnostics import (
     Diagnostic,
     DiagnosticEngine,
@@ -1350,16 +1352,14 @@ class TestBsl153FormModuleSkips:
 
 
 class TestBsl208Bsl256MixedScriptVsTypo:
-    def test_homoglyph_identifier_reports_bsl256_not_bsl208(self, tmp_path: Path) -> None:
-        # Cyrillic «с» (U+0441) instead of Latin «c» — Latinizes to «connection»
+    def test_homoglyph_identifier_reports_bsl208(self, tmp_path: Path) -> None:
         content = """\
             Процедура Тест()
                 \u0441onnection = 1;
             КонецПроцедуры
         """
         diags = _check(content, tmp_path, select={"BSL208", "BSL256"})
-        assert "BSL256" in _codes(diags)
-        assert "BSL208" not in _codes(diags)
+        assert "BSL208" in _codes(diags)
 
     def test_intentional_mixed_script_reports_bsl208(self, tmp_path: Path) -> None:
         content = """\
@@ -1371,15 +1371,14 @@ class TestBsl208Bsl256MixedScriptVsTypo:
         assert "BSL208" in _codes(diags)
         assert "BSL256" not in _codes(diags)
 
-    def test_bsl208_only_select_skips_homoglyph_typo_line(self, tmp_path: Path) -> None:
-        """Same line as BSLLS Typo: no LatinAndCyrillic when BSL256 is off."""
+    def test_bsl208_only_select_keeps_mixed_script_homoglyph_line(self, tmp_path: Path) -> None:
         content = """\
             Процедура Тест()
                 \u0441onnection = 1;
             КонецПроцедуры
         """
         diags = _check(content, tmp_path, select={"BSL208"})
-        assert "BSL208" not in _codes(diags)
+        assert "BSL208" in _codes(diags)
 
     def test_platform_tech_names_not_flagged(self, tmp_path: Path) -> None:
         """Standard 1C platform API names with Latin tech acronyms are not BSL208."""
@@ -1397,6 +1396,16 @@ class TestBsl208Bsl256MixedScriptVsTypo:
         diags = _check(content, tmp_path, select={"BSL208", "BSL256"})
         assert "BSL208" not in _codes(diags)
 
+    def test_homoglyphs_with_cyrillic_ve_and_en_report_bsl208(self, tmp_path: Path) -> None:
+        content = """\
+            Процедура Тест()
+                \u0412arcode = 1;
+                \u041dTTPClient = 2;
+            КонецПроцедуры
+        """
+        diags = _check(content, tmp_path, select={"BSL208", "BSL256"})
+        assert "BSL208" in _codes(diags)
+
     def test_non_acronym_mixed_name_still_flagged(self, tmp_path: Path) -> None:
         """User-defined mixed-script names that don't use tech acronyms are still flagged."""
         content = """\
@@ -1407,6 +1416,33 @@ class TestBsl208Bsl256MixedScriptVsTypo:
         """
         diags = _check(content, tmp_path, select={"BSL208"})
         assert "BSL208" in _codes(diags)
+
+    def test_bslls_typo_sample_with_mocked_spellchecker(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """BSLLS TypoDiagnostic.bsl — three typos when spell matches BSLLS expectations."""
+        monkeypatch.setattr(
+            "onec_hbk_bsl.analysis.bslls_typo.default_spell_fn",
+            lambda word: word in {"Варинаты", "Атмена", "ыть"},
+        )
+        content = (
+            'Функция Тест()\n'
+            '\tСообщить("Атмена"); // Срабатывание здесь\n'
+            '\tВозврат;\n'
+            'КонецФункции\n'
+            '\n'
+            'Функция ВаринатыОплаты() // срабатывание здесь\n'
+            '\tТипЗнч(Ссылка); // нет срабатывания\n'
+            '\tВозврат;\n'
+            '\tСообщить("ыть"); // срабатывание здесь\n'
+            '\tДеньНедели = Формат(ДатаКолонки, "ДФ=ддд"); // Нет срабатывания\n'
+            '\tЗапроситьДанныеОКВЭДФССВТранзакции = Истина; // Нет срабатывания\n'
+            'КонецФункции\n'
+        )
+        path = tmp_path / "TypoSample.bsl"
+        path.write_text(content, encoding="utf-8")
+        diags = DiagnosticEngine(select={"BSL256"}).check_file(str(path))
+        bsl256 = [d for d in diags if d.code == "BSL256"]
+        assert len(bsl256) == 3
+        assert {d.line for d in bsl256} == {2, 6, 9}
 
 
 # ---------------------------------------------------------------------------
