@@ -3051,6 +3051,19 @@ def _proc_body_base_indent(lines: list[str], proc: _ProcInfo) -> int:
     return 0
 
 
+def _proc_name_span(lines: list[str], proc: _ProcInfo) -> tuple[int, int]:
+    """Best-effort span of the procedure/function name on the header line."""
+    if 0 <= proc.start_idx < len(lines):
+        header_line = lines[proc.start_idx]
+        try:
+            start = header_line.index(proc.name)
+            return start, start + len(proc.name)
+        except ValueError:
+            pass
+    start = proc.header_col
+    return start, start + len(proc.name)
+
+
 def _line_starts_with_raise_statement(line: str) -> bool:
     """True if the line begins with ВызватьИсключение/Raise (not a // comment)."""
     if line.strip().startswith("//"):
@@ -6946,14 +6959,14 @@ class DiagnosticEngine:
         for proc in procs:
             cc = _calc_cognitive_complexity(lines, proc.start_idx, proc.end_idx)
             if cc > self.max_cognitive_complexity:
-                line_text = lines[proc.start_idx] if proc.start_idx < len(lines) else ""
+                start_col, end_col = _proc_name_span(lines, proc)
                 diags.append(
                     Diagnostic(
                         file=path,
                         line=proc.start_idx + 1,
-                        character=proc.header_col,
+                        character=start_col,
                         end_line=proc.start_idx + 1,
-                        end_character=len(line_text),
+                        end_character=end_col,
                         severity=Severity.WARNING,
                         code="BSL011",
                         message=(
@@ -7055,7 +7068,7 @@ class DiagnosticEngine:
                     Diagnostic(
                         file=path,
                         line=idx + 1,
-                        character=self.max_line_length,
+                        character=0,
                         end_line=idx + 1,
                         end_character=length,
                         severity=Severity.INFORMATION,
@@ -7223,14 +7236,14 @@ class DiagnosticEngine:
         for proc in procs:
             cc = _calc_mccabe_complexity(lines, proc.start_idx, proc.end_idx)
             if cc > self.max_mccabe_complexity:
-                line_text = lines[proc.start_idx] if proc.start_idx < len(lines) else ""
+                start_col, end_col = _proc_name_span(lines, proc)
                 diags.append(
                     Diagnostic(
                         file=path,
                         line=proc.start_idx + 1,
-                        character=proc.header_col,
+                        character=start_col,
                         end_line=proc.start_idx + 1,
-                        end_character=len(line_text),
+                        end_character=end_col,
                         severity=Severity.WARNING,
                         code="BSL019",
                         message=(
