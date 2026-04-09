@@ -73,3 +73,36 @@ def test_bsl019_attaches_to_method_name_span(tmp_path: Path) -> None:
     start = header.index("СложнаяФункция")
     assert diag.character == start
     assert diag.end_character == start + len("СложнаяФункция")
+
+
+def test_bsl036_uses_bslls_condition_parts_threshold(tmp_path: Path) -> None:
+    content = """\
+Процедура Тест()
+    Если А И Б И В И Г Тогда
+        Возврат;
+    КонецЕсли;
+КонецПроцедуры
+"""
+    diag = _single_diag(content, "BSL036", tmp_path)
+    assert diag.line == 2
+    assert diag.character == len("    Если ")
+
+
+def test_bsl020_uses_bslls_default_nesting_depth(tmp_path: Path) -> None:
+    content = """\
+Процедура Тест()
+    Если А Тогда
+        Если Б Тогда
+            Если В Тогда
+                Если Г Тогда
+                    Если Д Тогда
+                        Возврат;
+                    КонецЕсли;
+                КонецЕсли;
+            КонецЕсли;
+        КонецЕсли;
+    КонецЕсли;
+КонецПроцедуры
+"""
+    diag = _single_diag(content, "BSL020", tmp_path)
+    assert diag.line == 6

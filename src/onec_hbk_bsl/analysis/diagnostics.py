@@ -5857,7 +5857,7 @@ class DiagnosticEngine:
     MAX_RETURNS: int = 3
     MAX_COGNITIVE_COMPLEXITY: int = 15
     MAX_MCCABE_COMPLEXITY: int = 20
-    MAX_NESTING_DEPTH: int = 5
+    MAX_NESTING_DEPTH: int = 4
     MAX_LINE_LENGTH: int = 120
     MAX_OPTIONAL_PARAMS: int = 3
     MAX_PARAMS: int = 7
@@ -8050,7 +8050,7 @@ class DiagnosticEngine:
         chunk = self._bsl036_if_condition_chunk(lines, idx)
         if chunk is None:
             return False
-        return len(_RE_BOOL_OP.findall(chunk)) > self.max_bool_ops
+        return len(_RE_BOOL_OP.findall(chunk)) + 1 > self.max_bool_ops
 
     def _line_in_triggered_bsl036_condition(self, lines: list[str], idx: int) -> bool:
         """
@@ -8085,15 +8085,25 @@ class DiagnosticEngine:
             if not self._line_triggers_bsl036(lines, idx):
                 continue
             chunk = self._bsl036_if_condition_chunk(lines, idx) or line
-            ops = len(_RE_BOOL_OP.findall(chunk))
+            ops = len(_RE_BOOL_OP.findall(chunk)) + 1
+            char = len(line) - len(line.lstrip())
+            kw = line.lstrip()
+            if kw.lower().startswith("если "):
+                char += len("Если ")
+            elif kw.lower().startswith("if "):
+                char += len("If ")
+            elif kw.lower().startswith("иначеесли "):
+                char += len("ИначеЕсли ")
+            elif kw.lower().startswith("elsif "):
+                char += len("ElsIf ")
             diags.append(
                 Diagnostic(
                     file=path,
                     line=idx + 1,
-                    character=len(line) - len(line.lstrip()),
+                    character=char,
                     end_line=idx + 1,
                     end_character=len(line),
-                    severity=Severity.WARNING,
+                    severity=Severity.INFORMATION,
                     code="BSL036",
                     message=(
                         f"Condition has {ops} boolean operators "
