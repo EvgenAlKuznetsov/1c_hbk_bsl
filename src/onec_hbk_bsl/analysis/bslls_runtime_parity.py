@@ -11,6 +11,7 @@ from collections import Counter
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
+from urllib.parse import unquote
 
 from onec_hbk_bsl.analysis.diagnostics import (
     _BSLLS_NAME_TO_CODE,
@@ -112,7 +113,7 @@ def normalize_bslls_json_report(
         raw_path = fileinfo.get("mdoRef") or fileinfo.get("path") or ""
         raw_path = str(raw_path)
         if raw_path.startswith("file://"):
-            raw_path = raw_path[7:]
+            raw_path = unquote(raw_path[7:])
         file_path = _relative_file(raw_path, workspace_root)
         for diag in fileinfo.get("diagnostics", []):
             rule = str(diag.get("code") or "")
