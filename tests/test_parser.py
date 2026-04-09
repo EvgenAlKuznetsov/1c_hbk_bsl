@@ -27,7 +27,7 @@ class TestBslParserParseFile:
     def test_parse_content_returns_tree(self) -> None:
         """parse_content works with a simple BSL snippet."""
         parser = BslParser()
-        code = "Процедура Тест()\n    Сообщение(\"OK\");\nКонецПроцедуры\n"
+        code = 'Процедура Тест()\n    Сообщение("OK");\nКонецПроцедуры\n'
         tree = parser.parse_content(code)
         assert tree is not None
         assert hasattr(tree, "root_node")
@@ -147,9 +147,7 @@ class TestBslParserProcedureCount:
             "УвеличитьСчётчик",
         }
         found = expected_names & names
-        assert len(found) >= 2, (
-            f"Expected to find at least 2 known procedure names, found: {found}"
-        )
+        assert len(found) >= 2, f"Expected to find at least 2 known procedure names, found: {found}"
 
 
 # ---------------------------------------------------------------------------

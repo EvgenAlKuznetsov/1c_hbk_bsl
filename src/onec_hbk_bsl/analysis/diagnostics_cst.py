@@ -76,9 +76,10 @@ def _unary_operator_text(node: Any) -> str:
 
 
 def _is_not_negation(node: Any) -> bool:
-    return getattr(node, "type", None) == "unary_expression" and _unary_operator_text(
-        node
-    ) in ("не", "not")
+    return getattr(node, "type", None) == "unary_expression" and _unary_operator_text(node) in (
+        "не",
+        "not",
+    )
 
 
 def _double_negation_span(node: Any) -> tuple[int, int, int, int] | None:
@@ -192,12 +193,20 @@ def diagnostics_bsl018_from_tree(path: str, root: Any) -> list[Any]:
                 break
         if expr is None or not _expr_is_only_string_literal(expr):
             return
-        diags.append(_diag(path, "BSL018", Severity.WARNING, (
-            "ВызватьИсключение used with only a string literal. "
-            "For structured error data, use the extended "
-            "ВызватьИсключение(...); syntax (8.3.21+) or build the text "
-            "in a variable/expression."
-        ), expr))
+        diags.append(
+            _diag(
+                path,
+                "BSL018",
+                Severity.WARNING,
+                (
+                    "ВызватьИсключение used with only a string literal. "
+                    "For structured error data, use the extended "
+                    "ВызватьИсключение(...); syntax (8.3.21+) or build the text "
+                    "in a variable/expression."
+                ),
+                expr,
+            )
+        )
 
     ts_walk_preorder(root, visit)
     return diags
@@ -423,8 +432,7 @@ def diagnostics_bsl004_from_tree(path: str, root: Any) -> list[Any]:
 
     diags: list[Any] = []
     empty_then_msg = (
-        "Empty code block: 'Тогда' branch contains no statements — "
-        "add logic or remove the branch."
+        "Empty code block: 'Тогда' branch contains no statements — add logic or remove the branch."
     )
 
     def visit(node: Any) -> None:
@@ -489,8 +497,7 @@ def _emit_bsl091_else(else_node: Any, path: str, diags: list[Any]) -> None:
             severity=Severity.INFORMATION,
             code="BSL091",
             message=(
-                "Иначе/Else after Возврат/Return is redundant — "
-                "remove Иначе and dedent the block."
+                "Иначе/Else after Возврат/Return is redundant — remove Иначе and dedent the block."
             ),
         )
     )
@@ -688,11 +695,7 @@ def diagnostics_bsl061_from_tree(path: str, root: Any) -> list[Any]:
         if i_do is None or i_end is None or i_end <= i_do:
             return
         body = ch[i_do + 1 : i_end]
-        stmts = [
-            c
-            for c in body
-            if getattr(c, "type", None) not in ("line_comment", ";")
-        ]
+        stmts = [c for c in body if getattr(c, "type", None) not in ("line_comment", ";")]
         if not stmts:
             return
         last = stmts[-1]

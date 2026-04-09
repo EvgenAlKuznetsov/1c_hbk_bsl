@@ -17,14 +17,17 @@ from pathlib import Path
 class TestUriHelpers:
     def test_uri_to_path_file_scheme(self) -> None:
         from onec_hbk_bsl.lsp.server import _uri_to_path
+
         assert _uri_to_path("file:///home/user/module.bsl") == "/home/user/module.bsl"
 
     def test_uri_to_path_no_scheme(self) -> None:
         from onec_hbk_bsl.lsp.server import _uri_to_path
+
         assert _uri_to_path("/absolute/path.bsl") == "/absolute/path.bsl"
 
     def test_path_to_uri(self, tmp_path: Path) -> None:
         from onec_hbk_bsl.lsp.server import _path_to_uri
+
         f = tmp_path / "module.bsl"
         f.write_text("//", encoding="utf-8")
         result = _path_to_uri(str(f))
@@ -33,6 +36,7 @@ class TestUriHelpers:
 
     def test_roundtrip(self, tmp_path: Path) -> None:
         from onec_hbk_bsl.lsp.server import _path_to_uri, _uri_to_path
+
         f = tmp_path / "module.bsl"
         f.write_text("//", encoding="utf-8")
         path = str(f.resolve())
@@ -48,6 +52,7 @@ class TestBslLanguageServerInit:
     def test_server_is_created(self, tmp_path: Path, monkeypatch: object) -> None:
         monkeypatch.setenv("INDEX_DB_PATH", str(tmp_path / "idx.sqlite"))
         from onec_hbk_bsl.lsp.server import BslLanguageServer
+
         ls = BslLanguageServer()
         assert ls is not None
 
@@ -55,12 +60,14 @@ class TestBslLanguageServerInit:
         monkeypatch.setenv("INDEX_DB_PATH", str(tmp_path / "idx.sqlite"))
         from onec_hbk_bsl.analysis.diagnostics import DiagnosticEngine
         from onec_hbk_bsl.lsp.server import BslLanguageServer
+
         ls = BslLanguageServer()
         assert isinstance(ls.diagnostics_engine, DiagnosticEngine)
 
     def test_server_has_empty_docs_cache(self, tmp_path: Path, monkeypatch: object) -> None:
         monkeypatch.setenv("INDEX_DB_PATH", str(tmp_path / "idx.sqlite"))
         from onec_hbk_bsl.lsp.server import BslLanguageServer
+
         ls = BslLanguageServer()
         assert ls._docs == {}
 
@@ -91,6 +98,7 @@ class TestPublishDiagnostics:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import BslLanguageServer, _path_to_uri, _publish_diagnostics
+
         ls = BslLanguageServer()
         # Replace the pygls 2.0 publish method with a mock to capture calls
         ls.text_document_publish_diagnostics = MagicMock()
@@ -109,6 +117,7 @@ class TestPublishDiagnostics:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import BslLanguageServer, _publish_diagnostics
+
         ls = BslLanguageServer()
         ls.text_document_publish_diagnostics = MagicMock()
         _publish_diagnostics(ls, "file:///nonexistent.bsl", "/nonexistent.bsl")
@@ -216,24 +225,29 @@ class TestPublishDiagnostics:
 class TestWordAtPosition:
     def test_word_in_middle_of_line(self) -> None:
         from onec_hbk_bsl.lsp.server import _word_at_position
+
         content = "Процедура ПолучитьЗначение()\nКонецПроцедуры\n"
         word = _word_at_position(content, 0, 15)
         assert word  # should extract some identifier
 
     def test_empty_content_returns_empty(self) -> None:
         from onec_hbk_bsl.lsp.server import _word_at_position
+
         assert _word_at_position("", 0, 0) == ""
 
     def test_line_beyond_content_returns_empty(self) -> None:
         from onec_hbk_bsl.lsp.server import _word_at_position
+
         assert _word_at_position("А = 1;\n", 99, 0) == ""
 
     def test_character_beyond_line_returns_empty(self) -> None:
         from onec_hbk_bsl.lsp.server import _word_at_position
+
         assert _word_at_position("А = 1;\n", 0, 999) == ""
 
     def test_at_word_start(self) -> None:
         from onec_hbk_bsl.lsp.server import _word_at_position
+
         content = "НайтиПоКоду()\n"
         word = _word_at_position(content, 0, 0)
         assert "НайтиПоКоду" in word or word  # extracts identifier
@@ -242,18 +256,22 @@ class TestWordAtPosition:
 class TestLastIdentifier:
     def test_simple_word(self) -> None:
         from onec_hbk_bsl.lsp.server import _last_identifier
+
         assert _last_identifier("НайтиПоКоду") == "НайтиПоКоду"
 
     def test_after_dot(self) -> None:
         from onec_hbk_bsl.lsp.server import _last_identifier
+
         assert _last_identifier("Объект.Метод") == "Метод"
 
     def test_empty_string(self) -> None:
         from onec_hbk_bsl.lsp.server import _last_identifier
+
         assert _last_identifier("") == ""
 
     def test_ends_with_space(self) -> None:
         from onec_hbk_bsl.lsp.server import _last_identifier
+
         assert _last_identifier("Объект.") == ""
 
 
@@ -270,6 +288,7 @@ class TestHandlerFunctions:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import BslLanguageServer
+
         ls = BslLanguageServer()
         ls.text_document_publish_diagnostics = MagicMock()
         return ls
@@ -278,6 +297,7 @@ class TestHandlerFunctions:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import on_did_open
+
         ls = self._make_server(tmp_path, monkeypatch)
         params = MagicMock()
         params.text_document.uri = "file:///test.bsl"
@@ -289,6 +309,7 @@ class TestHandlerFunctions:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import on_did_change
+
         ls = self._make_server(tmp_path, monkeypatch)
         ls._docs["file:///test.bsl"] = "old content"
         params = MagicMock()
@@ -329,6 +350,7 @@ class TestHandlerFunctions:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import on_definition
+
         ls = self._make_server(tmp_path, monkeypatch)
         params = MagicMock()
         params.text_document.uri = "file:///test.bsl"
@@ -342,6 +364,7 @@ class TestHandlerFunctions:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import on_definition
+
         ls = self._make_server(tmp_path, monkeypatch)
         # Use a unique symbol name unlikely to exist in any real index
         ls._docs["file:///test.bsl"] = "ЭтаФункцияТочноНеСуществует();\n"
@@ -357,6 +380,7 @@ class TestHandlerFunctions:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import on_hover
+
         ls = self._make_server(tmp_path, monkeypatch)
         params = MagicMock()
         params.text_document.uri = "file:///test.bsl"
@@ -378,7 +402,9 @@ class TestHandlerFunctions:
 
         # Emulate metadata availability with chain-aware object resolution.
         ls.symbol_index.has_metadata = lambda: True
-        ls.symbol_index.find_meta_object = lambda name: {"name": name} if name == "Контрагенты" else None
+        ls.symbol_index.find_meta_object = lambda name: (
+            {"name": name} if name == "Контрагенты" else None
+        )
         ls.symbol_index.get_meta_members = lambda obj, prefix="": (
             [
                 {
@@ -406,6 +432,7 @@ class TestHandlerFunctions:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import on_signature_help
+
         ls = self._make_server(tmp_path, monkeypatch)
         params = MagicMock()
         params.text_document.uri = "file:///test.bsl"
@@ -414,12 +441,11 @@ class TestHandlerFunctions:
         result = on_signature_help(ls, params)
         assert result is None
 
-    def test_on_signature_help_platform_function_active_param(
-        self, tmp_path, monkeypatch
-    ) -> None:
+    def test_on_signature_help_platform_function_active_param(self, tmp_path, monkeypatch) -> None:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import on_signature_help
+
         ls = self._make_server(tmp_path, monkeypatch)
         content = 'Сообщить("Привет", Статус);\\n'
         uri = "file:///test.bsl"
@@ -446,6 +472,7 @@ class TestHandlerFunctions:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import on_document_symbol
+
         ls = self._make_server(tmp_path, monkeypatch)
         params = MagicMock()
         params.text_document.uri = "file:///test.bsl"
@@ -456,6 +483,7 @@ class TestHandlerFunctions:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import on_workspace_symbol
+
         ls = self._make_server(tmp_path, monkeypatch)
         params = MagicMock()
         params.query = "   "  # whitespace only
@@ -466,6 +494,7 @@ class TestHandlerFunctions:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import on_workspace_symbol
+
         ls = self._make_server(tmp_path, monkeypatch)
         params = MagicMock()
         params.query = "ПолучитьЗначение"
@@ -476,6 +505,7 @@ class TestHandlerFunctions:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import on_references
+
         ls = self._make_server(tmp_path, monkeypatch)
         params = MagicMock()
         params.text_document.uri = "file:///test.bsl"
@@ -511,6 +541,7 @@ class TestHandlerFunctions:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import on_completion
+
         ls = self._make_server(tmp_path, monkeypatch)
         params = MagicMock()
         params.text_document.uri = "file:///test.bsl"
@@ -523,6 +554,7 @@ class TestHandlerFunctions:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import on_completion
+
         ls = self._make_server(tmp_path, monkeypatch)
         ls._docs["file:///test.bsl"] = "Сообщить\n"
         params = MagicMock()
@@ -537,6 +569,7 @@ class TestHandlerFunctions:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import on_completion
+
         ls = self._make_server(tmp_path, monkeypatch)
         ls._docs["file:///test.bsl"] = "Массив.\n"
         params = MagicMock()
@@ -547,9 +580,7 @@ class TestHandlerFunctions:
         # Dot completion — returns CompletionList
         assert result is not None
 
-    def test_on_completion_metadata_chain_uses_base_object(
-        self, tmp_path, monkeypatch
-    ) -> None:
+    def test_on_completion_metadata_chain_uses_base_object(self, tmp_path, monkeypatch) -> None:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import on_completion
@@ -559,7 +590,9 @@ class TestHandlerFunctions:
         ls._docs[uri] = "Справочники.Контрагенты.Товары.Су\n"
 
         ls.symbol_index.has_metadata = lambda: True
-        ls.symbol_index.find_meta_object = lambda name: {"name": name} if name == "Контрагенты" else None
+        ls.symbol_index.find_meta_object = lambda name: (
+            {"name": name} if name == "Контрагенты" else None
+        )
         ls.symbol_index.find_meta_objects_by_collection = lambda collection, prefix="": []
         ls.symbol_index.get_meta_members = lambda obj, prefix="": (
             [
@@ -597,6 +630,7 @@ class TestFormatting:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import BslLanguageServer
+
         ls = BslLanguageServer()
         ls.text_document_publish_diagnostics = MagicMock()
         return ls
@@ -605,6 +639,7 @@ class TestFormatting:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import on_formatting
+
         ls = self._make_server(tmp_path, monkeypatch)
         ls._docs["file:///test.bsl"] = "процедура Тест()\nконецпроцедуры\n"
         params = MagicMock()
@@ -618,6 +653,7 @@ class TestFormatting:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import on_formatting
+
         ls = self._make_server(tmp_path, monkeypatch)
         params = MagicMock()
         params.text_document.uri = "file:///nonexistent.bsl"
@@ -629,6 +665,7 @@ class TestFormatting:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import on_formatting
+
         ls = self._make_server(tmp_path, monkeypatch)
         code = "Процедура Тест()\nКонецПроцедуры\n"
         ls._docs["file:///test.bsl"] = code
@@ -644,21 +681,27 @@ class TestFormatting:
         from lsprotocol.types import Position, Range
 
         from onec_hbk_bsl.lsp.server import on_range_formatting
+
         ls = self._make_server(tmp_path, monkeypatch)
         ls._docs["file:///test.bsl"] = "процедура Тест()\nконецпроцедуры\n"
         params = MagicMock()
         params.text_document.uri = "file:///test.bsl"
         params.options.tab_size = 4
-        params.range = Range(start=Position(line=0, character=0), end=Position(line=0, character=20))
+        params.range = Range(
+            start=Position(line=0, character=0), end=Position(line=0, character=20)
+        )
         result = on_range_formatting(ls, params)
         assert result is not None
 
-    def test_range_formatting_end_exclusive_does_not_touch_next_line(self, tmp_path, monkeypatch) -> None:
+    def test_range_formatting_end_exclusive_does_not_touch_next_line(
+        self, tmp_path, monkeypatch
+    ) -> None:
         from unittest.mock import MagicMock
 
         from lsprotocol.types import Position, Range
 
         from onec_hbk_bsl.lsp.server import on_range_formatting
+
         ls = self._make_server(tmp_path, monkeypatch)
         ls._docs["file:///test.bsl"] = "процедура Тест()\nа=1;\nб=2;\nконецпроцедуры\n"
         params = MagicMock()
@@ -685,6 +728,7 @@ class TestDocumentHighlight:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import BslLanguageServer
+
         ls = BslLanguageServer()
         ls.text_document_publish_diagnostics = MagicMock()
         return ls
@@ -693,6 +737,7 @@ class TestDocumentHighlight:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import on_document_highlight
+
         ls = self._make_server(tmp_path, monkeypatch)
         ls._docs["file:///test.bsl"] = "МояПерем = 1;\nА = МояПерем;\n"
         params = MagicMock()
@@ -707,6 +752,7 @@ class TestDocumentHighlight:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import on_document_highlight
+
         ls = self._make_server(tmp_path, monkeypatch)
         params = MagicMock()
         params.text_document.uri = "file:///test.bsl"
@@ -727,6 +773,7 @@ class TestFoldingRange:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import BslLanguageServer
+
         ls = BslLanguageServer()
         ls.text_document_publish_diagnostics = MagicMock()
         return ls
@@ -735,12 +782,9 @@ class TestFoldingRange:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import on_folding_range
+
         ls = self._make_server(tmp_path, monkeypatch)
-        ls._docs["file:///test.bsl"] = (
-            "Процедура Тест()\n"
-            "    А = 1;\n"
-            "КонецПроцедуры\n"
-        )
+        ls._docs["file:///test.bsl"] = "Процедура Тест()\n    А = 1;\nКонецПроцедуры\n"
         params = MagicMock()
         params.text_document.uri = "file:///test.bsl"
         result = on_folding_range(ls, params)
@@ -751,12 +795,9 @@ class TestFoldingRange:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import on_folding_range
+
         ls = self._make_server(tmp_path, monkeypatch)
-        ls._docs["file:///test.bsl"] = (
-            "#Область МояОбласть\n"
-            "А = 1;\n"
-            "#КонецОбласти\n"
-        )
+        ls._docs["file:///test.bsl"] = "#Область МояОбласть\nА = 1;\n#КонецОбласти\n"
         params = MagicMock()
         params.text_document.uri = "file:///test.bsl"
         result = on_folding_range(ls, params)
@@ -767,6 +808,7 @@ class TestFoldingRange:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import on_folding_range
+
         ls = self._make_server(tmp_path, monkeypatch)
         params = MagicMock()
         params.text_document.uri = "file:///empty.bsl"
@@ -785,6 +827,7 @@ class TestSemanticTokens:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import BslLanguageServer
+
         ls = BslLanguageServer()
         ls.text_document_publish_diagnostics = MagicMock()
         return ls
@@ -793,6 +836,7 @@ class TestSemanticTokens:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import on_semantic_tokens_full
+
         ls = self._make_server(tmp_path, monkeypatch)
         ls._docs["file:///test.bsl"] = "Процедура Тест()\n    А = 1;\nКонецПроцедуры\n"
         params = MagicMock()
@@ -802,11 +846,14 @@ class TestSemanticTokens:
         assert len(result.data) > 0
         assert len(result.data) % 5 == 0  # each token is 5 integers
 
-    def test_semantic_tokens_znach_val_are_keywords_not_variables(self, tmp_path, monkeypatch) -> None:
+    def test_semantic_tokens_znach_val_are_keywords_not_variables(
+        self, tmp_path, monkeypatch
+    ) -> None:
         """Знач/Val in parameter list are modifiers (keyword token), not parameter names."""
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import on_semantic_tokens_full
+
         ls = self._make_server(tmp_path, monkeypatch)
         src = "Процедура Записать(Знач ИмяСобытия, Val Detail)\nКонецПроцедуры\n"
         ls._docs["file:///p.bsl"] = src
@@ -839,7 +886,9 @@ class TestSemanticTokens:
         assert found_znach, "expected semantic token 'keyword' over Знач"
         assert found_val, "expected semantic token 'keyword' over Val"
 
-    def test_semantic_tokens_logical_operators_case_insensitive(self, tmp_path, monkeypatch) -> None:
+    def test_semantic_tokens_logical_operators_case_insensitive(
+        self, tmp_path, monkeypatch
+    ) -> None:
         """BSL is case-insensitive: и/или/нЕ must get keyword tokens; ИЛИ is one token, not И."""
         from unittest.mock import MagicMock
 
@@ -880,6 +929,7 @@ class TestSemanticTokens:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import on_semantic_tokens_full
+
         ls = self._make_server(tmp_path, monkeypatch)
         params = MagicMock()
         params.text_document.uri = "file:///empty.bsl"
@@ -938,6 +988,7 @@ class TestCodeAction:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import BslLanguageServer
+
         ls = BslLanguageServer()
         ls.text_document_publish_diagnostics = MagicMock()
         return ls
@@ -946,6 +997,7 @@ class TestCodeAction:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import on_code_action
+
         ls = self._make_server(tmp_path, monkeypatch)
         # Populate _docs so line-range check works
         ls._docs["file:///test.bsl"] = "А = 1;  // код\nБ = 2;\n"
@@ -966,6 +1018,7 @@ class TestCodeAction:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import on_code_action
+
         ls = self._make_server(tmp_path, monkeypatch)
         params = MagicMock()
         params.text_document.uri = "file:///unknown.bsl"  # not in _docs → empty content
@@ -1047,11 +1100,11 @@ class TestSelectionRange:
         from onec_hbk_bsl.lsp.server import _build_selection_range
 
         lines = [
-            "Процедура МойМетод()",   # 0
-            "    Если А > 0 Тогда",   # 1
-            "        Б = 1;",         # 2
-            "    КонецЕсли;",         # 3
-            "КонецПроцедуры",         # 4
+            "Процедура МойМетод()",  # 0
+            "    Если А > 0 Тогда",  # 1
+            "        Б = 1;",  # 2
+            "    КонецЕсли;",  # 3
+            "КонецПроцедуры",  # 4
         ]
         sr = _build_selection_range(lines, cursor_line=2)
         assert sr is not None
@@ -1087,9 +1140,9 @@ class TestSelectionRange:
         from onec_hbk_bsl.lsp.server import _build_selection_range
 
         lines = [
-            "Function MyFunc()",   # 0
-            "    Return 0;",       # 1
-            "EndFunction",         # 2
+            "Function MyFunc()",  # 0
+            "    Return 0;",  # 1
+            "EndFunction",  # 2
         ]
         sr = _build_selection_range(lines, cursor_line=1)
         assert sr is not None
@@ -1199,6 +1252,7 @@ class TestWorkspaceReindexSingleFlight:
 class TestInferType:
     def _parse(self, content: str):
         from onec_hbk_bsl.parser.bsl_parser import BslParser
+
         parser = BslParser()
         return parser.parse_content(content, file_path="test.bsl")
 
@@ -1379,6 +1433,7 @@ class TestOnTypeFormatting:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import BslLanguageServer
+
         ls = BslLanguageServer()
         ls.text_document_publish_diagnostics = MagicMock()
         return ls
@@ -1387,6 +1442,7 @@ class TestOnTypeFormatting:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import on_type_formatting
+
         ls = self._make_server(tmp_path, monkeypatch)
         # User pressed Enter after "Процедура Тест()" — cursor is on line 1 (empty)
         content = "Процедура Тест()\n\nКонецПроцедуры\n"
@@ -1405,6 +1461,7 @@ class TestOnTypeFormatting:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import on_type_formatting
+
         ls = self._make_server(tmp_path, monkeypatch)
         # КонецПроцедуры should be at indent 0
         content = "Процедура Тест()\n    КонецПроцедуры\n"
@@ -1422,6 +1479,7 @@ class TestOnTypeFormatting:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import on_type_formatting
+
         ls = self._make_server(tmp_path, monkeypatch)
         params = MagicMock()
         params.text_document.uri = "file:///empty.bsl"
@@ -1434,6 +1492,7 @@ class TestOnTypeFormatting:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import on_type_formatting
+
         ls = self._make_server(tmp_path, monkeypatch)
         content = "Процедура Тест()\n    Если А > 0 Тогда\n\n    КонецЕсли;\nКонецПроцедуры\n"
         ls._docs["file:///test.bsl"] = content
@@ -1450,6 +1509,7 @@ class TestOnTypeFormatting:
         from unittest.mock import MagicMock
 
         from onec_hbk_bsl.lsp.server import on_type_formatting
+
         ls = self._make_server(tmp_path, monkeypatch)
         content = "Процедура Тест()\n\nКонецПроцедуры\n"
         ls._docs["file:///test.bsl"] = content
@@ -1471,12 +1531,14 @@ class TestOnTypeFormatting:
 class TestFormatDocComment:
     def test_strips_slashes(self) -> None:
         from onec_hbk_bsl.lsp.server import _format_doc_comment
+
         raw = "// Описание функции."
         result = _format_doc_comment(raw)
         assert result == "Описание функции."
 
     def test_params_section_as_list(self) -> None:
         from onec_hbk_bsl.lsp.server import _format_doc_comment
+
         raw = "// Описание.\n//\n// Параметры:\n//   А - Тип - Описание"
         result = _format_doc_comment(raw)
         assert "**Параметры:**" in result
@@ -1484,6 +1546,7 @@ class TestFormatDocComment:
 
     def test_blank_lines_collapsed(self) -> None:
         from onec_hbk_bsl.lsp.server import _format_doc_comment
+
         raw = "// А\n//\n//\n// Б"
         result = _format_doc_comment(raw)
         assert "\n\n\n" not in result

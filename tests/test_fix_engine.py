@@ -200,7 +200,9 @@ class TestApplyFixes:
         assert result.error is None
 
     def test_io_error_sets_error_field(self, tmp_path: Path) -> None:
-        result = apply_fixes("/nonexistent/path/file.bsl", [_diag("/nonexistent/path/file.bsl", 1, "BSL009")])
+        result = apply_fixes(
+            "/nonexistent/path/file.bsl", [_diag("/nonexistent/path/file.bsl", 1, "BSL009")]
+        )
         assert result.error is not None
 
     def test_no_diagnostics_leaves_file_unchanged(self, tmp_path: Path) -> None:

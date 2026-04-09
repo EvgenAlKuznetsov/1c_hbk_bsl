@@ -2942,12 +2942,12 @@ class Diagnostic:
     """A single diagnostic issue found in a BSL file."""
 
     file: str
-    line: int           # 1-based
-    character: int      # 0-based column
+    line: int  # 1-based
+    character: int  # 0-based column
     end_line: int
     end_character: int
     severity: Severity
-    code: str           # e.g. "BSL001"
+    code: str  # e.g. "BSL001"
     message: str
 
     def to_dict(self, *, include_rule_name: bool = False) -> dict:
@@ -2997,14 +2997,14 @@ class _ProcInfo:
     """Procedure or function definition extracted from source."""
 
     name: str
-    kind: str               # 'procedure' | 'function'
-    start_idx: int          # 0-based line index (header line)
-    end_idx: int            # 0-based line index (КонецПроцедуры/КонецФункции)
+    kind: str  # 'procedure' | 'function'
+    start_idx: int  # 0-based line index (header line)
+    end_idx: int  # 0-based line index (КонецПроцедуры/КонецФункции)
     is_export: bool
-    params: list[str]       # all param names (no defaults, no Val prefix)
-    val_params: list[str]   # Знач/Val param names (passed by value)
-    optional_count: int     # count of params with default values
-    header_col: int = 0     # column of the keyword (indent)
+    params: list[str]  # all param names (no defaults, no Val prefix)
+    val_params: list[str]  # Знач/Val param names (passed by value)
+    optional_count: int  # count of params with default values
+    header_col: int = 0  # column of the keyword (indent)
     optional_params: frozenset[str] = frozenset()  # names of optional params (have default value)
 
 
@@ -3013,8 +3013,8 @@ class _RegionInfo:
     """#Область / #Region block."""
 
     name: str
-    start_idx: int          # 0-based
-    end_idx: int            # 0-based
+    start_idx: int  # 0-based
+    end_idx: int  # 0-based
 
 
 # ---------------------------------------------------------------------------
@@ -3107,24 +3107,24 @@ _RE_REGION_CLOSE = re.compile(
 # Hardcoded network addresses
 _RE_HARDCODE_NET = re.compile(
     r'"(?:'
-    r'(?:\d{1,3}\.){3}\d{1,3}'                     # bare IPv4
-    r'|\\\\[\w\-.]{2,}\\[\w\-.]+'                  # UNC path
+    r"(?:\d{1,3}\.){3}\d{1,3}"  # bare IPv4
+    r"|\\\\[\w\-.]{2,}\\[\w\-.]+"  # UNC path
     r')"',
     re.IGNORECASE,
 )
 # BSLLS: URLs (https?/ftp) are NOT flagged by BSL005 — only bare IPv4 and UNC paths.
 # Popular version prefixes to skip (BSLLS searchPopularVersionExclusion).
-_RE_BSL005_POPULAR_VERSION = re.compile(r'^(?:1|2|3|8\.3|11)\.')
+_RE_BSL005_POPULAR_VERSION = re.compile(r"^(?:1|2|3|8\.3|11)\.")
 # Context keywords that indicate a version string context (BSLLS searchWordsExclusion).
 _RE_BSL005_VERSION_CONTEXT = re.compile(
-    r'Верси|Version|ЗапуститьПриложение|RunApp|Пространств|Namespace|Драйвер|Driver',
+    r"Верси|Version|ЗапуститьПриложение|RunApp|Пространств|Namespace|Драйвер|Driver",
     re.IGNORECASE,
 )
 
 # Hardcoded file-system paths
 _RE_HARDCODE_PATH = re.compile(
     r'"(?:'
-    r'[A-Za-z]:\\[^"]{2,}'                         # Windows C:\...
+    r'[A-Za-z]:\\[^"]{2,}'  # Windows C:\...
     r'|/(?:home|usr|var|tmp|etc|opt|mnt|srv|app)/[^"]{2,}'  # Linux absolute
     r')"',
     re.IGNORECASE,
@@ -3160,7 +3160,7 @@ _RE_SELF_ASSIGN = re.compile(
 
 # Hardcoded credentials
 _RE_CREDENTIALS = re.compile(
-    r'(?:пароль|password|passwd|pwd|secret|credential(?:s)?|token'
+    r"(?:пароль|password|passwd|pwd|secret|credential(?:s)?|token"
     r'|логин|login|auth|apikey|api_key|accesskey|access_key)\s*=\s*"[^"]{2,}"',
     re.IGNORECASE,
 )
@@ -3227,189 +3227,189 @@ _RE_BSLLS = re.compile(
 # and users need it in suppression comments — avoid duplicate aliases «на всякий случай».
 _BSLLS_NAME_TO_CODE: dict[str, str] = {
     # ── Exact name matches ────────────────────────────────────────────────
-    "ParseError":                  "BSL001",
-    "MethodSize":                  "BSL002",
+    "ParseError": "BSL001",
+    "MethodSize": "BSL002",
     "NonExportMethodsInApiRegion": "BSL003",
-    "EmptyCodeBlock":              "BSL004",
-    "UnusedLocalVariable":         "BSL007",
-    "SelfAssign":                  "BSL009",
-    "CognitiveComplexity":         "BSL011",
-    "CommentedCode":               "BSL013",
-    "NumberOfOptionalParams":      "BSL015",
-    "NonStandardRegion":           "BSL016",
-    "CyclomaticComplexity":        "BSL019",
+    "EmptyCodeBlock": "BSL004",
+    "UnusedLocalVariable": "BSL007",
+    "SelfAssign": "BSL009",
+    "CognitiveComplexity": "BSL011",
+    "CommentedCode": "BSL013",
+    "NumberOfOptionalParams": "BSL015",
+    "NonStandardRegion": "BSL016",
+    "CyclomaticComplexity": "BSL019",
     # NOTE: BSLLS DeprecatedMessage flags Сообщить() — not implemented; BSL022 flags Предупреждение()
-    "UsingModalWindows":           "BSL022",
-    "UsingServiceTag":             "BSL023",
-    "SpaceAtStartComment":         "BSL024",
-    "EmptyRegion":                 "BSL026",
-    "MagicNumber":                 "BSL029",
-    "NumberOfParams":              "BSL031",
-    "DuplicateStringLiteral":      "BSL035",
-    "NestedTernaryOperator":       "BSL039",
-    "UsingThisForm":               "BSL040",
-    "UnreachableCode":             "BSL051",
-    "ProcedureReturnsValue":       "BSL064",
+    "UsingModalWindows": "BSL022",
+    "UsingServiceTag": "BSL023",
+    "SpaceAtStartComment": "BSL024",
+    "EmptyRegion": "BSL026",
+    "MagicNumber": "BSL029",
+    "NumberOfParams": "BSL031",
+    "DuplicateStringLiteral": "BSL035",
+    "NestedTernaryOperator": "BSL039",
+    "UsingThisForm": "BSL040",
+    "UnreachableCode": "BSL051",
+    "ProcedureReturnsValue": "BSL064",
     # ── BSLLS names (RULE_METADATA["name"] matches these) ─────────────────
-    "UsingHardcodeNetworkAddress":    "BSL005",
-    "UsingHardcodePath":              "BSL006",
-    "TooManyReturns":                 "BSL008",
+    "UsingHardcodeNetworkAddress": "BSL005",
+    "UsingHardcodePath": "BSL006",
+    "TooManyReturns": "BSL008",
     "UsingHardcodeSecretInformation": "BSL012",
-    "LineLength":                     "BSL014",
-    "CommandModuleExportMethods":     "BSL017",
-    "NestedStatements":               "BSL020",
-    "UsingGoto":                      "BSL027",
-    "MissingCodeTryCatchEx":          "BSL028",
-    "FunctionShouldHaveReturn":       "BSL032",
-    "CreateQueryInCycle":             "BSL033",
-    "IfConditionComplexity":          "BSL036",
-    "ConsecutiveEmptyLines":          "BSL055",
-    "DoubleNegatives":                "BSL060",
-    "UnusedParameters":               "BSL062",
+    "LineLength": "BSL014",
+    "CommandModuleExportMethods": "BSL017",
+    "NestedStatements": "BSL020",
+    "UsingGoto": "BSL027",
+    "MissingCodeTryCatchEx": "BSL028",
+    "FunctionShouldHaveReturn": "BSL032",
+    "CreateQueryInCycle": "BSL033",
+    "IfConditionComplexity": "BSL036",
+    "ConsecutiveEmptyLines": "BSL055",
+    "DoubleNegatives": "BSL060",
+    "UnusedParameters": "BSL062",
     "MissingReturnedValueDescription": "BSL065",
-    "DeprecatedFind":                 "BSL066",
-    "MagicDate":                      "BSL047",
-    "DeprecatedCurrentDate":          "BSL097",
-    "ExportVariables":                "BSL054",
-    "SelectTopWithoutOrderBy":        "BSL077",
-    "EmptyStatement":                 "BSL025",
-    "SemicolonPresence":              "BSL030",
-    "IdenticalExpressions":           "BSL052",
-    "UnusedLocalMethod":              "BSL042",
+    "DeprecatedFind": "BSL066",
+    "MagicDate": "BSL047",
+    "DeprecatedCurrentDate": "BSL097",
+    "ExportVariables": "BSL054",
+    "SelectTopWithoutOrderBy": "BSL077",
+    "EmptyStatement": "BSL025",
+    "SemicolonPresence": "BSL030",
+    "IdenticalExpressions": "BSL052",
+    "UnusedLocalMethod": "BSL042",
     # ── BSL148–BSL279 stub mappings ──────────────────────────────────────────
-    "AllFunctionPathMustHaveReturn":          "BSL148",
-    "AssignAliasFieldsInQuery":               "BSL149",
-    "BadWords":                               "BSL150",
-    "BeginTransactionBeforeTryCatch":         "BSL151",
-    "CachedPublic":                           "BSL152",
-    "CanonicalSpellingKeywords":              "BSL153",
-    "CodeAfterAsyncCall":                     "BSL154",
-    "CodeBlockBeforeSub":                     "BSL155",
-    "CodeOutOfRegion":                        "BSL156",
-    "CommitTransactionOutsideTryCatch":       "BSL157",
-    "CommonModuleAssign":                     "BSL158",
-    "CommonModuleInvalidType":                "BSL159",
-    "CommonModuleMissingAPI":                 "BSL160",
-    "CommonModuleNameCached":                 "BSL161",
-    "CommonModuleNameClient":                 "BSL162",
-    "CommonModuleNameClientServer":           "BSL163",
-    "CommonModuleNameFullAccess":             "BSL164",
-    "CommonModuleNameGlobal":                 "BSL165",
-    "CommonModuleNameGlobalClient":           "BSL166",
-    "CommonModuleNameServerCall":             "BSL167",
-    "CommonModuleNameWords":                  "BSL168",
-    "CompilationDirectiveLost":               "BSL169",
-    "CompilationDirectiveNeedLess":           "BSL170",
-    "CrazyMultilineString":                   "BSL171",
-    "DataExchangeLoading":                    "BSL172",
-    "DeletingCollectionItem":                 "BSL173",
-    "DenyIncompleteValues":                   "BSL174",
-    "DeprecatedAttributes8312":               "BSL175",
-    "DeprecatedMethodCall":                   "BSL176",
-    "DeprecatedMethods8310":                  "BSL177",
-    "DeprecatedMethods8317":                  "BSL178",
-    "DeprecatedTypeManagedForm":              "BSL179",
-    "DisableSafeMode":                        "BSL180",
-    "DuplicatedInsertionIntoCollection":      "BSL181",
-    "ExcessiveAutoTestCheck":                 "BSL182",
-    "ExecuteExternalCode":                    "BSL183",
-    "ExecuteExternalCodeInCommonModule":      "BSL184",
-    "ExternalAppStarting":                    "BSL185",
-    "ExtraCommas":                            "BSL186",
-    "FieldsFromJoinsWithoutIsNull":           "BSL187",
-    "FileSystemAccess":                       "BSL188",
-    "ForbiddenMetadataName":                  "BSL189",
-    "FormDataToValue":                        "BSL190",
-    "FullOuterJoinQuery":                     "BSL191",
-    "FunctionNameStartsWithGet":              "BSL192",
-    "FunctionOutParameter":                   "BSL193",
-    "FunctionReturnsSamePrimitive":           "BSL194",
-    "GetFormMethod":                          "BSL195",
-    "GlobalContextMethodCollision8312":       "BSL196",
-    "IfElseDuplicatedCodeBlock":              "BSL197",
-    "IfElseDuplicatedCondition":              "BSL198",
-    "IfElseIfEndsWithElse":                   "BSL199",
-    "IncorrectLineBreak":                     "BSL200",
-    "IncorrectUseLikeInQuery":               "BSL201",
-    "IncorrectUseOfStrTemplate":              "BSL202",
-    "InternetAccess":                         "BSL203",
-    "InvalidCharacterInFile":                 "BSL204",
-    "IsInRoleMethod":                         "BSL205",
-    "JoinWithSubQuery":                       "BSL206",
-    "JoinWithVirtualTable":                   "BSL207",
-    "LatinAndCyrillicSymbolInWord":           "BSL208",
-    "LogicalOrInJoinQuerySection":            "BSL209",
-    "LogicalOrInTheWhereSectionOfQuery":      "BSL210",
-    "MetadataObjectNameLength":               "BSL211",
-    "MissedRequiredParameter":               "BSL212",
-    "MissingCommonModuleMethod":              "BSL213",
-    "MissingEventSubscriptionHandler":        "BSL214",
-    "MissingParameterDescription":            "BSL215",
-    "MissingSpace":                           "BSL216",
-    "MissingTempStorageDeletion":             "BSL217",
-    "MissingTemporaryFileDeletion":           "BSL218",
-    "MissingVariablesDescription":            "BSL219",
-    "MultilineStringInQuery":                 "BSL220",
+    "AllFunctionPathMustHaveReturn": "BSL148",
+    "AssignAliasFieldsInQuery": "BSL149",
+    "BadWords": "BSL150",
+    "BeginTransactionBeforeTryCatch": "BSL151",
+    "CachedPublic": "BSL152",
+    "CanonicalSpellingKeywords": "BSL153",
+    "CodeAfterAsyncCall": "BSL154",
+    "CodeBlockBeforeSub": "BSL155",
+    "CodeOutOfRegion": "BSL156",
+    "CommitTransactionOutsideTryCatch": "BSL157",
+    "CommonModuleAssign": "BSL158",
+    "CommonModuleInvalidType": "BSL159",
+    "CommonModuleMissingAPI": "BSL160",
+    "CommonModuleNameCached": "BSL161",
+    "CommonModuleNameClient": "BSL162",
+    "CommonModuleNameClientServer": "BSL163",
+    "CommonModuleNameFullAccess": "BSL164",
+    "CommonModuleNameGlobal": "BSL165",
+    "CommonModuleNameGlobalClient": "BSL166",
+    "CommonModuleNameServerCall": "BSL167",
+    "CommonModuleNameWords": "BSL168",
+    "CompilationDirectiveLost": "BSL169",
+    "CompilationDirectiveNeedLess": "BSL170",
+    "CrazyMultilineString": "BSL171",
+    "DataExchangeLoading": "BSL172",
+    "DeletingCollectionItem": "BSL173",
+    "DenyIncompleteValues": "BSL174",
+    "DeprecatedAttributes8312": "BSL175",
+    "DeprecatedMethodCall": "BSL176",
+    "DeprecatedMethods8310": "BSL177",
+    "DeprecatedMethods8317": "BSL178",
+    "DeprecatedTypeManagedForm": "BSL179",
+    "DisableSafeMode": "BSL180",
+    "DuplicatedInsertionIntoCollection": "BSL181",
+    "ExcessiveAutoTestCheck": "BSL182",
+    "ExecuteExternalCode": "BSL183",
+    "ExecuteExternalCodeInCommonModule": "BSL184",
+    "ExternalAppStarting": "BSL185",
+    "ExtraCommas": "BSL186",
+    "FieldsFromJoinsWithoutIsNull": "BSL187",
+    "FileSystemAccess": "BSL188",
+    "ForbiddenMetadataName": "BSL189",
+    "FormDataToValue": "BSL190",
+    "FullOuterJoinQuery": "BSL191",
+    "FunctionNameStartsWithGet": "BSL192",
+    "FunctionOutParameter": "BSL193",
+    "FunctionReturnsSamePrimitive": "BSL194",
+    "GetFormMethod": "BSL195",
+    "GlobalContextMethodCollision8312": "BSL196",
+    "IfElseDuplicatedCodeBlock": "BSL197",
+    "IfElseDuplicatedCondition": "BSL198",
+    "IfElseIfEndsWithElse": "BSL199",
+    "IncorrectLineBreak": "BSL200",
+    "IncorrectUseLikeInQuery": "BSL201",
+    "IncorrectUseOfStrTemplate": "BSL202",
+    "InternetAccess": "BSL203",
+    "InvalidCharacterInFile": "BSL204",
+    "IsInRoleMethod": "BSL205",
+    "JoinWithSubQuery": "BSL206",
+    "JoinWithVirtualTable": "BSL207",
+    "LatinAndCyrillicSymbolInWord": "BSL208",
+    "LogicalOrInJoinQuerySection": "BSL209",
+    "LogicalOrInTheWhereSectionOfQuery": "BSL210",
+    "MetadataObjectNameLength": "BSL211",
+    "MissedRequiredParameter": "BSL212",
+    "MissingCommonModuleMethod": "BSL213",
+    "MissingEventSubscriptionHandler": "BSL214",
+    "MissingParameterDescription": "BSL215",
+    "MissingSpace": "BSL216",
+    "MissingTempStorageDeletion": "BSL217",
+    "MissingTemporaryFileDeletion": "BSL218",
+    "MissingVariablesDescription": "BSL219",
+    "MultilineStringInQuery": "BSL220",
     "MultilingualStringHasAllDeclaredLanguages": "BSL221",
-    "MultilingualStringUsingWithTemplate":    "BSL222",
+    "MultilingualStringUsingWithTemplate": "BSL222",
     "NestedConstructorsInStructureDeclaration": "BSL223",
-    "NestedFunctionInParameters":             "BSL224",
-    "NumberOfValuesInStructureConstructor":   "BSL225",
-    "OSUsersMethod":                          "BSL226",
-    "OneStatementPerLine":                    "BSL227",
-    "OrderOfParams":                          "BSL228",
-    "OrdinaryAppSupport":                     "BSL229",
-    "PairingBrokenTransaction":               "BSL230",
-    "PrivilegedModuleMethodCall":             "BSL231",
-    "ProtectedModule":                        "BSL232",
-    "PublicMethodsDescription":               "BSL233",
-    "QueryNestedFieldsByDot":                 "BSL234",
-    "QueryParseError":                        "BSL235",
-    "QueryToMissingMetadata":                 "BSL236",
-    "RedundantAccessToObject":                "BSL237",
-    "RefOveruse":                             "BSL238",
-    "ReservedParameterNames":                 "BSL239",
-    "RewriteMethodParameter":                 "BSL240",
-    "SameMetadataObjectAndChildNames":        "BSL241",
-    "ScheduledJobHandler":                    "BSL242",
-    "SelfInsertion":                          "BSL243",
-    "ServerCallsInFormEvents":                "BSL244",
-    "ServerSideExportFormMethod":             "BSL245",
-    "SetPermissionsForNewObjects":            "BSL246",
-    "SetPrivilegedMode":                      "BSL247",
-    "SeveralCompilerDirectives":              "BSL248",
-    "StyleElementConstructors":               "BSL249",
-    "TempFilesDir":                           "BSL250",
-    "TernaryOperatorUsage":                   "BSL251",
-    "ThisObjectAssign":                       "BSL252",
-    "TimeoutsInExternalResources":            "BSL253",
+    "NestedFunctionInParameters": "BSL224",
+    "NumberOfValuesInStructureConstructor": "BSL225",
+    "OSUsersMethod": "BSL226",
+    "OneStatementPerLine": "BSL227",
+    "OrderOfParams": "BSL228",
+    "OrdinaryAppSupport": "BSL229",
+    "PairingBrokenTransaction": "BSL230",
+    "PrivilegedModuleMethodCall": "BSL231",
+    "ProtectedModule": "BSL232",
+    "PublicMethodsDescription": "BSL233",
+    "QueryNestedFieldsByDot": "BSL234",
+    "QueryParseError": "BSL235",
+    "QueryToMissingMetadata": "BSL236",
+    "RedundantAccessToObject": "BSL237",
+    "RefOveruse": "BSL238",
+    "ReservedParameterNames": "BSL239",
+    "RewriteMethodParameter": "BSL240",
+    "SameMetadataObjectAndChildNames": "BSL241",
+    "ScheduledJobHandler": "BSL242",
+    "SelfInsertion": "BSL243",
+    "ServerCallsInFormEvents": "BSL244",
+    "ServerSideExportFormMethod": "BSL245",
+    "SetPermissionsForNewObjects": "BSL246",
+    "SetPrivilegedMode": "BSL247",
+    "SeveralCompilerDirectives": "BSL248",
+    "StyleElementConstructors": "BSL249",
+    "TempFilesDir": "BSL250",
+    "TernaryOperatorUsage": "BSL251",
+    "ThisObjectAssign": "BSL252",
+    "TimeoutsInExternalResources": "BSL253",
     "TransferringParametersBetweenClientAndServer": "BSL254",
-    "TryNumber":                              "BSL255",
-    "Typo":                                   "BSL256",
-    "UnaryPlusInConcatenation":               "BSL257",
-    "UnionAll":                               "BSL258",
-    "UnknownPreprocessorSymbol":              "BSL259",
-    "UnsafeFindByCode":                       "BSL260",
-    "UnsafeSafeModeMethodCall":               "BSL261",
-    "UsageWriteLogEvent":                     "BSL262",
-    "UseLessForEach":                         "BSL263",
-    "UseSystemInformation":                   "BSL264",
-    "UselessTernaryOperator":                 "BSL265",
-    "UsingCancelParameter":                   "BSL266",
-    "UsingExternalCodeTools":                 "BSL267",
-    "UsingFindElementByString":               "BSL268",
-    "UsingLikeInQuery":                       "BSL269",
+    "TryNumber": "BSL255",
+    "Typo": "BSL256",
+    "UnaryPlusInConcatenation": "BSL257",
+    "UnionAll": "BSL258",
+    "UnknownPreprocessorSymbol": "BSL259",
+    "UnsafeFindByCode": "BSL260",
+    "UnsafeSafeModeMethodCall": "BSL261",
+    "UsageWriteLogEvent": "BSL262",
+    "UseLessForEach": "BSL263",
+    "UseSystemInformation": "BSL264",
+    "UselessTernaryOperator": "BSL265",
+    "UsingCancelParameter": "BSL266",
+    "UsingExternalCodeTools": "BSL267",
+    "UsingFindElementByString": "BSL268",
+    "UsingLikeInQuery": "BSL269",
     # "UsingModalWindows" → BSL022 (active impl); BSL270 stub removed to avoid dict key collision
-    "UsingObjectNotAvailableUnix":            "BSL271",
-    "UsingSynchronousCalls":                  "BSL272",
-    "VirtualTableCallWithoutParameters":      "BSL273",
-    "WrongDataPathForFormElements":           "BSL274",
-    "WrongHttpServiceHandler":               "BSL275",
-    "WrongUseFunctionProceedWithCall":        "BSL276",
-    "WrongUseOfRollbackTransactionMethod":    "BSL277",
-    "WrongWebServiceHandler":                 "BSL278",
-    "YoLetterUsage":                          "BSL279",
-    "UnknownMetadataObjectReference":         "BSL280",
+    "UsingObjectNotAvailableUnix": "BSL271",
+    "UsingSynchronousCalls": "BSL272",
+    "VirtualTableCallWithoutParameters": "BSL273",
+    "WrongDataPathForFormElements": "BSL274",
+    "WrongHttpServiceHandler": "BSL275",
+    "WrongUseFunctionProceedWithCall": "BSL276",
+    "WrongUseOfRollbackTransactionMethod": "BSL277",
+    "WrongWebServiceHandler": "BSL278",
+    "YoLetterUsage": "BSL279",
+    "UnknownMetadataObjectReference": "BSL280",
 }
 
 # ---------------------------------------------------------------------------
@@ -3521,12 +3521,8 @@ _RE_SERVICE_TAG = re.compile(
 )
 
 # BSL215 — MissingParameterDescription: comment section headers and param entry
-_RE_BSL215_PARAMS_SECTION = re.compile(
-    r"^\s*//\s*(?:Параметры|Parameters)\s*:?\s*$", re.IGNORECASE
-)
-_RE_BSL215_PARAM_ENTRY = re.compile(
-    r"^\s*//\s{1,4}(\w+)\s*[-–]", re.UNICODE
-)
+_RE_BSL215_PARAMS_SECTION = re.compile(r"^\s*//\s*(?:Параметры|Parameters)\s*:?\s*$", re.IGNORECASE)
+_RE_BSL215_PARAM_ENTRY = re.compile(r"^\s*//\s{1,4}(\w+)\s*[-–]", re.UNICODE)
 _RE_BSL215_COMMENT_LINE = re.compile(r"^\s*//")
 
 # BSLLS SpaceAtStartCommentDiagnostic — GOOD_COMMENT_PATTERN_STRICT (develop branch):
@@ -3632,7 +3628,7 @@ def path_is_likely_form_module_bsl(path: str) -> bool:
 _BSL062_SKIP_STANDARD_COMMAND_PARAMS = frozenset(
     {
         # ── Команды ────────────────────────────────────────────────────────────
-        "команда",          # Процедура ОткрытьФорму(Команда) — стандартный командный обработчик
+        "команда",  # Процедура ОткрытьФорму(Команда) — стандартный командный обработчик
         "command",
         "параметркоманды",
         "параметрывыполнениякоманды",
@@ -3690,7 +3686,7 @@ _BSL062_SKIP_STANDARD_COMMAND_PARAMS = frozenset(
         "ожиданиеввода",
         "waiting",
         # ── Параметры событий таблиц и списков ────────────────────────────────
-        "область",          # ПолеТабличногоДокумента...Выбор(Элемент, Область, СтандартнаяОбработка)
+        "область",  # ПолеТабличногоДокумента...Выбор(Элемент, Область, СтандартнаяОбработка)
         "area",
         "расшифровка",
         "decoding",
@@ -3839,9 +3835,7 @@ def _proc_assigned_param_names(lines: list[str], proc: _ProcInfo) -> set[str]:
     return assigned
 
 
-def _proc_by_name_and_line(
-    procs: list[_ProcInfo], name: str, line_1based: int
-) -> _ProcInfo | None:
+def _proc_by_name_and_line(procs: list[_ProcInfo], name: str, line_1based: int) -> _ProcInfo | None:
     line_idx = max(0, line_1based - 1)
     for proc in procs:
         if proc.name.casefold() == name.casefold() and proc.start_idx <= line_idx <= proc.end_idx:
@@ -3889,11 +3883,16 @@ def _caller_is_client_method(
         return False
     if caller_file == current_path:
         proc = _proc_by_name_and_line(current_procs, caller_name, caller_line)
-        return proc is not None and _procedure_compiler_execution_context(current_lines, proc) == "client"
+        return (
+            proc is not None
+            and _procedure_compiler_execution_context(current_lines, proc) == "client"
+        )
     caller_lines = _load_file_lines_cached(caller_file, file_lines_cache) or []
     caller_procs = _parse_procs_cached(caller_file, proc_cache, file_lines_cache)
     proc = _proc_by_name_and_line(caller_procs, caller_name, caller_line)
-    return proc is not None and _procedure_compiler_execution_context(caller_lines, proc) == "client"
+    return (
+        proc is not None and _procedure_compiler_execution_context(caller_lines, proc) == "client"
+    )
 
 
 def _proc_containing_line(procs: list[_ProcInfo], line_idx: int) -> _ProcInfo | None:
@@ -3959,7 +3958,7 @@ _RE_BSL044_RETURN_VALUE = re.compile(r"^\s*(?:Возврат|Return)\s+\S", re.I
 _RE_TRY_OPEN = re.compile(r"^\s*(?:Попытка|Try)\b", re.IGNORECASE)
 _RE_TRY_CLOSE = re.compile(r"^\s*(?:КонецПопытки|EndTry)\b", re.IGNORECASE)
 # BSL240 / write-only var assignment
-_RE_MODULE_ASSIGN = re.compile(r'^\s*(\w+)\s*=(?!=)', re.IGNORECASE)
+_RE_MODULE_ASSIGN = re.compile(r"^\s*(\w+)\s*=(?!=)", re.IGNORECASE)
 # BSL186 — trailing comma before ) or ;
 _RE_BSL186_TRAILING_COMMA = re.compile(r",\s*[)\];]")
 # BSL149 — AssignAliasFieldsInQuery
@@ -4116,9 +4115,7 @@ def _bsl149_append_missing_alias_diags(
 
 
 # BSL190 — FormDataToValue / ДанныеФормыВЗначение
-_RE_BSL190_FORM_DATA = re.compile(
-    r"\b(?:ДанныеФормыВЗначение|FormDataToValue)\s*\(", re.IGNORECASE
-)
+_RE_BSL190_FORM_DATA = re.compile(r"\b(?:ДанныеФормыВЗначение|FormDataToValue)\s*\(", re.IGNORECASE)
 # BSL197 — duplicate if/elseif branch detection
 _RE_BSL197_IF = re.compile(r"^\s*(?:Если|If)\b", re.IGNORECASE)
 _RE_BSL197_ELSEIF = re.compile(r"^\s*(?:ИначеЕсли|ElseIf)\b", re.IGNORECASE)
@@ -4132,9 +4129,9 @@ _RE_BSL198_ELSEIF_COND = re.compile(
     r"^\s*(?:ИначеЕсли|ElseIf)\s+(.+?)\s+(?:Тогда|Then)\b", re.IGNORECASE | re.UNICODE
 )
 # BSL-x module-level Перем / preprocessor lines
-_RE_PERЕМ_LINE = re.compile(r'^\s*(?:Перем|Var)\b', re.IGNORECASE)
-_RE_REGION_LINE = re.compile(r'^\s*#(?:Область|Region|КонецОбласти|EndRegion)\b', re.IGNORECASE)
-_RE_PREPROC_LINE = re.compile(r'^\s*#', re.IGNORECASE)
+_RE_PERЕМ_LINE = re.compile(r"^\s*(?:Перем|Var)\b", re.IGNORECASE)
+_RE_REGION_LINE = re.compile(r"^\s*#(?:Область|Region|КонецОбласти|EndRegion)\b", re.IGNORECASE)
+_RE_PREPROC_LINE = re.compile(r"^\s*#", re.IGNORECASE)
 
 # BSL007 — «read» of a simple identifier: LHS of ``Имя =`` does not count as a use.
 _BSL007_SIMPLE_ASSIGN_AT_START = re.compile(r"^\s*(\w+)\s*=(?!=)", re.IGNORECASE)
@@ -4173,9 +4170,7 @@ def _bsl007_rhs_mentions_name(name: str, raw_line: str) -> bool:
     if not m or m.group(1).casefold() != name_cf:
         return _bsl007_name_read_in_code_line(name, raw_line)
     tail = code_clean[m.end() :]
-    return bool(
-        re.search(rf"\b{re.escape(name)}\b", tail, re.IGNORECASE)
-    )
+    return bool(re.search(rf"\b{re.escape(name)}\b", tail, re.IGNORECASE))
 
 
 def _bsl007_name_read_in_code_line(name: str, raw_line: str) -> bool:
@@ -4216,11 +4211,10 @@ def _bsl007_name_used_in_file(
 @functools.lru_cache(maxsize=512)
 def _compile_call_pattern(proc_name: str) -> re.Pattern[str]:
     """BSL129: cached per-name regex to avoid re-compile on every proc in every file."""
-    return re.compile(r'(?<![.\w])' + re.escape(proc_name) + r'\s*\(', re.IGNORECASE)
+    return re.compile(r"(?<![.\w])" + re.escape(proc_name) + r"\s*\(", re.IGNORECASE)
 
-def _arithmetic_missing_space_cols_in_line(
-    line: str, in_str_at_start: bool = False
-) -> list[int]:
+
+def _arithmetic_missing_space_cols_in_line(line: str, in_str_at_start: bool = False) -> list[int]:
     """
     Returns 0-based columns where an arithmetic/comparison binary operator
     lacks a space on at least one side (BSLLS MissingSpace rule for +/-/*/%).
@@ -4228,9 +4222,11 @@ def _arithmetic_missing_space_cols_in_line(
     Detects unary +/- and skips them.
     """
     # Chars that indicate the previous token is a valid LHS of binary operator.
-    _BINARY_LHS = frozenset("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                            "абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ"
-                            "0123456789_)]\"|'")
+    _BINARY_LHS = frozenset(
+        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ"
+        "0123456789_)]\"|'"
+    )
     # Chars after which +/- is unary (not binary).
     _UNARY_AFTER = frozenset("(=[,+-*/%<>!&|~")
 
@@ -4240,14 +4236,14 @@ def _arithmetic_missing_space_cols_in_line(
     for ci, ch in enumerate(line):
         if ch == '"':
             in_s = not in_s
-        elif ch == '/' and not in_s and ci + 1 < len(line) and line[ci + 1] == '/':
+        elif ch == "/" and not in_s and ci + 1 < len(line) and line[ci + 1] == "/":
             stripped = line[:ci]
             break
 
     cols: list[int] = []
     in_s = in_str_at_start
     in_sq = False  # inside single-quoted date/string literals '...'
-    prev_non_space = ''
+    prev_non_space = ""
     i = 0
     n = len(stripped)
     while i < n:
@@ -4265,24 +4261,24 @@ def _arithmetic_missing_space_cols_in_line(
         if in_s or in_sq:
             i += 1
             continue
-        if ch in ' \t':
+        if ch in " \t":
             i += 1
             continue
 
-        if ch in '+-*/%':
+        if ch in "+-*/%":
             # Check for ** (not in BSL but guard anyway).
             # Determine if binary operator.
-            if ch in '+-' and prev_non_space not in _BINARY_LHS:
+            if ch in "+-" and prev_non_space not in _BINARY_LHS:
                 # Unary.
                 prev_non_space = ch
                 i += 1
                 continue
             # Space before: prev real char should have been a space.
-            prev_ch = stripped[i - 1] if i > 0 else ''
-            space_before = prev_ch in ' \t'
+            prev_ch = stripped[i - 1] if i > 0 else ""
+            space_before = prev_ch in " \t"
             # Space after.
-            next_ch = stripped[i + 1] if i + 1 < n else ''
-            space_after = next_ch in ' \t'
+            next_ch = stripped[i + 1] if i + 1 < n else ""
+            space_after = next_ch in " \t"
             if not space_before or not space_after:
                 cols.append(i)
             prev_non_space = ch
@@ -4319,18 +4315,50 @@ def _module_export_var_has_preceding_description(lines: list[str], var_line_idx:
 _BSL208_TECH_ACRONYMS: frozenset[str] = frozenset(
     {
         # Network protocols & data formats
-        "HTTP", "HTTPS", "FTP", "SFTP", "FTPS",
-        "SMTP", "POP", "IMAP",
-        "TCP", "UDP", "IP", "TLS", "SSL",
-        "URL", "URI", "UUID", "GUID",
-        "REST", "SOAP", "WSDL", "API",
+        "HTTP",
+        "HTTPS",
+        "FTP",
+        "SFTP",
+        "FTPS",
+        "SMTP",
+        "POP",
+        "IMAP",
+        "TCP",
+        "UDP",
+        "IP",
+        "TLS",
+        "SSL",
+        "URL",
+        "URI",
+        "UUID",
+        "GUID",
+        "REST",
+        "SOAP",
+        "WSDL",
+        "API",
         # Data formats
-        "JSON", "XML", "HTML", "XHTML", "XDTO", "XSL", "XSLT",
-        "CSV", "ZIP", "PDF", "XLS", "XLSX", "DOCX", "ODT",
+        "JSON",
+        "XML",
+        "HTML",
+        "XHTML",
+        "XDTO",
+        "XSL",
+        "XSLT",
+        "CSV",
+        "ZIP",
+        "PDF",
+        "XLS",
+        "XLSX",
+        "DOCX",
+        "ODT",
         "SQL",
         # Platform integration
-        "COM", "OLE", "DLL", "EXE",
-        "ADO", "ODP",
+        "COM",
+        "OLE",
+        "DLL",
+        "EXE",
+        "ADO",
+        "ODP",
         # Misc abbreviations accepted in 1C names
         "ODATA",
     }
@@ -4346,8 +4374,8 @@ _RE_BSL208_TRAILING_LANG = re.compile(
     # BSLLS allowTrailingPartsInAnotherLanguage=true: skip only ALL-CAPS abbreviation
     # suffixes/prefixes (e.g. ЮрФизЛицоID, МинДлинаИННпоXSD, HTMLОтчёт).
     # Mixed-script words like ИмяName (both parts are full words) are still flagged.
-    r"^(?:[A-Z]{2,}[А-ЯЁ][А-Яа-яЁё]+[А-Яа-я0-9Ёё_]*"   # ALL-CAPS prefix + Cyrillic
-    r"|[А-ЯЁ][А-Яа-яЁё]+[А-Яа-я0-9Ёё_]*[A-Z]{2,})$",    # Cyrillic + ALL-CAPS suffix
+    r"^(?:[A-Z]{2,}[А-ЯЁ][А-Яа-яЁё]+[А-Яа-я0-9Ёё_]*"  # ALL-CAPS prefix + Cyrillic
+    r"|[А-ЯЁ][А-Яа-яЁё]+[А-Яа-я0-9Ёё_]*[A-Z]{2,})$",  # Cyrillic + ALL-CAPS suffix
     re.UNICODE,
 )
 
@@ -4373,9 +4401,9 @@ def _bsl208_word_is_standard_tech_name(word: str) -> bool:
 # Only used as a heuristic; BSL allows some statements without semicolons.
 _RE_STMT_NO_SEMI = re.compile(
     r"^\s*(?:"
-    r"(?:\w+(?:\.\w+)*)\s*\([^)]*\)"     # method call
-    r"|(?:\w+(?:\.\w+)*)\s*="            # assignment
-    r"|(?:Возврат|Return)\s+\S"          # return with value
+    r"(?:\w+(?:\.\w+)*)\s*\([^)]*\)"  # method call
+    r"|(?:\w+(?:\.\w+)*)\s*="  # assignment
+    r"|(?:Возврат|Return)\s+\S"  # return with value
     r")\s*$",
     re.IGNORECASE,
 )
@@ -4399,10 +4427,10 @@ _RE_GOTO = re.compile(
 # Magic number: numeric literal not 0/1/-1, not in a comment or string
 # A simplified heuristic: standalone number after =, (, or operator
 _RE_MAGIC_NUMBER = re.compile(
-    r"(?<![\"'\w.])"        # not preceded by string/word/dot
-    r"-?(?:[2-9]\d*|\d{2,})" # 2+ digit integer OR single digit >= 2
-    r"(?:\.\d+)?"           # optional decimal part
-    r"(?![\w.\"])",          # not followed by word/dot/quote
+    r"(?<![\"'\w.])"  # not preceded by string/word/dot
+    r"-?(?:[2-9]\d*|\d{2,})"  # 2+ digit integer OR single digit >= 2
+    r"(?:\.\d+)?"  # optional decimal part
+    r"(?![\w.\"])",  # not followed by word/dot/quote
 )
 
 # Procedure/function header line that erroneously ends with ;
@@ -4467,33 +4495,105 @@ _RE_NOTIFY_DESCRIPTION = re.compile(
 # Platform built-in names (lowercase) — used for BSL037 override detection
 _PLATFORM_BUILTINS: frozenset[str] = frozenset(
     {
-        "сообщить", "предупреждение", "вопрос", "описаниеошибки",
-        "информацияобошибке", "новоеисключение", "типзнч", "тип",
-        "значениезаполнено", "стрдлина", "лев", "прав", "сред",
-        "стрнайти", "стрзаменить", "нрег", "врег", "сокрл", "сокрп", "сокрлп",
-        "пустаястрока", "строка", "число", "булево", "дата",
-        "окр", "цел", "abs", "макс", "мин",
-        "текущаядата", "началодня", "конецдня", "началомесяца", "конецмесяца",
-        "добавитьмесяц", "год", "месяц", "день",
-        "стрразделить", "стрсоединить", "стрсодержит",
-        "стрначинаетсяс", "стрзаканчиваетсяна",
-        "символ", "кодсимвола", "формат", "стршаблон",
+        "сообщить",
+        "предупреждение",
+        "вопрос",
+        "описаниеошибки",
+        "информацияобошибке",
+        "новоеисключение",
+        "типзнч",
+        "тип",
+        "значениезаполнено",
+        "стрдлина",
+        "лев",
+        "прав",
+        "сред",
+        "стрнайти",
+        "стрзаменить",
+        "нрег",
+        "врег",
+        "сокрл",
+        "сокрп",
+        "сокрлп",
+        "пустаястрока",
+        "строка",
+        "число",
+        "булево",
+        "дата",
+        "окр",
+        "цел",
+        "abs",
+        "макс",
+        "мин",
+        "текущаядата",
+        "началодня",
+        "конецдня",
+        "началомесяца",
+        "конецмесяца",
+        "добавитьмесяц",
+        "год",
+        "месяц",
+        "день",
+        "стрразделить",
+        "стрсоединить",
+        "стрсодержит",
+        "стрначинаетсяс",
+        "стрзаканчиваетсяна",
+        "символ",
+        "кодсимвола",
+        "формат",
+        "стршаблон",
         # English aliases
-        "message", "question", "errordescription", "errorinfo",
-        "typeof", "type", "valueisfilled",
-        "strlen", "left", "right", "mid", "strfind", "strreplace",
-        "lower", "upper", "triml", "trimr", "trimall", "isblankstring",
-        "string", "number", "boolean", "round", "int", "max", "min",
-        "currentdate", "begofday", "endofday", "begofmonth", "endofmonth",
-        "addmonth", "year", "month", "day",
-        "strsplit", "strconcat", "strcontains", "strstartswith", "strendswith",
-        "char", "charcode", "format", "strtemplate",
+        "message",
+        "question",
+        "errordescription",
+        "errorinfo",
+        "typeof",
+        "type",
+        "valueisfilled",
+        "strlen",
+        "left",
+        "right",
+        "mid",
+        "strfind",
+        "strreplace",
+        "lower",
+        "upper",
+        "triml",
+        "trimr",
+        "trimall",
+        "isblankstring",
+        "string",
+        "number",
+        "boolean",
+        "round",
+        "int",
+        "max",
+        "min",
+        "currentdate",
+        "begofday",
+        "endofday",
+        "begofmonth",
+        "endofmonth",
+        "addmonth",
+        "year",
+        "month",
+        "day",
+        "strsplit",
+        "strconcat",
+        "strcontains",
+        "strstartswith",
+        "strendswith",
+        "char",
+        "charcode",
+        "format",
+        "strtemplate",
     }
 )
 
 # Выполнить / Execute dynamic code
 _RE_EXECUTE_DYNAMIC = re.compile(
-    r'^\s*(?:Выполнить|Execute)\s*\(',
+    r"^\s*(?:Выполнить|Execute)\s*\(",
     re.IGNORECASE,
 )
 
@@ -4502,7 +4602,7 @@ _RE_EXECUTE_DYNAMIC = re.compile(
 
 # Literal True/False in If condition
 _RE_IF_LITERAL = re.compile(
-    r'^\s*(?:Если|If)\s+(?:Истина|True|Ложь|False)\b',
+    r"^\s*(?:Если|If)\s+(?:Истина|True|Ложь|False)\b",
     re.IGNORECASE,
 )
 
@@ -4515,17 +4615,17 @@ _RE_BOOL_LITERAL_CMP = re.compile(
 
 # Double negation НЕ НЕ / Not Not
 _RE_DOUBLE_NEGATION = re.compile(
-    r'\b(?:НЕ|Not)\s+(?:НЕ|Not)\b',
+    r"\b(?:НЕ|Not)\s+(?:НЕ|Not)\b",
     re.IGNORECASE,
 )
 
 # Прервать/Break as last statement before КонецЦикла
-_RE_BREAK = re.compile(r'^\s*(?:Прервать|Break)\s*;?\s*$', re.IGNORECASE)
+_RE_BREAK = re.compile(r"^\s*(?:Прервать|Break)\s*;?\s*$", re.IGNORECASE)
 
 # Deprecated modal input dialogs
 _RE_INPUT_DIALOG = re.compile(
-    r'\b(?:ВвестиЗначение|ВвестиЧисло|ВвестиДату|ВвестиСтроку'
-    r'|InputValue|InputNumber|InputDate|InputString)\s*\(',
+    r"\b(?:ВвестиЗначение|ВвестиЧисло|ВвестиДату|ВвестиСтроку"
+    r"|InputValue|InputNumber|InputDate|InputString)\s*\(",
     re.IGNORECASE,
 )
 
@@ -4535,60 +4635,60 @@ _RE_QUERY_TEXT_START = re.compile(
     re.IGNORECASE,
 )
 _RE_QUERY_WHERE = re.compile(
-    r'\b(?:ГДЕ|WHERE)\b',
+    r"\b(?:ГДЕ|WHERE)\b",
     re.IGNORECASE,
 )
 _RE_QUERY_END_QUOTE = re.compile(r'[^|"]*"')
 
 # Unconditional exit from method body (for unreachable code detection)
 _RE_UNCONDITIONAL_EXIT = re.compile(
-    r'^\s*(?:Возврат|Return|ВызватьИсключение|Raise)\b',
+    r"^\s*(?:Возврат|Return|ВызватьИсключение|Raise)\b",
     re.IGNORECASE,
 )
 
 # String continuation line in BSL (| at the start for multiline literals)
-_RE_STR_CONTINUATION = re.compile(r'^\s*\|', re.MULTILINE)
+_RE_STR_CONTINUATION = re.compile(r"^\s*\|", re.MULTILINE)
 
 # ТекущаяДата / CurrentDate (non-UTC)
 _RE_CURRENT_DATE = re.compile(
-    r'\b(?:ТекущаяДата|CurrentDate)\s*\(',
+    r"\b(?:ТекущаяДата|CurrentDate)\s*\(",
     re.IGNORECASE,
 )
 
 # НачатьТранзакцию / BeginTransaction
 _RE_BEGIN_TRANSACTION = re.compile(
-    r'\b(?:НачатьТранзакцию|BeginTransaction)\s*\(',
+    r"\b(?:НачатьТранзакцию|BeginTransaction)\s*\(",
     re.IGNORECASE,
 )
 
 # ЗафиксироватьТранзакцию / CommitTransaction or РоллбекТранзакции / RollbackTransaction
 _RE_COMMIT_TRANSACTION = re.compile(
-    r'\b(?:ЗафиксироватьТранзакцию|CommitTransaction'
-    r'|ОтменитьТранзакцию|RollbackTransaction)\s*\(',
+    r"\b(?:ЗафиксироватьТранзакцию|CommitTransaction"
+    r"|ОтменитьТранзакцию|RollbackTransaction)\s*\(",
     re.IGNORECASE,
 )
 
 # ВызватьИсключение / Raise (not inside try)
 _RE_RAISE = re.compile(
-    r'^\s*(?:ВызватьИсключение|Raise)\b',
+    r"^\s*(?:ВызватьИсключение|Raise)\b",
     re.IGNORECASE | re.MULTILINE,
 )
 
 # If/ElseIf/Else/EndIf detection (for MissingElseBranch)
-_RE_IF_OPEN = re.compile(r'^\s*Если\b|^\s*If\b', re.IGNORECASE)
-_RE_ELSEIF = re.compile(r'^\s*(?:ИначеЕсли|ElsIf)\b', re.IGNORECASE)
-_RE_ELSE = re.compile(r'^\s*(?:Иначе|Else)\s*$|^\s*(?:Иначе|Else)\s*;?\s*$', re.IGNORECASE)
-_RE_ENDIF = re.compile(r'^\s*(?:КонецЕсли|EndIf)\b', re.IGNORECASE)
+_RE_IF_OPEN = re.compile(r"^\s*Если\b|^\s*If\b", re.IGNORECASE)
+_RE_ELSEIF = re.compile(r"^\s*(?:ИначеЕсли|ElsIf)\b", re.IGNORECASE)
+_RE_ELSE = re.compile(r"^\s*(?:Иначе|Else)\s*$|^\s*(?:Иначе|Else)\s*;?\s*$", re.IGNORECASE)
+_RE_ENDIF = re.compile(r"^\s*(?:КонецЕсли|EndIf)\b", re.IGNORECASE)
 
 # Procedure body header (BSL062/BSL064)
 # Return with a value (BSL064 — Procedure returns value)
 _RE_RETURN_VALUE = re.compile(
-    r'^\s*(?:Возврат|Return)\s+\S',
+    r"^\s*(?:Возврат|Return)\s+\S",
     re.IGNORECASE | re.MULTILINE,
 )
 
 # Comment line (BSL065 — export method comment check)
-_RE_COMMENT_LINE = re.compile(r'^\s*//')
+_RE_COMMENT_LINE = re.compile(r"^\s*//")
 # Form / module compiler directives before procedure (&НаКлиенте, &НаСервере, …)
 _RE_FORM_COMPILER_DIRECTIVE_LINE = re.compile(r"^\s*&\S+")
 
@@ -4596,133 +4696,137 @@ _RE_FORM_COMPILER_DIRECTIVE_LINE = re.compile(r"^\s*&\S+")
 # Врег/НРег/СокрЛ/СокрП/СокрЛП/Символ/КодСимвола — current platform functions, NOT deprecated.
 # Предупреждение/Вопрос/Сообщить — covered by UsingModalWindows / DeprecatedMessage rules.
 # ВвестиЗначение/ВвестиЧисло/ВвестиДату/ВвестиСтроку — covered by BSL057 DeprecatedInputDialog.
-_DEPRECATED_METHODS = frozenset({
-    "найти",   # Найти() for strings → СтрНайти()
-    "find",    # English alias
-})
+_DEPRECATED_METHODS = frozenset(
+    {
+        "найти",  # Найти() for strings → СтрНайти()
+        "find",  # English alias
+    }
+)
 # Negative lookbehind for '.' excludes object method calls like Массив.Найти()
 _RE_DEPRECATED_METHOD = re.compile(
-    r'(?<!\.)(?<!\w)\b(?:' + '|'.join(re.escape(m) for m in sorted(_DEPRECATED_METHODS)) + r')\s*\(',
+    r"(?<!\.)(?<!\w)\b(?:"
+    + "|".join(re.escape(m) for m in sorted(_DEPRECATED_METHODS))
+    + r")\s*\(",
     re.IGNORECASE,
 )
 
 # Пока Истина Цикл / While True Do (BSL069)
 _RE_WHILE_TRUE = re.compile(
-    r'^\s*(?:Пока|While)\s+(?:Истина|True)\s+(?:Цикл|Do)\b',
+    r"^\s*(?:Пока|While)\s+(?:Истина|True)\s+(?:Цикл|Do)\b",
     re.IGNORECASE,
 )
 
 # Перем declaration (BSL067)
-_RE_VAR_DECL = re.compile(r'^\s*(?:Перем|Var)\b', re.IGNORECASE)
+_RE_VAR_DECL = re.compile(r"^\s*(?:Перем|Var)\b", re.IGNORECASE)
 # Executable code (not comment, not blank, not Перем, not proc header)
 _RE_EXECUTABLE_LINE = re.compile(
-    r'^\s*(?!//|$|(?:Перем|Var)\b|(?:Процедура|Функция|Procedure|Function)\b|(?:КонецПроцедуры|КонецФункции|EndProcedure|EndFunction)\b)',
+    r"^\s*(?!//|$|(?:Перем|Var)\b|(?:Процедура|Функция|Procedure|Function)\b|(?:КонецПроцедуры|КонецФункции|EndProcedure|EndFunction)\b)",
     re.IGNORECASE,
 )
 
 # Multiple statements on one line (BSL095): two assignments/calls separated by ;
 # Simplified: a non-empty statement before ; and another after on the same line
 _RE_MULTI_STMT = re.compile(
-    r';\s*\w',  # ; followed by word char on same line
+    r";\s*\w",  # ; followed by word char on same line
 )
 
 # ТекущаяДата() (BSL097)
 _RE_CURRENT_DATE = re.compile(
-    r'\b(?:ТекущаяДата|CurrentDate)\s*\(',
+    r"\b(?:ТекущаяДата|CurrentDate)\s*\(",
     re.IGNORECASE,
 )
 
 # NULL comparison (BSL093)
 _RE_NULL_COMPARISON = re.compile(
-    r'(?:=|<>)\s*(?:NULL|Null)\b|(?:NULL|Null)\s*(?:=|<>)',
+    r"(?:=|<>)\s*(?:NULL|Null)\b|(?:NULL|Null)\s*(?:=|<>)",
     re.IGNORECASE,
 )
 
 # Compound no-op assignment (BSL094): += 0 or *= 1 or -= 0 or /= 1
 _RE_NOOP_COMPOUND = re.compile(
-    r'\w+\s*(?:\+=\s*0|-=\s*0|\*=\s*1|/=\s*1)\b',
+    r"\w+\s*(?:\+=\s*0|-=\s*0|\*=\s*1|/=\s*1)\b",
 )
 
 # Transaction begin in loop (BSL089)
 _RE_BEGIN_TRANSACTION = re.compile(
-    r'\b(?:НачатьТранзакцию|BeginTransaction)\s*\(',
+    r"\b(?:НачатьТранзакцию|BeginTransaction)\s*\(",
     re.IGNORECASE,
 )
 
 # Hardcoded connection string patterns (BSL090)
 _RE_CONNECTION_STRING = re.compile(
-    r'(?:Server\s*=|DSN\s*=|Driver\s*=|Database\s*=|Uid\s*=|Pwd\s*=)',
+    r"(?:Server\s*=|DSN\s*=|Driver\s*=|Database\s*=|Uid\s*=|Pwd\s*=)",
     re.IGNORECASE,
 )
 
 # Else after Return detection (BSL091)
-_RE_RETURN_STMT = re.compile(r'^\s*(?:Возврат|Return)\b', re.IGNORECASE)
+_RE_RETURN_STMT = re.compile(r"^\s*(?:Возврат|Return)\b", re.IGNORECASE)
 
 # HTTP request in loop (BSL086) — ПолучитьДанные, ВыполнитьЗапросHTTP, HTTPЗапрос etc.
 _RE_HTTP_REQUEST = re.compile(
-    r'(?:HTTPСоединение|HTTPConnection|HTTPЗапрос|HTTPRequest'
-    r'|ПолучитьДанные|GetData|ОтправитьДанные|PutData'
-    r'|ПолучитьСтроку|GetString|ОтправитьСтроку|PutString)\b',
+    r"(?:HTTPСоединение|HTTPConnection|HTTPЗапрос|HTTPRequest"
+    r"|ПолучитьДанные|GetData|ОтправитьДанные|PutData"
+    r"|ПолучитьСтроку|GetString|ОтправитьСтроку|PutString)\b",
     re.IGNORECASE,
 )
 
 # Новый/New object creation (BSL087)
-_RE_NEW_OBJECT = re.compile(r'\bНовый\b|\bNew\b', re.IGNORECASE)
+_RE_NEW_OBJECT = re.compile(r"\bНовый\b|\bNew\b", re.IGNORECASE)
 
 # // Parameters: comment section (BSL088)
-_RE_PARAM_COMMENT = re.compile(r'//\s*(?:Параметры|Parameters)\s*:', re.IGNORECASE)
+_RE_PARAM_COMMENT = re.compile(r"//\s*(?:Параметры|Parameters)\s*:", re.IGNORECASE)
 
 # Literal boolean in Если condition (BSL085)
 _RE_LITERAL_BOOL_CONDITION = re.compile(
-    r'^\s*(?:Если|If|ИначеЕсли|ElsIf)\s+(?:Истина|True|Ложь|False)\s+(?:Тогда|Then)\b',
+    r"^\s*(?:Если|If|ИначеЕсли|ElsIf)\s+(?:Истина|True|Ложь|False)\s+(?:Тогда|Then)\b",
     re.IGNORECASE,
 )
 
 # Exception block detection (BSL080)
-_RE_EXCEPT_BLOCK = re.compile(r'^\s*(?:Исключение|Except)\b', re.IGNORECASE)
-_RE_END_TRY = re.compile(r'^\s*(?:КонецПопытки|EndTry)\b', re.IGNORECASE)
-_RE_TRY_OPEN = re.compile(r'^\s*(?:Попытка|Try)\b', re.IGNORECASE)
-_RE_ERROR_INFO = re.compile(r'(?:ИнформацияОбОшибке|ErrorInfo)\s*\(', re.IGNORECASE)
+_RE_EXCEPT_BLOCK = re.compile(r"^\s*(?:Исключение|Except)\b", re.IGNORECASE)
+_RE_END_TRY = re.compile(r"^\s*(?:КонецПопытки|EndTry)\b", re.IGNORECASE)
+_RE_TRY_OPEN = re.compile(r"^\s*(?:Попытка|Try)\b", re.IGNORECASE)
+_RE_ERROR_INFO = re.compile(r"(?:ИнформацияОбОшибке|ErrorInfo)\s*\(", re.IGNORECASE)
 
 # Method chain length (BSL081): count dots in a non-comment line
-_RE_DOT_CHAIN = re.compile(r'(?:\.\w+\s*\()+')
+_RE_DOT_CHAIN = re.compile(r"(?:\.\w+\s*\()+")
 
 # SELECT * in query text (BSL077)
 _RE_SELECT_STAR = re.compile(
-    r'(?:ВЫБРАТЬ|SELECT)\s+\*',
+    r"(?:ВЫБРАТЬ|SELECT)\s+\*",
     re.IGNORECASE,
 )
 
 # Raise without message (BSL078): ВызватьИсключение; or Raise; alone on line
 _RE_RAISE_BARE = re.compile(
-    r'^\s*(?:ВызватьИсключение|Raise)\s*;',
+    r"^\s*(?:ВызватьИсключение|Raise)\s*;",
     re.IGNORECASE,
 )
 
 # Goto statement (BSL079)
 _RE_GOTO = re.compile(
-    r'^\s*(?:Перейти|Goto)\b',
+    r"^\s*(?:Перейти|Goto)\b",
     re.IGNORECASE,
 )
 
 # TODO/FIXME/HACK comment (BSL074)
 _RE_TODO_COMMENT = re.compile(
-    r'//\s*(?:TODO|FIXME|HACK|XXX)\b',
+    r"//\s*(?:TODO|FIXME|HACK|XXX)\b",
     re.IGNORECASE,
 )
 
 # Negative condition: line starts an Если/ElsIf and condition begins with НЕ/Not (BSL076)
 _RE_NEGATIVE_CONDITION = re.compile(
-    r'^\s*(?:Если|If|ИначеЕсли|ElsIf)\s+(?:НЕ|Not)\b',
+    r"^\s*(?:Если|If|ИначеЕсли|ElsIf)\s+(?:НЕ|Not)\b",
     re.IGNORECASE,
 )
 
 # Выполнить() / Execute() — dynamic code execution (BSL098)
-_RE_EXECUTE = re.compile(r'(?<!\.)(?:Выполнить|Execute)\s*\(', re.IGNORECASE)
+_RE_EXECUTE = re.compile(r"(?<!\.)(?:Выполнить|Execute)\s*\(", re.IGNORECASE)
 
 # Exported Перем declaration (BSL108): Перем X Экспорт
 _RE_EXPORTED_VAR = re.compile(
-    r'^\s*(?:Перем|Var)\b[^;]*\bЭкспорт\b',
+    r"^\s*(?:Перем|Var)\b[^;]*\bЭкспорт\b",
     re.IGNORECASE,
 )
 
@@ -4735,7 +4839,7 @@ _RE_STR_CONCAT_SELF = re.compile(
 # Mixed Cyrillic+Latin identifier (BSL111)
 # Matches a sequence where Cyrillic and Latin characters are interleaved
 _RE_MIXED_IDENT = re.compile(
-    r'(?:[А-ЯЁа-яё]+[A-Za-z]|[A-Za-z]+[А-ЯЁа-яё])\w*',
+    r"(?:[А-ЯЁа-яё]+[A-Za-z]|[A-Za-z]+[А-ЯЁа-яё])\w*",
 )
 
 # BSL113 removed: in BSL '=' is ALWAYS a comparison operator, never assignment.
@@ -4744,15 +4848,15 @@ _RE_MIXED_IDENT = re.compile(
 
 # Double negation: НЕ НЕ or Not Not (BSL115)
 _RE_DOUBLE_NEGATION = re.compile(
-    r'\b(?:НЕ|Not)\s+(?:НЕ|Not)\b',
+    r"\b(?:НЕ|Not)\s+(?:НЕ|Not)\b",
     re.IGNORECASE,
 )
 
 # Прервать / Break (BSL125)
-_RE_BREAK = re.compile(r'^\s*(?:Прервать|Break)\s*;', re.IGNORECASE)
+_RE_BREAK = re.compile(r"^\s*(?:Прервать|Break)\s*;", re.IGNORECASE)
 
 # Продолжить / Continue (BSL126)
-_RE_CONTINUE = re.compile(r'^\s*(?:Продолжить|Continue)\s*;', re.IGNORECASE)
+_RE_CONTINUE = re.compile(r"^\s*(?:Продолжить|Continue)\s*;", re.IGNORECASE)
 
 # Comment that looks like commented-out code (BSL123): // contains = ; or ()
 _RE_COMMENTED_CODE = re.compile(
@@ -4776,22 +4880,22 @@ _RE_HARDCODED_PATH = re.compile(
 
 # Loop opening / closing for QueryInLoop and TooDeepNesting tracking
 _RE_LOOP_FOR = re.compile(
-    r'^\s*(?:Для|For|ДляКаждого|ForEach)\b',
+    r"^\s*(?:Для|For|ДляКаждого|ForEach)\b",
     re.IGNORECASE,
 )
-_RE_LOOP_ENDDO = re.compile(r'^\s*(?:КонецЦикла|EndDo)\b', re.IGNORECASE)
+_RE_LOOP_ENDDO = re.compile(r"^\s*(?:КонецЦикла|EndDo)\b", re.IGNORECASE)
 
 # SQL query start (BSL106)
-_RE_SQL_SELECT = re.compile(r'(?:ВЫБРАТЬ|SELECT)\b', re.IGNORECASE)
+_RE_SQL_SELECT = re.compile(r"(?:ВЫБРАТЬ|SELECT)\b", re.IGNORECASE)
 
 # Вычислить() / Eval() — dynamic expression evaluation (BSL103)
-_RE_EVAL = re.compile(r'\b(?:Вычислить|Eval)\s*\(', re.IGNORECASE)
+_RE_EVAL = re.compile(r"\b(?:Вычислить|Eval)\s*\(", re.IGNORECASE)
 
 # Приостановить() / Sleep() (BSL105)
-_RE_SLEEP = re.compile(r'\b(?:Приостановить|Sleep)\s*\(', re.IGNORECASE)
+_RE_SLEEP = re.compile(r"\b(?:Приостановить|Sleep)\s*\(", re.IGNORECASE)
 
 # Тогда — Then keyword for EmptyThenBranch (BSL107)
-_RE_THEN = re.compile(r'\b(?:Тогда|Then)\s*$', re.IGNORECASE)
+_RE_THEN = re.compile(r"\b(?:Тогда|Then)\s*$", re.IGNORECASE)
 
 
 def _regex_line_has_empty_then_branch(lines: list[str], then_line_idx: int) -> bool:
@@ -4819,64 +4923,64 @@ def _regex_line_has_empty_then_branch(lines: list[str], then_line_idx: int) -> b
 
 
 # BSL130 — LongCommentLine: comment line longer than 120 chars
-_RE_COMMENT_ONLY_LINE = re.compile(r'^\s*//')
+_RE_COMMENT_ONLY_LINE = re.compile(r"^\s*//")
 
 # BSL131 — EmptyRegion: #Область / #КонецОбласти markers (line-level, no name group)
-_RE_REGION_OPEN_LINE = re.compile(r'^\s*#(?:Область|Region)\b', re.IGNORECASE)
-_RE_REGION_CLOSE_LINE = re.compile(r'^\s*#(?:КонецОбласти|EndRegion)\b', re.IGNORECASE)
+_RE_REGION_OPEN_LINE = re.compile(r"^\s*#(?:Область|Region)\b", re.IGNORECASE)
+_RE_REGION_CLOSE_LINE = re.compile(r"^\s*#(?:КонецОбласти|EndRegion)\b", re.IGNORECASE)
 
 # BSL132 — RepeatedStringLiteral: collect all double-quoted strings ≥ 3 chars
 _RE_STRING_LITERAL = re.compile(r'"([^"]{3,})"')
 
 # BSL133 — RequiredParamAfterOptional: detect optional params (have =)
-_RE_PARAM_HAS_DEFAULT = re.compile(r'=')
+_RE_PARAM_HAS_DEFAULT = re.compile(r"=")
 
 # BSL134 — CyclomaticComplexity: decision-point keywords
 _RE_MCCABE_BRANCH_BSL134 = re.compile(
-    r'^\s*(?:Если|If|ИначеЕсли|ElsIf|Пока|While|Для|For|ДляКаждого|ForEach'
-    r'|Попытка|Try|Исключение|Except)\b',
+    r"^\s*(?:Если|If|ИначеЕсли|ElsIf|Пока|While|Для|For|ДляКаждого|ForEach"
+    r"|Попытка|Try|Исключение|Except)\b",
     re.IGNORECASE,
 )
 
 # BSL135 — NestedFunctionCalls: word( ... word(
-_RE_NESTED_CALL = re.compile(r'\w+\s*\([^)]*\w+\s*\(')
+_RE_NESTED_CALL = re.compile(r"\w+\s*\([^)]*\w+\s*\(")
 
 # BSL136 — MissingSpaceBeforeComment: non-whitespace immediately before //
-_RE_NO_SPACE_BEFORE_COMMENT = re.compile(r'\S//')
+_RE_NO_SPACE_BEFORE_COMMENT = re.compile(r"\S//")
 
 # BSL137 — UseOfFindByDescription: slow search methods
 _RE_FIND_BY_DESCRIPTION = re.compile(
-    r'\b(?:НайтиПоНаименованию|FindByDescription'
-    r'|НайтиПоКоду|FindByCode'
-    r'|НайтиПоРеквизиту|FindByAttribute)\s*\(',
+    r"\b(?:НайтиПоНаименованию|FindByDescription"
+    r"|НайтиПоКоду|FindByCode"
+    r"|НайтиПоРеквизиту|FindByAttribute)\s*\(",
     re.IGNORECASE,
 )
 
 # BSL138 — UseOfDebugOutput: Сообщить()/Message()/Предупреждение()/Warning()
 _RE_DEBUG_OUTPUT = re.compile(
-    r'\b(?:Сообщить|Message|Предупреждение|Warning)\s*\(',
+    r"\b(?:Сообщить|Message|Предупреждение|Warning)\s*\(",
     re.IGNORECASE,
 )
 
 # BSL141 — MagicBooleanReturn
 _RE_RETURN_TRUE = re.compile(
-    r'^\s*(?:Возврат|Return)\s+(?:Истина|True)\s*;',
+    r"^\s*(?:Возврат|Return)\s+(?:Истина|True)\s*;",
     re.IGNORECASE,
 )
 _RE_RETURN_FALSE = re.compile(
-    r'^\s*(?:Возврат|Return)\s+(?:Ложь|False)\s*;',
+    r"^\s*(?:Возврат|Return)\s+(?:Ложь|False)\s*;",
     re.IGNORECASE,
 )
 
 # BSL143 — DuplicateElseIfCondition: extract condition text from Если/ИначеЕсли
 _RE_IF_COND = re.compile(
-    r'^\s*(?:Если|If|ИначеЕсли|ElsIf)\s+(.*?)\s+(?:Тогда|Then)\s*$',
+    r"^\s*(?:Если|If|ИначеЕсли|ElsIf)\s+(.*?)\s+(?:Тогда|Then)\s*$",
     re.IGNORECASE,
 )
 
 # BSL144 — UnnecessaryParentheses: Возврат (expr)
 _RE_RETURN_PAREN = re.compile(
-    r'^\s*(?:Возврат|Return)\s+\((?!\s*(?:Новый|New)\b)',
+    r"^\s*(?:Возврат|Return)\s+\((?!\s*(?:Новый|New)\b)",
     re.IGNORECASE,
 )
 
@@ -4885,8 +4989,8 @@ _RE_MULTI_CONCAT = re.compile(r'"[^"]*"\s*\+[^+;]+\+[^+;]+\+')
 
 # BSL147 — UseOfUICall: ОткрытьФорму()/OpenForm() etc.
 _RE_UI_CALL = re.compile(
-    r'\b(?:ОткрытьФорму|OpenForm|ПоказатьПредупреждение|ShowMessageBox'
-    r'|ПоказатьВопрос|ShowQueryBox)\s*\(',
+    r"\b(?:ОткрытьФорму|OpenForm|ПоказатьПредупреждение|ShowMessageBox"
+    r"|ПоказатьВопрос|ShowQueryBox)\s*\(",
     re.IGNORECASE,
 )
 
@@ -5032,13 +5136,9 @@ _RE_BSL240_ZNACH = re.compile(r"^\s*(?:Знач|Val)\s+", re.IGNORECASE)
 # BSL029: single-quoted date/string literals (remove before scanning for magic numbers)
 _RE_SINGLE_QUOTED_STRING = re.compile(r"'[^']*'")
 # BSL029: simple direct assignment Var = N; — BSLLS does not flag these
-_RE_BSL029_SIMPLE_ASSIGN = re.compile(
-    r"^\s*[\w\.]+\s*=\s*-?[0-9]+(?:\.[0-9]+)?\s*;?\s*$"
-)
+_RE_BSL029_SIMPLE_ASSIGN = re.compile(r"^\s*[\w\.]+\s*=\s*-?[0-9]+(?:\.[0-9]+)?\s*;?\s*$")
 # BSL029: For loop header — Для X = N По M Цикл — BSLLS does not flag loop bounds
-_RE_BSL029_FOR_HEADER = re.compile(
-    r"^\s*(?:Для|For)\b", re.IGNORECASE
-)
+_RE_BSL029_FOR_HEADER = re.compile(r"^\s*(?:Для|For)\b", re.IGNORECASE)
 # BSL029: ternary operator ?(cond, N, M) — BSLLS does not flag numeric values in ternary
 # because they are TernaryOperatorContext, not CallParamContext
 _RE_BSL029_TERNARY = re.compile(r"\?\s*\([^)]*\)")
@@ -6056,7 +6156,11 @@ class DiagnosticEngine:
         return code not in self._ignore
 
     def check_content(
-        self, path: str, content: str, *, symbol_index: Any | None = None,
+        self,
+        path: str,
+        content: str,
+        *,
+        symbol_index: Any | None = None,
     ) -> list[Diagnostic]:
         """
         Run all enabled diagnostic rules on *content* (pre-loaded string).
@@ -6071,15 +6175,24 @@ class DiagnosticEngine:
         except Exception as exc:
             return [
                 Diagnostic(
-                    file=path, line=1, character=0, end_line=1, end_character=0,
-                    severity=Severity.ERROR, code="BSL001",
+                    file=path,
+                    line=1,
+                    character=0,
+                    end_line=1,
+                    end_character=0,
+                    severity=Severity.ERROR,
+                    code="BSL001",
                     message=f"Failed to parse content: {exc}",
                 )
             ]
         return self._run_rules(path, content, tree, symbol_index=symbol_index)
 
     def check_file(
-        self, path: str, tree: Any | None = None, *, symbol_index: Any | None = None,
+        self,
+        path: str,
+        tree: Any | None = None,
+        *,
+        symbol_index: Any | None = None,
     ) -> list[Diagnostic]:
         """
         Run all enabled diagnostic rules on *path*.
@@ -6097,8 +6210,13 @@ class DiagnosticEngine:
             except Exception as exc:
                 return [
                     Diagnostic(
-                        file=path, line=1, character=0, end_line=1, end_character=0,
-                        severity=Severity.ERROR, code="BSL001",
+                        file=path,
+                        line=1,
+                        character=0,
+                        end_line=1,
+                        end_character=0,
+                        severity=Severity.ERROR,
+                        code="BSL001",
                         message=f"Failed to parse file: {exc}",
                     )
                 ]
@@ -6108,8 +6226,13 @@ class DiagnosticEngine:
         except OSError as exc:
             return [
                 Diagnostic(
-                    file=path, line=1, character=0, end_line=1, end_character=0,
-                    severity=Severity.ERROR, code="BSL001",
+                    file=path,
+                    line=1,
+                    character=0,
+                    end_line=1,
+                    end_character=0,
+                    severity=Severity.ERROR,
+                    code="BSL001",
                     message=f"Cannot read file: {exc}",
                 )
             ]
@@ -6171,112 +6294,192 @@ class DiagnosticEngine:
         if self._rule_enabled("BSL001"):
             _rule_tasks.append(("BSL001", lambda: self._rule_bsl001_syntax_errors(path, tree)))
         if self._rule_enabled("BSL002"):
-            _rule_tasks.append(("BSL002", lambda: self._rule_bsl002_method_size(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL002", lambda: self._rule_bsl002_method_size(path, lines, procs))
+            )
         if self._rule_enabled("BSL003"):
-            _rule_tasks.append(("BSL003", lambda: self._rule_bsl003_non_export_in_api_region(path, lines, procs, regions)))
+            _rule_tasks.append(
+                (
+                    "BSL003",
+                    lambda: self._rule_bsl003_non_export_in_api_region(path, lines, procs, regions),
+                )
+            )
         # BSL004 (EmptyCodeBlock) before BSL059: empty «Тогда» must report BSL004, not BooleanLiteralComparison.
         if self._rule_enabled("BSL004"):
-            _rule_tasks.append(("BSL004", lambda: self._rule_bsl004_empty_except(path, lines, tree)))
+            _rule_tasks.append(
+                ("BSL004", lambda: self._rule_bsl004_empty_except(path, lines, tree))
+            )
         if self._rule_enabled("BSL005"):
-            _rule_tasks.append(("BSL005", lambda: self._rule_bsl005_hardcode_network_address(path, lines)))
+            _rule_tasks.append(
+                ("BSL005", lambda: self._rule_bsl005_hardcode_network_address(path, lines))
+            )
         if self._rule_enabled("BSL006"):
             _rule_tasks.append(("BSL006", lambda: self._rule_bsl006_hardcode_path(path, lines)))
         if self._rule_enabled("BSL007"):
-            _rule_tasks.append(("BSL007", lambda: self._rule_bsl007_unused_local_variable(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL007", lambda: self._rule_bsl007_unused_local_variable(path, lines, procs))
+            )
         if self._rule_enabled("BSL008"):
-            _rule_tasks.append(("BSL008", lambda: self._rule_bsl008_too_many_returns(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL008", lambda: self._rule_bsl008_too_many_returns(path, lines, procs))
+            )
         if self._rule_enabled("BSL009"):
             _rule_tasks.append(("BSL009", lambda: self._rule_bsl009_self_assign(path, lines, tree)))
         if self._rule_enabled("BSL010"):
-            _rule_tasks.append(("BSL010", lambda: self._rule_bsl010_useless_return(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL010", lambda: self._rule_bsl010_useless_return(path, lines, procs))
+            )
         if self._rule_enabled("BSL011"):
-            _rule_tasks.append(("BSL011", lambda: self._rule_bsl011_cognitive_complexity(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL011", lambda: self._rule_bsl011_cognitive_complexity(path, lines, procs))
+            )
         if self._rule_enabled("BSL012"):
-            _rule_tasks.append(("BSL012", lambda: self._rule_bsl012_hardcode_credentials(path, lines)))
+            _rule_tasks.append(
+                ("BSL012", lambda: self._rule_bsl012_hardcode_credentials(path, lines))
+            )
         if self._rule_enabled("BSL013"):
             _rule_tasks.append(("BSL013", lambda: self._rule_bsl013_commented_code(path, lines)))
         if self._rule_enabled("BSL014"):
             _rule_tasks.append(("BSL014", lambda: self._rule_bsl014_line_too_long(path, lines)))
         if self._rule_enabled("BSL015"):
-            _rule_tasks.append(("BSL015", lambda: self._rule_bsl015_optional_params_count(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL015", lambda: self._rule_bsl015_optional_params_count(path, lines, procs))
+            )
         if self._rule_enabled("BSL016"):
-            _rule_tasks.append(("BSL016", lambda: self._rule_bsl016_non_standard_region(path, lines, regions)))
+            _rule_tasks.append(
+                ("BSL016", lambda: self._rule_bsl016_non_standard_region(path, lines, regions))
+            )
         if self._rule_enabled("BSL017"):
-            _rule_tasks.append(("BSL017", lambda: self._rule_bsl017_export_in_command_module(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL017", lambda: self._rule_bsl017_export_in_command_module(path, lines, procs))
+            )
         if self._rule_enabled("BSL018"):
-            _rule_tasks.append(("BSL018", lambda: self._rule_bsl018_raise_with_literal(path, lines, tree)))
+            _rule_tasks.append(
+                ("BSL018", lambda: self._rule_bsl018_raise_with_literal(path, lines, tree))
+            )
         if self._rule_enabled("BSL019"):
-            _rule_tasks.append(("BSL019", lambda: self._rule_bsl019_cyclomatic_complexity(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL019", lambda: self._rule_bsl019_cyclomatic_complexity(path, lines, procs))
+            )
         if self._rule_enabled("BSL020"):
-            _rule_tasks.append(("BSL020", lambda: self._rule_bsl020_excessive_nesting(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL020", lambda: self._rule_bsl020_excessive_nesting(path, lines, procs))
+            )
         if self._rule_enabled("BSL021"):
-            _rule_tasks.append(("BSL021", lambda: self._rule_bsl021_unused_val_parameter(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL021", lambda: self._rule_bsl021_unused_val_parameter(path, lines, procs))
+            )
         if self._rule_enabled("BSL022"):
-            _rule_tasks.append(("BSL022", lambda: self._rule_bsl022_deprecated_message(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL022", lambda: self._rule_bsl022_deprecated_message(path, lines, procs))
+            )
         if self._rule_enabled("BSL023"):
             _rule_tasks.append(("BSL023", lambda: self._rule_bsl023_service_tag(path, lines)))
         if self._rule_enabled("BSL024"):
-            _rule_tasks.append(("BSL024", lambda: self._rule_bsl024_space_at_start_comment(path, lines)))
+            _rule_tasks.append(
+                ("BSL024", lambda: self._rule_bsl024_space_at_start_comment(path, lines))
+            )
         if self._rule_enabled("BSL025"):
             _rule_tasks.append(("BSL025", lambda: self._rule_bsl025_empty_statement(path, lines)))
         if self._rule_enabled("BSL026"):
-            _rule_tasks.append(("BSL026", lambda: self._rule_bsl026_empty_region(path, lines, regions)))
+            _rule_tasks.append(
+                ("BSL026", lambda: self._rule_bsl026_empty_region(path, lines, regions))
+            )
         if self._rule_enabled("BSL027"):
             _rule_tasks.append(("BSL027", lambda: self._rule_bsl027_use_goto(path, lines)))
         if self._rule_enabled("BSL028"):
-            _rule_tasks.append(("BSL028", lambda: self._rule_bsl028_missing_try_catch(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL028", lambda: self._rule_bsl028_missing_try_catch(path, lines, procs))
+            )
         if self._rule_enabled("BSL029"):
-            _rule_tasks.append(("BSL029", lambda: self._rule_bsl029_magic_number(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL029", lambda: self._rule_bsl029_magic_number(path, lines, procs))
+            )
         if self._rule_enabled("BSL030"):
+
             def _task_bsl030() -> list[Diagnostic]:
                 a = self._rule_bsl030_header_semicolon(path, lines)
                 a.extend(self._rule_bsl030_statement_missing_semicolon(path, lines, procs))
                 return a
+
             _rule_tasks.append(("BSL030", _task_bsl030))
         if self._rule_enabled("BSL031"):
-            _rule_tasks.append(("BSL031", lambda: self._rule_bsl031_number_of_params(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL031", lambda: self._rule_bsl031_number_of_params(path, lines, procs))
+            )
         if self._rule_enabled("BSL032"):
-            _rule_tasks.append(("BSL032", lambda: self._rule_bsl032_function_return_value(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL032", lambda: self._rule_bsl032_function_return_value(path, lines, procs))
+            )
         if self._rule_enabled("BSL148"):
             _rule_tasks.append(
                 ("BSL148", lambda: self._rule_bsl148_all_function_paths_return(path, tree))
             )
         if self._rule_enabled("BSL033"):
-            _rule_tasks.append(("BSL033", lambda: self._rule_bsl033_query_in_loop(path, lines, procs, tree)))
+            _rule_tasks.append(
+                ("BSL033", lambda: self._rule_bsl033_query_in_loop(path, lines, procs, tree))
+            )
         if self._rule_enabled("BSL034"):
-            _rule_tasks.append(("BSL034", lambda: self._rule_bsl034_unused_error_variable(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL034", lambda: self._rule_bsl034_unused_error_variable(path, lines, procs))
+            )
         if self._rule_enabled("BSL035"):
-            _rule_tasks.append(("BSL035", lambda: self._rule_bsl035_duplicate_string_literal(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL035", lambda: self._rule_bsl035_duplicate_string_literal(path, lines, procs))
+            )
         if self._rule_enabled("BSL036"):
             _rule_tasks.append(("BSL036", lambda: self._rule_bsl036_complex_condition(path, lines)))
         if self._rule_enabled("BSL037"):
-            _rule_tasks.append(("BSL037", lambda: self._rule_bsl037_override_builtin(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL037", lambda: self._rule_bsl037_override_builtin(path, lines, procs))
+            )
         if self._rule_enabled("BSL038"):
-            _rule_tasks.append(("BSL038", lambda: self._rule_bsl038_string_concat_in_loop(path, lines, procs, tree)))
+            _rule_tasks.append(
+                (
+                    "BSL038",
+                    lambda: self._rule_bsl038_string_concat_in_loop(path, lines, procs, tree),
+                )
+            )
         if self._rule_enabled("BSL039"):
             _rule_tasks.append(("BSL039", lambda: self._rule_bsl039_nested_ternary(path, lines)))
         if self._rule_enabled("BSL040"):
             _rule_tasks.append(("BSL040", lambda: self._rule_bsl040_using_this_form(path, lines)))
         if self._rule_enabled("BSL041"):
-            _rule_tasks.append(("BSL041", lambda: self._rule_bsl041_notify_description(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL041", lambda: self._rule_bsl041_notify_description(path, lines, procs))
+            )
         if self._rule_enabled("BSL042"):
-            _rule_tasks.append(("BSL042", lambda: self._rule_bsl042_empty_export_method(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL042", lambda: self._rule_bsl042_empty_export_method(path, lines, procs))
+            )
         if self._rule_enabled("BSL043"):
-            _rule_tasks.append(("BSL043", lambda: self._rule_bsl043_too_many_variables(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL043", lambda: self._rule_bsl043_too_many_variables(path, lines, procs))
+            )
         if self._rule_enabled("BSL044"):
-            _rule_tasks.append(("BSL044", lambda: self._rule_bsl044_function_no_return_value(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL044", lambda: self._rule_bsl044_function_no_return_value(path, lines, procs))
+            )
         if self._rule_enabled("BSL045"):
-            _rule_tasks.append(("BSL045", lambda: self._rule_bsl045_multiline_string_literal(path, lines)))
+            _rule_tasks.append(
+                ("BSL045", lambda: self._rule_bsl045_multiline_string_literal(path, lines))
+            )
         if self._rule_enabled("BSL046"):
-            _rule_tasks.append(("BSL046", lambda: self._rule_bsl046_missing_else_branch(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL046", lambda: self._rule_bsl046_missing_else_branch(path, lines, procs))
+            )
         if self._rule_enabled("BSL047"):
             _rule_tasks.append(("BSL047", lambda: self._rule_bsl047_current_date(path, lines)))
         if self._rule_enabled("BSL048"):
             _rule_tasks.append(("BSL048", lambda: self._rule_bsl048_empty_file(path, lines)))
         if self._rule_enabled("BSL049"):
-            _rule_tasks.append(("BSL049", lambda: self._rule_bsl049_unconditional_raise(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL049", lambda: self._rule_bsl049_unconditional_raise(path, lines, procs))
+            )
         if self._rule_enabled("BSL050"):
-            _rule_tasks.append(("BSL050", lambda: self._rule_bsl050_large_transaction(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL050", lambda: self._rule_bsl050_large_transaction(path, lines, procs))
+            )
         if self._rule_enabled("BSL051"):
             _rule_tasks.append(
                 (
@@ -6285,11 +6488,15 @@ class DiagnosticEngine:
                 )
             )
         if self._rule_enabled("BSL052"):
-            _rule_tasks.append(("BSL052", lambda: self._rule_bsl052_useless_condition(path, lines, tree)))
+            _rule_tasks.append(
+                ("BSL052", lambda: self._rule_bsl052_useless_condition(path, lines, tree))
+            )
         if self._rule_enabled("BSL053"):
             _rule_tasks.append(("BSL053", lambda: self._rule_bsl053_execute_dynamic(path, lines)))
         if self._rule_enabled("BSL054"):
-            _rule_tasks.append(("BSL054", lambda: self._rule_bsl054_module_level_variable(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL054", lambda: self._rule_bsl054_module_level_variable(path, lines, procs))
+            )
         if self._rule_enabled("BSL219"):
             _rule_tasks.append(
                 (
@@ -6298,58 +6505,99 @@ class DiagnosticEngine:
                 )
             )
         if self._rule_enabled("BSL055"):
-            _rule_tasks.append(("BSL055", lambda: self._rule_bsl055_consecutive_blank_lines(path, lines)))
+            _rule_tasks.append(
+                ("BSL055", lambda: self._rule_bsl055_consecutive_blank_lines(path, lines))
+            )
         if self._rule_enabled("BSL056"):
-            _rule_tasks.append(("BSL056", lambda: self._rule_bsl056_short_method_name(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL056", lambda: self._rule_bsl056_short_method_name(path, lines, procs))
+            )
         if self._rule_enabled("BSL057"):
-            _rule_tasks.append(("BSL057", lambda: self._rule_bsl057_deprecated_input_dialog(path, lines)))
+            _rule_tasks.append(
+                ("BSL057", lambda: self._rule_bsl057_deprecated_input_dialog(path, lines))
+            )
         if self._rule_enabled("BSL058"):
-            _rule_tasks.append(("BSL058", lambda: self._rule_bsl058_query_without_where(path, lines)))
+            _rule_tasks.append(
+                ("BSL058", lambda: self._rule_bsl058_query_without_where(path, lines))
+            )
         if self._rule_enabled("BSL059"):
-            _rule_tasks.append(("BSL059", lambda: self._rule_bsl059_bool_literal_comparison(path, lines, tree)))
+            _rule_tasks.append(
+                ("BSL059", lambda: self._rule_bsl059_bool_literal_comparison(path, lines, tree))
+            )
         if self._rule_enabled("BSL060"):
-            _rule_tasks.append(("BSL060", lambda: self._rule_bsl060_double_negation(path, lines, tree)))
+            _rule_tasks.append(
+                ("BSL060", lambda: self._rule_bsl060_double_negation(path, lines, tree))
+            )
         if self._rule_enabled("BSL061"):
-            _rule_tasks.append(("BSL061", lambda: self._rule_bsl061_abrupt_loop_exit(path, lines, tree)))
+            _rule_tasks.append(
+                ("BSL061", lambda: self._rule_bsl061_abrupt_loop_exit(path, lines, tree))
+            )
         if self._rule_enabled("BSL062"):
             _rule_tasks.append(
                 (
                     "BSL062",
-                    lambda: self._rule_bsl062_unused_parameter(path, lines, procs, tree, _proc_node_map),
+                    lambda: self._rule_bsl062_unused_parameter(
+                        path, lines, procs, tree, _proc_node_map
+                    ),
                 )
             )
         if self._rule_enabled("BSL063"):
             _rule_tasks.append(("BSL063", lambda: self._rule_bsl063_large_module(path, lines)))
         if self._rule_enabled("BSL064"):
-            _rule_tasks.append(("BSL064", lambda: self._rule_bsl064_procedure_returns_value(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL064", lambda: self._rule_bsl064_procedure_returns_value(path, lines, procs))
+            )
         if self._rule_enabled("BSL065"):
-            _rule_tasks.append(("BSL065", lambda: self._rule_bsl065_missing_export_comment(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL065", lambda: self._rule_bsl065_missing_export_comment(path, lines, procs))
+            )
         if self._rule_enabled("BSL066"):
-            _rule_tasks.append(("BSL066", lambda: self._rule_bsl066_deprecated_platform_method(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL066", lambda: self._rule_bsl066_deprecated_platform_method(path, lines, procs))
+            )
         if self._rule_enabled("BSL067"):
-            _rule_tasks.append(("BSL067", lambda: self._rule_bsl067_var_after_code(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL067", lambda: self._rule_bsl067_var_after_code(path, lines, procs))
+            )
         if self._rule_enabled("BSL068"):
             _rule_tasks.append(("BSL068", lambda: self._rule_bsl068_too_many_elseif(path, lines)))
         if self._rule_enabled("BSL069"):
             _rule_tasks.append(("BSL069", lambda: self._rule_bsl069_infinite_loop(path, lines)))
         if self._rule_enabled("BSL070"):
-            _rule_tasks.append(("BSL070", lambda: self._rule_bsl070_empty_loop_body(path, lines, tree)))
+            _rule_tasks.append(
+                ("BSL070", lambda: self._rule_bsl070_empty_loop_body(path, lines, tree))
+            )
         if self._rule_enabled("BSL071"):
-            _rule_tasks.append(("BSL071", lambda: self._rule_bsl071_magic_number(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL071", lambda: self._rule_bsl071_magic_number(path, lines, procs))
+            )
         if self._rule_enabled("BSL072"):
-            _rule_tasks.append(("BSL072", lambda: self._rule_bsl072_string_concat_in_loop(path, lines)))
+            _rule_tasks.append(
+                ("BSL072", lambda: self._rule_bsl072_string_concat_in_loop(path, lines))
+            )
         if self._rule_enabled("BSL073"):
-            _rule_tasks.append(("BSL073", lambda: self._rule_bsl073_missing_else_branch(path, lines)))
+            _rule_tasks.append(
+                ("BSL073", lambda: self._rule_bsl073_missing_else_branch(path, lines))
+            )
         if self._rule_enabled("BSL074"):
             _rule_tasks.append(("BSL074", lambda: self._rule_bsl074_todo_comment(path, lines)))
         if self._rule_enabled("BSL075"):
-            _rule_tasks.append(("BSL075", lambda: self._rule_bsl075_global_variable_modification(path, lines, procs)))
+            _rule_tasks.append(
+                (
+                    "BSL075",
+                    lambda: self._rule_bsl075_global_variable_modification(path, lines, procs),
+                )
+            )
         if self._rule_enabled("BSL076"):
-            _rule_tasks.append(("BSL076", lambda: self._rule_bsl076_negative_condition_first(path, lines)))
+            _rule_tasks.append(
+                ("BSL076", lambda: self._rule_bsl076_negative_condition_first(path, lines))
+            )
         if self._rule_enabled("BSL077"):
             _rule_tasks.append(("BSL077", lambda: self._rule_bsl077_select_star(path, lines)))
         if self._rule_enabled("BSL078"):
-            _rule_tasks.append(("BSL078", lambda: self._rule_bsl078_raise_without_message(path, lines)))
+            _rule_tasks.append(
+                ("BSL078", lambda: self._rule_bsl078_raise_without_message(path, lines))
+            )
         if self._rule_enabled("BSL079"):
             _rule_tasks.append(("BSL079", lambda: self._rule_bsl079_using_goto(path, lines)))
         if self._rule_enabled("BSL080"):
@@ -6357,43 +6605,80 @@ class DiagnosticEngine:
         if self._rule_enabled("BSL081"):
             _rule_tasks.append(("BSL081", lambda: self._rule_bsl081_long_method_chain(path, lines)))
         if self._rule_enabled("BSL082"):
-            _rule_tasks.append(("BSL082", lambda: self._rule_bsl082_missing_newline_at_eof(path, lines)))
+            _rule_tasks.append(
+                ("BSL082", lambda: self._rule_bsl082_missing_newline_at_eof(path, lines))
+            )
         if self._rule_enabled("BSL083"):
-            _rule_tasks.append(("BSL083", lambda: self._rule_bsl083_too_many_module_variables(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL083", lambda: self._rule_bsl083_too_many_module_variables(path, lines, procs))
+            )
         if self._rule_enabled("BSL084"):
-            _rule_tasks.append(("BSL084", lambda: self._rule_bsl084_function_with_no_return(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL084", lambda: self._rule_bsl084_function_with_no_return(path, lines, procs))
+            )
         if self._rule_enabled("BSL085"):
-            _rule_tasks.append(("BSL085", lambda: self._rule_bsl085_literal_boolean_condition(path, lines, tree)))
+            _rule_tasks.append(
+                ("BSL085", lambda: self._rule_bsl085_literal_boolean_condition(path, lines, tree))
+            )
         if self._rule_enabled("BSL086"):
-            _rule_tasks.append(("BSL086", lambda: self._rule_bsl086_http_request_in_loop(path, lines)))
+            _rule_tasks.append(
+                ("BSL086", lambda: self._rule_bsl086_http_request_in_loop(path, lines))
+            )
         if self._rule_enabled("BSL087"):
-            _rule_tasks.append(("BSL087", lambda: self._rule_bsl087_object_creation_in_loop(path, lines)))
+            _rule_tasks.append(
+                ("BSL087", lambda: self._rule_bsl087_object_creation_in_loop(path, lines))
+            )
         if self._rule_enabled("BSL088"):
-            _rule_tasks.append(("BSL088", lambda: self._rule_bsl088_missing_parameter_comment(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL088", lambda: self._rule_bsl088_missing_parameter_comment(path, lines, procs))
+            )
         if self._rule_enabled("BSL089"):
-            _rule_tasks.append(("BSL089", lambda: self._rule_bsl089_transaction_in_loop(path, lines)))
+            _rule_tasks.append(
+                ("BSL089", lambda: self._rule_bsl089_transaction_in_loop(path, lines))
+            )
         if self._rule_enabled("BSL090"):
-            _rule_tasks.append(("BSL090", lambda: self._rule_bsl090_hardcoded_connection_string(path, lines)))
+            _rule_tasks.append(
+                ("BSL090", lambda: self._rule_bsl090_hardcoded_connection_string(path, lines))
+            )
         if self._rule_enabled("BSL091"):
-            _rule_tasks.append(("BSL091", lambda: self._rule_bsl091_redundant_else_after_return(path, lines, procs, tree)))
+            _rule_tasks.append(
+                (
+                    "BSL091",
+                    lambda: self._rule_bsl091_redundant_else_after_return(path, lines, procs, tree),
+                )
+            )
         if self._rule_enabled("BSL092"):
-            _rule_tasks.append(("BSL092", lambda: self._rule_bsl092_empty_else_block(path, lines, tree)))
+            _rule_tasks.append(
+                ("BSL092", lambda: self._rule_bsl092_empty_else_block(path, lines, tree))
+            )
         if self._rule_enabled("BSL093"):
-            _rule_tasks.append(("BSL093", lambda: self._rule_bsl093_comparison_to_null(path, lines)))
+            _rule_tasks.append(
+                ("BSL093", lambda: self._rule_bsl093_comparison_to_null(path, lines))
+            )
         if self._rule_enabled("BSL094"):
             _rule_tasks.append(("BSL094", lambda: self._rule_bsl094_noop_assignment(path, lines)))
         if self._rule_enabled("BSL095"):
-            _rule_tasks.append(("BSL095", lambda: self._rule_bsl095_multiple_statements_on_one_line(path, lines)))
+            _rule_tasks.append(
+                ("BSL095", lambda: self._rule_bsl095_multiple_statements_on_one_line(path, lines))
+            )
         if self._rule_enabled("BSL096"):
-            _rule_tasks.append(("BSL096", lambda: self._rule_bsl096_undocumented_export_method(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL096", lambda: self._rule_bsl096_undocumented_export_method(path, lines, procs))
+            )
         if self._rule_enabled("BSL097"):
-            _rule_tasks.append(("BSL097", lambda: self._rule_bsl097_use_of_current_date(path, lines)))
+            _rule_tasks.append(
+                ("BSL097", lambda: self._rule_bsl097_use_of_current_date(path, lines))
+            )
         if self._rule_enabled("BSL098"):
             _rule_tasks.append(("BSL098", lambda: self._rule_bsl098_use_of_execute(path, lines)))
         if self._rule_enabled("BSL099"):
-            _rule_tasks.append(("BSL099", lambda: self._rule_bsl099_too_many_parameters(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL099", lambda: self._rule_bsl099_too_many_parameters(path, lines, procs))
+            )
         if self._rule_enabled("BSL100"):
-            _rule_tasks.append(("BSL100", lambda: self._rule_bsl100_hardcoded_file_path(path, lines)))
+            _rule_tasks.append(
+                ("BSL100", lambda: self._rule_bsl100_hardcoded_file_path(path, lines))
+            )
         if self._rule_enabled("BSL101"):
             _rule_tasks.append(("BSL101", lambda: self._rule_bsl101_too_deep_nesting(path, lines)))
         if self._rule_enabled("BSL102"):
@@ -6401,7 +6686,9 @@ class DiagnosticEngine:
         if self._rule_enabled("BSL103"):
             _rule_tasks.append(("BSL103", lambda: self._rule_bsl103_use_of_eval(path, lines)))
         if self._rule_enabled("BSL104"):
-            _rule_tasks.append(("BSL104", lambda: self._rule_bsl104_missing_module_comment(path, lines)))
+            _rule_tasks.append(
+                ("BSL104", lambda: self._rule_bsl104_missing_module_comment(path, lines))
+            )
         if self._rule_enabled("BSL105"):
             _rule_tasks.append(("BSL105", lambda: self._rule_bsl105_use_of_sleep(path, lines)))
         if self._rule_enabled("BSL106"):
@@ -6409,106 +6696,199 @@ class DiagnosticEngine:
         if self._rule_enabled("BSL107"):
             _rule_tasks.append(("BSL107", lambda: self._rule_bsl107_empty_then_branch(path, lines)))
         if self._rule_enabled("BSL108"):
-            _rule_tasks.append(("BSL108", lambda: self._rule_bsl108_use_of_global_variables(path, lines)))
+            _rule_tasks.append(
+                ("BSL108", lambda: self._rule_bsl108_use_of_global_variables(path, lines))
+            )
         if self._rule_enabled("BSL109"):
-            _rule_tasks.append(("BSL109", lambda: self._rule_bsl109_negative_conditional_return(path, lines)))
+            _rule_tasks.append(
+                ("BSL109", lambda: self._rule_bsl109_negative_conditional_return(path, lines))
+            )
         if self._rule_enabled("BSL110"):
-            _rule_tasks.append(("BSL110", lambda: self._rule_bsl110_string_concat_in_loop(path, lines)))
+            _rule_tasks.append(
+                ("BSL110", lambda: self._rule_bsl110_string_concat_in_loop(path, lines))
+            )
         if self._rule_enabled("BSL111"):
-            _rule_tasks.append(("BSL111", lambda: self._rule_bsl111_mixed_language_identifiers(path, lines)))
+            _rule_tasks.append(
+                ("BSL111", lambda: self._rule_bsl111_mixed_language_identifiers(path, lines))
+            )
         if self._rule_enabled("BSL112"):
-            _rule_tasks.append(("BSL112", lambda: self._rule_bsl112_unterminated_transaction(path, lines)))
+            _rule_tasks.append(
+                ("BSL112", lambda: self._rule_bsl112_unterminated_transaction(path, lines))
+            )
         if self._rule_enabled("BSL113"):
-            _rule_tasks.append(("BSL113", lambda: self._rule_bsl113_assignment_in_condition(path, lines)))
+            _rule_tasks.append(
+                ("BSL113", lambda: self._rule_bsl113_assignment_in_condition(path, lines))
+            )
         if self._rule_enabled("BSL114"):
             _rule_tasks.append(("BSL114", lambda: self._rule_bsl114_empty_module(path, lines)))
         if self._rule_enabled("BSL115"):
             _rule_tasks.append(("BSL115", lambda: self._rule_bsl115_chained_negation(path, lines)))
         if self._rule_enabled("BSL116"):
-            _rule_tasks.append(("BSL116", lambda: self._rule_bsl116_use_of_obsolete_iterator(path, lines)))
+            _rule_tasks.append(
+                ("BSL116", lambda: self._rule_bsl116_use_of_obsolete_iterator(path, lines))
+            )
         if self._rule_enabled("BSL117"):
-            _rule_tasks.append(("BSL117", lambda: self._rule_bsl117_procedure_called_as_function(path, lines, procs)))
+            _rule_tasks.append(
+                (
+                    "BSL117",
+                    lambda: self._rule_bsl117_procedure_called_as_function(path, lines, procs),
+                )
+            )
         if self._rule_enabled("BSL118"):
-            _rule_tasks.append(("BSL118", lambda: self._rule_bsl118_function_returns_nothing(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL118", lambda: self._rule_bsl118_function_returns_nothing(path, lines, procs))
+            )
         if self._rule_enabled("BSL119"):
             _rule_tasks.append(("BSL119", lambda: self._rule_bsl119_line_too_long(path, lines)))
         if self._rule_enabled("BSL120"):
-            _rule_tasks.append(("BSL120", lambda: self._rule_bsl120_trailing_whitespace(path, lines)))
+            _rule_tasks.append(
+                ("BSL120", lambda: self._rule_bsl120_trailing_whitespace(path, lines))
+            )
         if self._rule_enabled("BSL121"):
             _rule_tasks.append(("BSL121", lambda: self._rule_bsl121_tab_indentation(path, lines)))
         if self._rule_enabled("BSL122"):
-            _rule_tasks.append(("BSL122", lambda: self._rule_bsl122_unused_parameter(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL122", lambda: self._rule_bsl122_unused_parameter(path, lines, procs))
+            )
         if self._rule_enabled("BSL123"):
-            _rule_tasks.append(("BSL123", lambda: self._rule_bsl123_commented_out_code(path, lines)))
+            _rule_tasks.append(
+                ("BSL123", lambda: self._rule_bsl123_commented_out_code(path, lines))
+            )
         if self._rule_enabled("BSL124"):
-            _rule_tasks.append(("BSL124", lambda: self._rule_bsl124_short_procedure_name(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL124", lambda: self._rule_bsl124_short_procedure_name(path, lines, procs))
+            )
         if self._rule_enabled("BSL125"):
-            _rule_tasks.append(("BSL125", lambda: self._rule_bsl125_break_outside_loop(path, lines)))
+            _rule_tasks.append(
+                ("BSL125", lambda: self._rule_bsl125_break_outside_loop(path, lines))
+            )
         if self._rule_enabled("BSL126"):
-            _rule_tasks.append(("BSL126", lambda: self._rule_bsl126_continue_outside_loop(path, lines)))
+            _rule_tasks.append(
+                ("BSL126", lambda: self._rule_bsl126_continue_outside_loop(path, lines))
+            )
         if self._rule_enabled("BSL127"):
-            _rule_tasks.append(("BSL127", lambda: self._rule_bsl127_multiple_return_values(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL127", lambda: self._rule_bsl127_multiple_return_values(path, lines, procs))
+            )
         if self._rule_enabled("BSL128"):
-            _rule_tasks.append(("BSL128", lambda: self._rule_bsl128_dead_code_after_return(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL128", lambda: self._rule_bsl128_dead_code_after_return(path, lines, procs))
+            )
         if self._rule_enabled("BSL129"):
-            _rule_tasks.append(("BSL129", lambda: self._rule_bsl129_recursive_call(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL129", lambda: self._rule_bsl129_recursive_call(path, lines, procs))
+            )
         if self._rule_enabled("BSL130"):
             _rule_tasks.append(("BSL130", lambda: self._rule_bsl130_long_comment_line(path, lines)))
         if self._rule_enabled("BSL131"):
             _rule_tasks.append(("BSL131", lambda: self._rule_bsl131_empty_region(path, lines)))
         if self._rule_enabled("BSL132"):
-            _rule_tasks.append(("BSL132", lambda: self._rule_bsl132_repeated_string_literal(path, lines, content)))
+            _rule_tasks.append(
+                ("BSL132", lambda: self._rule_bsl132_repeated_string_literal(path, lines, content))
+            )
         if self._rule_enabled("BSL133"):
-            _rule_tasks.append(("BSL133", lambda: self._rule_bsl133_required_param_after_optional(path, lines, procs)))
+            _rule_tasks.append(
+                (
+                    "BSL133",
+                    lambda: self._rule_bsl133_required_param_after_optional(path, lines, procs),
+                )
+            )
         if self._rule_enabled("BSL134"):
-            _rule_tasks.append(("BSL134", lambda: self._rule_bsl134_cyclomatic_complexity(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL134", lambda: self._rule_bsl134_cyclomatic_complexity(path, lines, procs))
+            )
         if self._rule_enabled("BSL135"):
-            _rule_tasks.append(("BSL135", lambda: self._rule_bsl135_nested_function_calls(path, lines)))
+            _rule_tasks.append(
+                ("BSL135", lambda: self._rule_bsl135_nested_function_calls(path, lines))
+            )
         if self._rule_enabled("BSL136"):
-            _rule_tasks.append(("BSL136", lambda: self._rule_bsl136_missing_space_before_comment(path, lines)))
+            _rule_tasks.append(
+                ("BSL136", lambda: self._rule_bsl136_missing_space_before_comment(path, lines))
+            )
         if self._rule_enabled("BSL137"):
-            _rule_tasks.append(("BSL137", lambda: self._rule_bsl137_use_of_find_by_description(path, lines)))
+            _rule_tasks.append(
+                ("BSL137", lambda: self._rule_bsl137_use_of_find_by_description(path, lines))
+            )
         if self._rule_enabled("BSL138"):
-            _rule_tasks.append(("BSL138", lambda: self._rule_bsl138_use_of_debug_output(path, lines)))
+            _rule_tasks.append(
+                ("BSL138", lambda: self._rule_bsl138_use_of_debug_output(path, lines))
+            )
         if self._rule_enabled("BSL139"):
-            _rule_tasks.append(("BSL139", lambda: self._rule_bsl139_too_long_parameter_name(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL139", lambda: self._rule_bsl139_too_long_parameter_name(path, lines, procs))
+            )
         if self._rule_enabled("BSL140"):
-            _rule_tasks.append(("BSL140", lambda: self._rule_bsl140_unreachable_elseif(path, lines)))
+            _rule_tasks.append(
+                ("BSL140", lambda: self._rule_bsl140_unreachable_elseif(path, lines))
+            )
         if self._rule_enabled("BSL141"):
-            _rule_tasks.append(("BSL141", lambda: self._rule_bsl141_magic_boolean_return(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL141", lambda: self._rule_bsl141_magic_boolean_return(path, lines, procs))
+            )
         if self._rule_enabled("BSL142"):
-            _rule_tasks.append(("BSL142", lambda: self._rule_bsl142_large_param_default_value(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL142", lambda: self._rule_bsl142_large_param_default_value(path, lines, procs))
+            )
         if self._rule_enabled("BSL143"):
-            _rule_tasks.append(("BSL143", lambda: self._rule_bsl143_duplicate_elseif_condition(path, lines)))
+            _rule_tasks.append(
+                ("BSL143", lambda: self._rule_bsl143_duplicate_elseif_condition(path, lines))
+            )
         if self._rule_enabled("BSL144"):
-            _rule_tasks.append(("BSL144", lambda: self._rule_bsl144_unnecessary_parentheses(path, lines)))
+            _rule_tasks.append(
+                ("BSL144", lambda: self._rule_bsl144_unnecessary_parentheses(path, lines))
+            )
         if self._rule_enabled("BSL145"):
-            _rule_tasks.append(("BSL145", lambda: self._rule_bsl145_string_format_instead_of_concat(path, lines)))
+            _rule_tasks.append(
+                ("BSL145", lambda: self._rule_bsl145_string_format_instead_of_concat(path, lines))
+            )
         if self._rule_enabled("BSL146"):
-            _rule_tasks.append(("BSL146", lambda: self._rule_bsl146_module_initialization_code(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL146", lambda: self._rule_bsl146_module_initialization_code(path, lines, procs))
+            )
         if self._rule_enabled("BSL147"):
-            _rule_tasks.append(("BSL147", lambda: self._rule_bsl147_use_of_ui_call(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL147", lambda: self._rule_bsl147_use_of_ui_call(path, lines, procs))
+            )
         if self._rule_enabled("BSL151"):
-            _rule_tasks.append(("BSL151", lambda: self._rule_bsl151_begin_transaction_before_try(path, lines)))
+            _rule_tasks.append(
+                ("BSL151", lambda: self._rule_bsl151_begin_transaction_before_try(path, lines))
+            )
         if self._rule_enabled("BSL152"):
             _rule_tasks.append(
                 ("BSL152", lambda: self._rule_bsl152_cached_public(path, lines, regions, procs))
             )
         if self._rule_enabled("BSL154"):
-            _rule_tasks.append(("BSL154", lambda: self._rule_bsl154_code_after_async(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL154", lambda: self._rule_bsl154_code_after_async(path, lines, procs))
+            )
         if self._rule_enabled("BSL155"):
-            _rule_tasks.append(("BSL155", lambda: self._rule_bsl155_code_block_before_sub(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL155", lambda: self._rule_bsl155_code_block_before_sub(path, lines, procs))
+            )
         if self._rule_enabled("BSL156"):
-            _rule_tasks.append(("BSL156", lambda: self._rule_bsl156_code_out_of_region(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL156", lambda: self._rule_bsl156_code_out_of_region(path, lines, procs))
+            )
         if self._rule_enabled("BSL157"):
-            _rule_tasks.append(("BSL157", lambda: self._rule_bsl157_commit_transaction_outside_try(path, lines)))
+            _rule_tasks.append(
+                ("BSL157", lambda: self._rule_bsl157_commit_transaction_outside_try(path, lines))
+            )
         if self._rule_enabled("BSL158") and idx is not None:
-            _rule_tasks.append(("BSL158", lambda: self._rule_bsl158_common_module_assign(path, lines, idx)))
+            _rule_tasks.append(
+                ("BSL158", lambda: self._rule_bsl158_common_module_assign(path, lines, idx))
+            )
         if self._rule_enabled("BSL159"):
-            _rule_tasks.append(("BSL159", lambda: self._rule_bsl159_common_module_invalid_type(path, lines)))
+            _rule_tasks.append(
+                ("BSL159", lambda: self._rule_bsl159_common_module_invalid_type(path, lines))
+            )
         if self._rule_enabled("BSL160"):
             _rule_tasks.append(
-                ("BSL160", lambda: self._rule_bsl160_common_module_missing_api(path, lines, regions, procs))
+                (
+                    "BSL160",
+                    lambda: self._rule_bsl160_common_module_missing_api(
+                        path, lines, regions, procs
+                    ),
+                )
             )
         _bsl161_168 = (
             "BSL161",
@@ -6522,23 +6902,37 @@ class DiagnosticEngine:
         )
         if any(self._rule_enabled(c) for c in _bsl161_168):
             _rule_tasks.append(
-                ("BSL161-168", lambda: self._rule_bsl161_168_common_module_names(path, lines, _bsl161_168))
+                (
+                    "BSL161-168",
+                    lambda: self._rule_bsl161_168_common_module_names(path, lines, _bsl161_168),
+                )
             )
         if self._rule_enabled("BSL173"):
-            _rule_tasks.append(("BSL173", lambda: self._rule_bsl173_deleting_collection_item(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL173", lambda: self._rule_bsl173_deleting_collection_item(path, lines, procs))
+            )
         if self._rule_enabled("BSL257"):
-            _rule_tasks.append(("BSL257", lambda: self._rule_bsl257_unary_plus_in_concatenation(path, lines)))
+            _rule_tasks.append(
+                ("BSL257", lambda: self._rule_bsl257_unary_plus_in_concatenation(path, lines))
+            )
         if self._rule_enabled("BSL279"):
             _rule_tasks.append(("BSL279", lambda: self._rule_bsl279_yo_letter_usage(path, lines)))
         if self._rule_enabled("BSL280") and idx is not None:
+
             def _task_bsl280() -> list[Diagnostic]:
                 from onec_hbk_bsl.analysis.metadata_refs import diagnostics_unknown_metadata_objects
+
                 return diagnostics_unknown_metadata_objects(path, content, idx)
+
             _rule_tasks.append(("BSL280", _task_bsl280))
         if self._rule_enabled("BSL172"):
-            _rule_tasks.append(("BSL172", lambda: self._rule_bsl172_data_exchange_loading(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL172", lambda: self._rule_bsl172_data_exchange_loading(path, lines, procs))
+            )
         if self._rule_enabled("BSL149"):
-            _rule_tasks.append(("BSL149", lambda: self._rule_bsl149_assign_alias_fields_in_query(path, lines)))
+            _rule_tasks.append(
+                ("BSL149", lambda: self._rule_bsl149_assign_alias_fields_in_query(path, lines))
+            )
         if self._rule_enabled("BSL210"):
             _rule_tasks.append(
                 ("BSL210", lambda: self._rule_bsl210_logical_or_in_where(path, lines))
@@ -6548,18 +6942,29 @@ class DiagnosticEngine:
         if self._rule_enabled("BSL186"):
             _rule_tasks.append(("BSL186", lambda: self._rule_bsl186_extra_commas(path, lines)))
         if self._rule_enabled("BSL190"):
-            _rule_tasks.append(("BSL190", lambda: self._rule_bsl190_form_data_to_value(path, lines)))
+            _rule_tasks.append(
+                ("BSL190", lambda: self._rule_bsl190_form_data_to_value(path, lines))
+            )
         if self._rule_enabled("BSL197"):
-            _rule_tasks.append(("BSL197", lambda: self._rule_bsl197_if_else_duplicated_code_block(path, lines)))
+            _rule_tasks.append(
+                ("BSL197", lambda: self._rule_bsl197_if_else_duplicated_code_block(path, lines))
+            )
         if self._rule_enabled("BSL198"):
-            _rule_tasks.append(("BSL198", lambda: self._rule_bsl198_if_else_duplicated_condition(path, lines)))
+            _rule_tasks.append(
+                ("BSL198", lambda: self._rule_bsl198_if_else_duplicated_condition(path, lines))
+            )
         if self._rule_enabled("BSL227"):
-            _rule_tasks.append(("BSL227", lambda: self._rule_bsl227_one_statement_per_line(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL227", lambda: self._rule_bsl227_one_statement_per_line(path, lines, procs))
+            )
         if self._rule_enabled("BSL258"):
             _rule_tasks.append(("BSL258", lambda: self._rule_bsl258_union_without_all(path, lines)))
         if self._rule_enabled("BSL183"):
-            _rule_tasks.append(("BSL183", lambda: self._rule_bsl183_execute_external_code(path, lines)))
+            _rule_tasks.append(
+                ("BSL183", lambda: self._rule_bsl183_execute_external_code(path, lines))
+            )
         if self._rule_enabled("BSL208") or self._rule_enabled("BSL256"):
+
             def _task_bsl208_bsl256() -> list[Diagnostic]:
                 out = self._rule_bsl208_bsl256_latin_cyrillic_and_typo(path, lines, procs)
                 if self._rule_enabled("BSL256"):
@@ -6568,25 +6973,51 @@ class DiagnosticEngine:
 
             _rule_tasks.append(("BSL208_BSL256", _task_bsl208_bsl256))
         if self._rule_enabled("BSL230"):
-            _rule_tasks.append(("BSL230", lambda: self._rule_bsl230_pairing_broken_transaction(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL230", lambda: self._rule_bsl230_pairing_broken_transaction(path, lines, procs))
+            )
         if self._rule_enabled("BSL240"):
-            _rule_tasks.append(("BSL240", lambda: self._rule_bsl240_rewrite_method_parameter(path, lines, procs, tree, _proc_node_map)))
+            _rule_tasks.append(
+                (
+                    "BSL240",
+                    lambda: self._rule_bsl240_rewrite_method_parameter(
+                        path, lines, procs, tree, _proc_node_map
+                    ),
+                )
+            )
         if self._rule_enabled("BSL263"):
-            _rule_tasks.append(("BSL263", lambda: self._rule_bsl263_useless_for_each(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL263", lambda: self._rule_bsl263_useless_for_each(path, lines, procs))
+            )
         if self._rule_enabled("BSL265"):
-            _rule_tasks.append(("BSL265", lambda: self._rule_bsl265_useless_ternary_operator(path, lines)))
+            _rule_tasks.append(
+                ("BSL265", lambda: self._rule_bsl265_useless_ternary_operator(path, lines))
+            )
         if self._rule_enabled("BSL153"):
-            _rule_tasks.append(("BSL153", lambda: self._rule_bsl153_canonical_spelling_keywords(path, lines)))
+            _rule_tasks.append(
+                ("BSL153", lambda: self._rule_bsl153_canonical_spelling_keywords(path, lines))
+            )
         if self._rule_enabled("BSL199"):
-            _rule_tasks.append(("BSL199", lambda: self._rule_bsl199_if_else_if_ends_with_else(path, lines)))
+            _rule_tasks.append(
+                ("BSL199", lambda: self._rule_bsl199_if_else_if_ends_with_else(path, lines))
+            )
         if self._rule_enabled("BSL215"):
-            _rule_tasks.append(("BSL215", lambda: self._rule_bsl215_missing_parameter_description(path, lines, procs)))
+            _rule_tasks.append(
+                (
+                    "BSL215",
+                    lambda: self._rule_bsl215_missing_parameter_description(path, lines, procs),
+                )
+            )
         if self._rule_enabled("BSL233"):
-            _rule_tasks.append(("BSL233", lambda: self._rule_bsl233_public_methods_description(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL233", lambda: self._rule_bsl233_public_methods_description(path, lines, procs))
+            )
         if self._rule_enabled("BSL216"):
             _rule_tasks.append(("BSL216", lambda: self._rule_bsl216_missing_space(path, lines)))
         if self._rule_enabled("BSL254"):
-            _rule_tasks.append(("BSL254", lambda: self._rule_bsl254_transferring_parameters(path, lines, procs)))
+            _rule_tasks.append(
+                ("BSL254", lambda: self._rule_bsl254_transferring_parameters(path, lines, procs))
+            )
         if self._rule_enabled("BSL255"):
             _rule_tasks.append(("BSL255", lambda: self._rule_bsl255_try_number(path, lines)))
         diagnostics = _execute_diagnostic_rule_tasks(_rule_tasks)
@@ -6703,9 +7134,7 @@ class DiagnosticEngine:
     # BSL004 — Empty exception handler
     # ------------------------------------------------------------------
 
-    def _rule_bsl004_empty_except(
-        self, path: str, lines: list[str], tree: Any
-    ) -> list[Diagnostic]:
+    def _rule_bsl004_empty_except(self, path: str, lines: list[str], tree: Any) -> list[Diagnostic]:
         if _ts_tree_ok_for_rules(tree):
             return diagnostics_bsl004_from_tree(path, tree.root_node)
         diags: list[Diagnostic] = []
@@ -6802,9 +7231,7 @@ class DiagnosticEngine:
     # BSL006 — Hardcoded file path
     # ------------------------------------------------------------------
 
-    def _rule_bsl006_hardcode_path(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl006_hardcode_path(self, path: str, lines: list[str]) -> list[Diagnostic]:
         diags: list[Diagnostic] = []
         for idx, line in enumerate(lines):
             if line.strip().startswith("//"):
@@ -6990,9 +7417,7 @@ class DiagnosticEngine:
     # BSL009 — Self-assignment
     # ------------------------------------------------------------------
 
-    def _rule_bsl009_self_assign(
-        self, path: str, lines: list[str], tree: Any
-    ) -> list[Diagnostic]:
+    def _rule_bsl009_self_assign(self, path: str, lines: list[str], tree: Any) -> list[Diagnostic]:
         if _ts_tree_ok_for_rules(tree):
             return _diagnostics_bsl009_from_tree(path, tree.root_node)
         diags: list[Diagnostic] = []
@@ -7093,9 +7518,7 @@ class DiagnosticEngine:
     # BSL012 — Hardcoded credentials
     # ------------------------------------------------------------------
 
-    def _rule_bsl012_hardcode_credentials(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl012_hardcode_credentials(self, path: str, lines: list[str]) -> list[Diagnostic]:
         diags: list[Diagnostic] = []
         for idx, line in enumerate(lines):
             if line.strip().startswith("//"):
@@ -7120,9 +7543,7 @@ class DiagnosticEngine:
     # BSL013 — Commented-out code
     # ------------------------------------------------------------------
 
-    def _rule_bsl013_commented_code(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl013_commented_code(self, path: str, lines: list[str]) -> list[Diagnostic]:
         diags: list[Diagnostic] = []
         consecutive = 0
         start_line = 0
@@ -7166,9 +7587,7 @@ class DiagnosticEngine:
     # BSL014 — Line too long
     # ------------------------------------------------------------------
 
-    def _rule_bsl014_line_too_long(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl014_line_too_long(self, path: str, lines: list[str]) -> list[Diagnostic]:
         diags: list[Diagnostic] = []
         for idx, line in enumerate(lines):
             # Skip query string continuation lines (|...) — BSLLS does not flag these for BSL014
@@ -7490,9 +7909,7 @@ class DiagnosticEngine:
     # BSL023 — Service tags (TODO/FIXME/HACK)
     # ------------------------------------------------------------------
 
-    def _rule_bsl023_service_tag(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl023_service_tag(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """
         Flag TODO, FIXME, HACK, КЕЙС, WORKAROUND, UNDONE, XXX in comments.
 
@@ -7523,9 +7940,7 @@ class DiagnosticEngine:
     # BSL024 — No space after // in comment
     # ------------------------------------------------------------------
 
-    def _rule_bsl024_space_at_start_comment(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl024_space_at_start_comment(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """
         Require a space after ``//`` in single-line comments (BSLLS ``SpaceAtStartComment``).
 
@@ -7595,9 +8010,7 @@ class DiagnosticEngine:
                             end_character=len(code_part),
                             severity=Severity.WARNING,
                             code="BSL030",
-                            message=(
-                                "Пропущена точка с запятой в конце выражения"
-                            ),
+                            message=("Пропущена точка с запятой в конце выражения"),
                         )
                     )
         return diags
@@ -7650,9 +8063,7 @@ class DiagnosticEngine:
     # BSL027 — UseGotoOperator
     # ------------------------------------------------------------------
 
-    def _rule_bsl027_use_goto(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl027_use_goto(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag Перейти/Goto — unconditional jumps damage readability."""
         diags: list[Diagnostic] = []
         for idx, line in enumerate(lines):
@@ -7798,9 +8209,7 @@ class DiagnosticEngine:
     # BSL030 — Procedure/function header ends with semicolon
     # ------------------------------------------------------------------
 
-    def _rule_bsl030_header_semicolon(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl030_header_semicolon(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """
         Detect procedure/function headers that end with a semicolon.
 
@@ -8136,9 +8545,7 @@ class DiagnosticEngine:
     # BSL036 — Complex condition (too many boolean operators)
     # ------------------------------------------------------------------
 
-    _RE_IF_OR_ELSEIF_LINE = re.compile(
-        r"^\s*(?:Если|If|ИначеЕсли|ElsIf)\b", re.IGNORECASE
-    )
+    _RE_IF_OR_ELSEIF_LINE = re.compile(r"^\s*(?:Если|If|ИначеЕсли|ElsIf)\b", re.IGNORECASE)
     _RE_THEN_WORD = re.compile(r"\b(?:Тогда|Then)\b", re.IGNORECASE)
 
     def _bsl036_if_condition_chunk(self, lines: list[str], idx: int) -> str | None:
@@ -8190,9 +8597,7 @@ class DiagnosticEngine:
                 j += 1
         return False
 
-    def _rule_bsl036_complex_condition(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl036_complex_condition(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """
         Flag Если/If lines with more boolean operators than *max_bool_ops*.
 
@@ -8332,9 +8737,7 @@ class DiagnosticEngine:
     # BSL039 — Nested ternary operator
     # ------------------------------------------------------------------
 
-    def _rule_bsl039_nested_ternary(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl039_nested_ternary(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag nested ?() expressions — they are nearly unreadable."""
         diags: list[Diagnostic] = []
         for idx, line in enumerate(lines):
@@ -8363,9 +8766,7 @@ class DiagnosticEngine:
     # BSL040 — ЭтаФорма / ThisForm outside event handler context
     # ------------------------------------------------------------------
 
-    def _rule_bsl040_using_this_form(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl040_using_this_form(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """
         Flag direct use of ЭтаФорма/ThisForm.
 
@@ -8437,7 +8838,6 @@ class DiagnosticEngine:
                 )
         return diags
 
-
     # ------------------------------------------------------------------
     # BSL042 — Empty export method
     # ------------------------------------------------------------------
@@ -8452,8 +8852,7 @@ class DiagnosticEngine:
                 continue
             body_lines = lines[proc.start_idx + 1 : proc.end_idx]
             has_code = any(
-                line.strip() and not _RE_BLANK_OR_COMMENT.match(line)
-                for line in body_lines
+                line.strip() and not _RE_BLANK_OR_COMMENT.match(line) for line in body_lines
             )
             if not has_code:
                 header = lines[proc.start_idx] if proc.start_idx < len(lines) else ""
@@ -8649,9 +9048,7 @@ class DiagnosticEngine:
     # BSL047 — CurrentDate (non-UTC)
     # ------------------------------------------------------------------
 
-    def _rule_bsl047_current_date(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl047_current_date(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag ТекущаяДата()/CurrentDate() — prefer ТекущаяУниверсальнаяДата()."""
         diags: list[Diagnostic] = []
         for idx, line in enumerate(lines):
@@ -8680,9 +9077,7 @@ class DiagnosticEngine:
     # BSL048 — Empty file
     # ------------------------------------------------------------------
 
-    def _rule_bsl048_empty_file(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl048_empty_file(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag BSL files that contain no executable code at all."""
         if not lines:
             return []  # truly empty file — no position to attach diagnostic; BSLLS skips these
@@ -8719,10 +9114,11 @@ class DiagnosticEngine:
             body_lines = lines[proc.start_idx : proc.end_idx + 1]
             base_indent = _proc_body_base_indent(lines, proc)
             # Skip stub procs where raise is the only code statement (intentional "not implemented")
-            inner_lines = lines[proc.start_idx + 1 : proc.end_idx]  # exclude header and КонецПроцедуры
+            inner_lines = lines[
+                proc.start_idx + 1 : proc.end_idx
+            ]  # exclude header and КонецПроцедуры
             code_stmts = [
-                ln.strip() for ln in inner_lines
-                if ln.strip() and not ln.strip().startswith("//")
+                ln.strip() for ln in inner_lines if ln.strip() and not ln.strip().startswith("//")
             ]
             if len(code_stmts) <= 1:
                 continue
@@ -8798,7 +9194,6 @@ class DiagnosticEngine:
             )
         return diags
 
-
     # ------------------------------------------------------------------
     # BSL051 — Unreachable code after Return/Raise
     # ------------------------------------------------------------------
@@ -8823,9 +9218,9 @@ class DiagnosticEngine:
             end_line_idxs.add(proc.end_idx)
 
         for proc in procs:
-            body_lines = list(enumerate(
-                lines[proc.start_idx + 1 : proc.end_idx], start=proc.start_idx + 1
-            ))
+            body_lines = list(
+                enumerate(lines[proc.start_idx + 1 : proc.end_idx], start=proc.start_idx + 1)
+            )
             i = 0
             while i < len(body_lines):
                 abs_idx, line = body_lines[i]
@@ -8911,9 +9306,7 @@ class DiagnosticEngine:
             m = _RE_IF_LITERAL.match(line)
             if m:
                 # Get the literal value
-                literal_m = re.search(
-                    r"\b(Истина|True|Ложь|False)\b", line, re.IGNORECASE
-                )
+                literal_m = re.search(r"\b(Истина|True|Ложь|False)\b", line, re.IGNORECASE)
                 literal = literal_m.group(1) if literal_m else "literal"
                 diags.append(
                     Diagnostic(
@@ -8936,9 +9329,7 @@ class DiagnosticEngine:
     # BSL053 — Execute() dynamic code
     # ------------------------------------------------------------------
 
-    def _rule_bsl053_execute_dynamic(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl053_execute_dynamic(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag Выполнить()/Execute() calls — dynamic code is a security risk."""
         diags: list[Diagnostic] = []
         for idx, line in enumerate(lines):
@@ -9060,9 +9451,7 @@ class DiagnosticEngine:
     # BSLLS ConsecutiveEmptyLines: flag when more than one blank line in a row.
     MAX_BLANK_LINES: int = 1
 
-    def _rule_bsl055_consecutive_blank_lines(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl055_consecutive_blank_lines(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag runs of more than ``MAX_BLANK_LINES`` consecutive blank lines."""
         diags: list[Diagnostic] = []
         blank_run = 0
@@ -9123,7 +9512,6 @@ class DiagnosticEngine:
                 )
             )
         return diags
-
 
     # ------------------------------------------------------------------
     # BSL059 — Boolean literal comparison
@@ -9286,9 +9674,7 @@ class DiagnosticEngine:
     # BSL057 — Deprecated input dialogs
     # ------------------------------------------------------------------
 
-    def _rule_bsl057_deprecated_input_dialog(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl057_deprecated_input_dialog(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag synchronous modal input dialogs deprecated in 8.3."""
         diags: list[Diagnostic] = []
         for idx, line in enumerate(lines):
@@ -9318,9 +9704,7 @@ class DiagnosticEngine:
     # BSL058 — Embedded query without WHERE clause
     # ------------------------------------------------------------------
 
-    def _rule_bsl058_query_without_where(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl058_query_without_where(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """
         Detect string literals that contain a SELECT query without a WHERE clause.
         Heuristic: looks for quoted strings spanning multiple lines (BSL | continuation)
@@ -9335,13 +9719,15 @@ class DiagnosticEngine:
                 query_start = i
                 query_lines = [line]
                 j = i + 1
-                while j < len(lines) and (lines[j].lstrip().startswith("|") or not lines[j].strip()):
+                while j < len(lines) and (
+                    lines[j].lstrip().startswith("|") or not lines[j].strip()
+                ):
                     query_lines.append(lines[j])
                     j += 1
                 query_text = "\n".join(query_lines)
                 has_where = _RE_QUERY_WHERE.search(query_text)
-                has_first = re.search(r'\b(?:ПЕРВЫЕ|FIRST|TOP)\b', query_text, re.IGNORECASE)
-                has_into = re.search(r'\b(?:ПОМЕСТИТЬ|INTO)\b', query_text, re.IGNORECASE)
+                has_first = re.search(r"\b(?:ПЕРВЫЕ|FIRST|TOP)\b", query_text, re.IGNORECASE)
+                has_into = re.search(r"\b(?:ПОМЕСТИТЬ|INTO)\b", query_text, re.IGNORECASE)
                 if not has_where and not has_first and not has_into:
                     diags.append(
                         Diagnostic(
@@ -9457,9 +9843,7 @@ class DiagnosticEngine:
                         end_character=len(header_line.rstrip()),
                         severity=Severity.WARNING,
                         code="BSL062",
-                        message=(
-                            f"Parameter '{param_name}' is never used in the method body."
-                        ),
+                        message=(f"Parameter '{param_name}' is never used in the method body."),
                     )
                 )
         return diags
@@ -9468,9 +9852,7 @@ class DiagnosticEngine:
     # BSL063 — Large module
     # ------------------------------------------------------------------
 
-    def _rule_bsl063_large_module(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl063_large_module(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag files that exceed the maximum module line count."""
         total = len(lines)
         if total <= self.max_module_lines:
@@ -9660,9 +10042,7 @@ class DiagnosticEngine:
 
     MAX_ELSEIF_BRANCHES: int = 5
 
-    def _rule_bsl068_too_many_elseif(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl068_too_many_elseif(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """
         Flag Если/If blocks that contain more than MAX_ELSEIF_BRANCHES ИначеЕсли branches.
         Long chains are hard to read and maintain — use a map or polymorphism.
@@ -9710,9 +10090,7 @@ class DiagnosticEngine:
     # BSL069 — Infinite loop (Пока Истина Цикл without Прервать)
     # ------------------------------------------------------------------
 
-    def _rule_bsl069_infinite_loop(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl069_infinite_loop(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """
         Flag 'Пока Истина Цикл' / 'While True Do' bodies that contain no
         Прервать/Break statement — this is almost certainly an infinite loop.
@@ -9786,10 +10164,9 @@ class DiagnosticEngine:
                             break
                     j += 1
                 # Check if loop body (lines between loop header and КонецЦикла) is empty
-                body_lines = lines[loop_start + 1: j]
+                body_lines = lines[loop_start + 1 : j]
                 has_executable = any(
-                    ln.strip() and not ln.strip().startswith("//")
-                    for ln in body_lines
+                    ln.strip() and not ln.strip().startswith("//") for ln in body_lines
                 )
                 if not has_executable:
                     header = lines[loop_start]
@@ -9830,9 +10207,7 @@ class DiagnosticEngine:
         if not procs:
             return []
         # Build a set of line ranges that are inside procedure/function bodies
-        body_ranges: list[tuple[int, int]] = [
-            (proc.start_idx + 1, proc.end_idx) for proc in procs
-        ]
+        body_ranges: list[tuple[int, int]] = [(proc.start_idx + 1, proc.end_idx) for proc in procs]
         diags: list[Diagnostic] = []
         for idx, line in enumerate(lines):
             # Only flag inside method bodies
@@ -9842,7 +10217,7 @@ class DiagnosticEngine:
             if not stripped or stripped.startswith("//"):
                 continue
             # Skip constant declarations: Конст Х = 100;
-            if re.match(r'^\s*(?:Конст|Const)\b', line, re.IGNORECASE):
+            if re.match(r"^\s*(?:Конст|Const)\b", line, re.IGNORECASE):
                 continue
             for m in _RE_MAGIC_NUMBER.finditer(line):
                 num = m.group(0).strip()
@@ -9874,9 +10249,7 @@ class DiagnosticEngine:
     # BSL072 — String concatenation inside a loop
     # ------------------------------------------------------------------
 
-    def _rule_bsl072_string_concat_in_loop(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl072_string_concat_in_loop(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """
         Flag lines inside a loop body that concatenate a variable with a string literal
         using '+'. This is an O(n²) operation — collect into an array and join instead.
@@ -9925,9 +10298,7 @@ class DiagnosticEngine:
 
     MAX_IF_DEPTH_FOR_ELSE_CHECK: int = 1  # only top-level if-blocks
 
-    def _rule_bsl073_missing_else_branch(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl073_missing_else_branch(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """
         Flag top-level Если/If blocks that have at least one ИначеЕсли but no Иначе/Else.
         Pure 'Если ... Тогда ... КонецЕсли' without any ИначеЕсли are not flagged.
@@ -9980,9 +10351,7 @@ class DiagnosticEngine:
     # BSL074 — TODO/FIXME/HACK comment
     # ------------------------------------------------------------------
 
-    def _rule_bsl074_todo_comment(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl074_todo_comment(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag TODO, FIXME, HACK, XXX markers in comments as technical debt."""
         diags: list[Diagnostic] = []
         for idx, line in enumerate(lines):
@@ -10025,8 +10394,8 @@ class DiagnosticEngine:
             m = _RE_VAR_DECL.match(lines[idx])
             if m:
                 # Extract variable names: Перем А, Б, В;
-                rest = lines[idx][m.end():].rstrip().rstrip(";")
-                for name in re.split(r'\s*,\s*', rest):
+                rest = lines[idx][m.end() :].rstrip().rstrip(";")
+                for name in re.split(r"\s*,\s*", rest):
                     name = name.strip()
                     if name:
                         module_vars.add(name.lower())
@@ -10042,8 +10411,8 @@ class DiagnosticEngine:
             for idx in range(body_start, min(proc.end_idx, len(lines))):
                 lm = _RE_VAR_DECL.match(lines[idx])
                 if lm:
-                    rest = lines[idx][lm.end():].rstrip().rstrip(";")
-                    for nm in re.split(r'\s*,\s*', rest):
+                    rest = lines[idx][lm.end() :].rstrip().rstrip(";")
+                    for nm in re.split(r"\s*,\s*", rest):
                         nm = nm.strip()
                         if nm:
                             local_vars.add(nm.lower())
@@ -10055,7 +10424,11 @@ class DiagnosticEngine:
                 am = _RE_MODULE_ASSIGN.match(lines[idx])
                 if am:
                     var_name = am.group(1).lower()
-                    if var_name in module_vars and var_name not in local_vars and var_name not in param_vars:
+                    if (
+                        var_name in module_vars
+                        and var_name not in local_vars
+                        and var_name not in param_vars
+                    ):
                         diags.append(
                             Diagnostic(
                                 file=path,
@@ -10105,9 +10478,7 @@ class DiagnosticEngine:
     # BSL077 — SELECT * in query
     # ------------------------------------------------------------------
 
-    def _rule_bsl077_select_star(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl077_select_star(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag ВЫБРАТЬ */SELECT * in query text strings."""
         diags: list[Diagnostic] = []
         for idx, line in enumerate(lines):
@@ -10134,9 +10505,7 @@ class DiagnosticEngine:
     # BSL078 — ВызватьИсключение without a message
     # ------------------------------------------------------------------
 
-    def _rule_bsl078_raise_without_message(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl078_raise_without_message(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag bare ВызватьИсключение; / Raise; with no message argument."""
         diags: list[Diagnostic] = []
         for idx, line in enumerate(lines):
@@ -10162,9 +10531,7 @@ class DiagnosticEngine:
     # BSL079 — Goto statement
     # ------------------------------------------------------------------
 
-    def _rule_bsl079_using_goto(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl079_using_goto(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag Перейти/Goto statements as unstructured control flow."""
         diags: list[Diagnostic] = []
         for idx, line in enumerate(lines):
@@ -10190,9 +10557,7 @@ class DiagnosticEngine:
     # BSL080 — Silent catch (exception handler ignores the error)
     # ------------------------------------------------------------------
 
-    def _rule_bsl080_silent_catch(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl080_silent_catch(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """
         Flag Исключение/Except blocks that contain no ИнформацияОбОшибке() call
         and no ВызватьИсключение/Raise — the error is silently swallowed.
@@ -10251,9 +10616,7 @@ class DiagnosticEngine:
 
     MAX_METHOD_CHAIN_DEPTH: int = 5
 
-    def _rule_bsl081_long_method_chain(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl081_long_method_chain(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """
         Flag lines where a method call chain exceeds MAX_METHOD_CHAIN_DEPTH
         chained calls (e.g. A.B().C().D().E().F() has 5 calls).
@@ -10288,9 +10651,7 @@ class DiagnosticEngine:
     # BSL082 — Missing newline at end of file
     # ------------------------------------------------------------------
 
-    def _rule_bsl082_missing_newline_at_eof(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl082_missing_newline_at_eof(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag files that do not end with a newline character."""
         if not lines:
             return []
@@ -10334,8 +10695,8 @@ class DiagnosticEngine:
         for idx in range(first_proc):
             if _RE_VAR_DECL.match(lines[idx]):
                 # Count comma-separated names on this line
-                rest = lines[idx][_RE_VAR_DECL.match(lines[idx]).end():].rstrip().rstrip(";")
-                count = len([n for n in re.split(r'\s*,\s*', rest) if n.strip()])
+                rest = lines[idx][_RE_VAR_DECL.match(lines[idx]).end() :].rstrip().rstrip(";")
+                count = len([n for n in re.split(r"\s*,\s*", rest) if n.strip()])
                 module_var_count += max(count, 1)
         if module_var_count > self.MAX_MODULE_VARIABLES:
             return [
@@ -10372,10 +10733,8 @@ class DiagnosticEngine:
         for proc in procs:
             if proc.kind != "function":
                 continue
-            body_lines = lines[proc.start_idx + 1: proc.end_idx]
-            has_return_value = any(
-                _RE_RETURN_VALUE.match(ln) for ln in body_lines
-            )
+            body_lines = lines[proc.start_idx + 1 : proc.end_idx]
+            has_return_value = any(_RE_RETURN_VALUE.match(ln) for ln in body_lines)
             if not has_return_value:
                 header = lines[proc.start_idx]
                 diags.append(
@@ -10429,9 +10788,7 @@ class DiagnosticEngine:
     # BSL086 — HTTP request in a loop
     # ------------------------------------------------------------------
 
-    def _rule_bsl086_http_request_in_loop(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl086_http_request_in_loop(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag HTTP-related calls inside a loop body."""
         diags: list[Diagnostic] = []
         i = 0
@@ -10475,14 +10832,20 @@ class DiagnosticEngine:
     # ------------------------------------------------------------------
 
     # Objects that are cheap/intentional to create per-iteration
-    _ALLOWED_NEW_IN_LOOP: frozenset[str] = frozenset({
-        "структура", "соответствие", "массив", "список",
-        "structure", "map", "array", "list",
-    })
+    _ALLOWED_NEW_IN_LOOP: frozenset[str] = frozenset(
+        {
+            "структура",
+            "соответствие",
+            "массив",
+            "список",
+            "structure",
+            "map",
+            "array",
+            "list",
+        }
+    )
 
-    def _rule_bsl087_object_creation_in_loop(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl087_object_creation_in_loop(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag Новый/New object creation inside a loop body (potential performance issue)."""
         diags: list[Diagnostic] = []
         i = 0
@@ -10501,8 +10864,8 @@ class DiagnosticEngine:
                         m = _RE_NEW_OBJECT.search(lines[j])
                         if m:
                             # Check the object type after Новый
-                            after = lines[j][m.end():].strip()
-                            obj_type = re.match(r'(\w+)', after)
+                            after = lines[j][m.end() :].strip()
+                            obj_type = re.match(r"(\w+)", after)
                             if obj_type and obj_type.group(1).lower() in self._ALLOWED_NEW_IN_LOOP:
                                 j += 1
                                 continue
@@ -10544,7 +10907,7 @@ class DiagnosticEngine:
                 continue
             # Scan up to 10 lines before the header for a Parameters comment
             start = max(0, proc.start_idx - 10)
-            comment_block = lines[start: proc.start_idx]
+            comment_block = lines[start : proc.start_idx]
             has_param_comment = any(_RE_PARAM_COMMENT.search(ln) for ln in comment_block)
             if not has_param_comment:
                 header = lines[proc.start_idx]
@@ -10569,9 +10932,7 @@ class DiagnosticEngine:
     # BSL089 — Transaction begun inside a loop
     # ------------------------------------------------------------------
 
-    def _rule_bsl089_transaction_in_loop(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl089_transaction_in_loop(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag НачатьТранзакцию/BeginTransaction calls inside a loop body."""
         diags: list[Diagnostic] = []
         i = 0
@@ -10676,7 +11037,7 @@ class DiagnosticEngine:
                     elif depth == 1:
                         if _RE_RETURN_STMT.match(lines[j]):
                             last_return_before_else = j
-                        elif (_RE_ELSE.match(lines[j]) or _RE_ELSEIF.match(lines[j])):
+                        elif _RE_ELSE.match(lines[j]) or _RE_ELSEIF.match(lines[j]):
                             if last_return_before_else is not None:
                                 # Else/ElseIf after a Return — redundant
                                 if _RE_ELSE.match(lines[j]):
@@ -10757,9 +11118,7 @@ class DiagnosticEngine:
     # BSL093 — Comparison to NULL
     # ------------------------------------------------------------------
 
-    def _rule_bsl093_comparison_to_null(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl093_comparison_to_null(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag comparisons to SQL NULL — use Неопределено or ЗначениеЗаполнено()."""
         diags: list[Diagnostic] = []
         for idx, line in enumerate(lines):
@@ -10788,9 +11147,7 @@ class DiagnosticEngine:
     # BSL094 — No-op compound assignment
     # ------------------------------------------------------------------
 
-    def _rule_bsl094_noop_assignment(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl094_noop_assignment(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag compound assignments that have no effect (e.g. += 0, *= 1)."""
         diags: list[Diagnostic] = []
         for idx, line in enumerate(lines):
@@ -10821,7 +11178,7 @@ class DiagnosticEngine:
 
     # Lines that are allowed to have ; mid-line (for/each, string literals etc.)
     _MULTI_STMT_SKIP = re.compile(
-        r'^\s*(?:Для|For|ДляКаждого|ForEach|Пока|While|#)',
+        r"^\s*(?:Для|For|ДляКаждого|ForEach|Пока|While|#)",
         re.IGNORECASE,
     )
 
@@ -10874,7 +11231,7 @@ class DiagnosticEngine:
                 continue
             # Look at up to 5 lines before the header
             start = max(0, proc.start_idx - 5)
-            preceding = lines[start: proc.start_idx]
+            preceding = lines[start : proc.start_idx]
             has_comment = any(ln.strip().startswith("//") for ln in preceding)
             if not has_comment:
                 header = lines[proc.start_idx]
@@ -10899,9 +11256,7 @@ class DiagnosticEngine:
     # BSL097 — Use of ТекущаяДата() / CurrentDate()
     # ------------------------------------------------------------------
 
-    def _rule_bsl097_use_of_current_date(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl097_use_of_current_date(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag ТекущаяДата()/CurrentDate() — recommend ТекущаяДатаСеанса()."""
         diags: list[Diagnostic] = []
         for idx, line in enumerate(lines):
@@ -10926,14 +11281,11 @@ class DiagnosticEngine:
                 )
         return diags
 
-
     # ------------------------------------------------------------------
     # BSL098 — Use of Выполнить() / Execute()
     # ------------------------------------------------------------------
 
-    def _rule_bsl098_use_of_execute(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl098_use_of_execute(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag Выполнить()/Execute() — dynamic code execution."""
         diags: list[Diagnostic] = []
         for idx, line in enumerate(lines):
@@ -10993,9 +11345,7 @@ class DiagnosticEngine:
     # BSL100 — Hardcoded file path
     # ------------------------------------------------------------------
 
-    def _rule_bsl100_hardcoded_file_path(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl100_hardcoded_file_path(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag string literals containing hardcoded file system paths."""
         diags: list[Diagnostic] = []
         for idx, line in enumerate(lines):
@@ -11028,19 +11378,17 @@ class DiagnosticEngine:
 
     # Keywords that increase nesting depth
     _NESTING_OPEN = re.compile(
-        r'^\s*(?:Если|If|'
-        r'Для|For|ДляКаждого|ForEach|Пока|While|'
-        r'Попытка|Try)\b',
+        r"^\s*(?:Если|If|"
+        r"Для|For|ДляКаждого|ForEach|Пока|While|"
+        r"Попытка|Try)\b",
         re.IGNORECASE,
     )
     _NESTING_CLOSE = re.compile(
-        r'^\s*(?:КонецЕсли|EndIf|КонецЦикла|EndDo|КонецПопытки|EndTry)\b',
+        r"^\s*(?:КонецЕсли|EndIf|КонецЦикла|EndDo|КонецПопытки|EndTry)\b",
         re.IGNORECASE,
     )
 
-    def _rule_bsl101_too_deep_nesting(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl101_too_deep_nesting(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag lines where the structural nesting depth exceeds the maximum."""
         diags: list[Diagnostic] = []
         depth = 0
@@ -11080,9 +11428,7 @@ class DiagnosticEngine:
 
     _MAX_MODULE_LINES = 500
 
-    def _rule_bsl102_large_module(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl102_large_module(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag modules with more than MAX_MODULE_LINES non-blank lines."""
         total = len(lines)
         if total <= self._MAX_MODULE_LINES:
@@ -11107,9 +11453,7 @@ class DiagnosticEngine:
     # BSL103 — Use of Вычислить() / Eval()
     # ------------------------------------------------------------------
 
-    def _rule_bsl103_use_of_eval(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl103_use_of_eval(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag Вычислить()/Eval() — dynamic expression evaluation."""
         diags: list[Diagnostic] = []
         for idx, line in enumerate(lines):
@@ -11138,9 +11482,7 @@ class DiagnosticEngine:
     # BSL104 — Missing module comment header
     # ------------------------------------------------------------------
 
-    def _rule_bsl104_missing_module_comment(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl104_missing_module_comment(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag modules that have no comment block in the first 5 lines."""
         if not lines:
             return []
@@ -11149,9 +11491,7 @@ class DiagnosticEngine:
         if has_comment:
             return []
         # Skip empty files or files that start with a region
-        first_non_blank = next(
-            (ln.strip() for ln in lines if ln.strip()), ""
-        )
+        first_non_blank = next((ln.strip() for ln in lines if ln.strip()), "")
         if first_non_blank.startswith("#"):
             return []
         return [
@@ -11164,8 +11504,7 @@ class DiagnosticEngine:
                 severity=Severity.INFORMATION,
                 code="BSL104",
                 message=(
-                    "Module has no comment header — "
-                    "add a // description of the module's purpose."
+                    "Module has no comment header — add a // description of the module's purpose."
                 ),
             )
         ]
@@ -11174,9 +11513,7 @@ class DiagnosticEngine:
     # BSL105 — Use of Приостановить() / Sleep()
     # ------------------------------------------------------------------
 
-    def _rule_bsl105_use_of_sleep(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl105_use_of_sleep(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag Приостановить()/Sleep() — blocks the current thread."""
         diags: list[Diagnostic] = []
         for idx, line in enumerate(lines):
@@ -11205,9 +11542,7 @@ class DiagnosticEngine:
     # BSL106 — Query (ВЫБРАТЬ/SELECT) inside a loop
     # ------------------------------------------------------------------
 
-    def _rule_bsl106_query_in_loop(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl106_query_in_loop(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag SQL queries that appear inside a Цикл/EndDo loop."""
         diags: list[Diagnostic] = []
         loop_depth = 0
@@ -11244,9 +11579,7 @@ class DiagnosticEngine:
     # BSL107 — Empty Тогда branch in Если statement
     # ------------------------------------------------------------------
 
-    def _rule_bsl107_empty_then_branch(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl107_empty_then_branch(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag Если ... Тогда blocks whose body is empty (next non-blank is КонецЕсли/ИначеЕсли/Иначе)."""
         diags: list[Diagnostic] = []
         n = len(lines)
@@ -11279,8 +11612,7 @@ class DiagnosticEngine:
                         severity=Severity.WARNING,
                         code="BSL107",
                         message=(
-                            "Empty Тогда branch — "
-                            "add the missing logic or remove the branch."
+                            "Empty Тогда branch — add the missing logic or remove the branch."
                         ),
                     )
                 )
@@ -11290,9 +11622,7 @@ class DiagnosticEngine:
     # BSL108 — Exported module-level variable
     # ------------------------------------------------------------------
 
-    def _rule_bsl108_use_of_global_variables(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl108_use_of_global_variables(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag module-level Перем declarations that are exported."""
         diags: list[Diagnostic] = []
         for idx, line in enumerate(lines):
@@ -11347,10 +11677,7 @@ class DiagnosticEngine:
                         end_character=len(line.rstrip()),
                         severity=Severity.INFORMATION,
                         code="BSL109",
-                        message=(
-                            "Guard-clause with НЕ — "
-                            "invert the condition to reduce nesting."
-                        ),
+                        message=("Guard-clause with НЕ — invert the condition to reduce nesting."),
                     )
                 )
         return diags
@@ -11359,9 +11686,7 @@ class DiagnosticEngine:
     # BSL110 — String self-concatenation inside a loop
     # ------------------------------------------------------------------
 
-    def _rule_bsl110_string_concat_in_loop(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl110_string_concat_in_loop(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag А = А + '...' patterns inside a loop body."""
         diags: list[Diagnostic] = []
         loop_depth = 0
@@ -11447,7 +11772,7 @@ class DiagnosticEngine:
                     break
                 # Stop at the end of the enclosing procedure/function
                 if re.match(
-                    r'(?:КонецПроцедуры|КонецФункции|EndProcedure|EndFunction)',
+                    r"(?:КонецПроцедуры|КонецФункции|EndProcedure|EndFunction)",
                     jline,
                     re.IGNORECASE,
                 ):
@@ -11474,9 +11799,7 @@ class DiagnosticEngine:
     # BSL113 — Assignment inside Если condition
     # ------------------------------------------------------------------
 
-    def _rule_bsl113_assignment_in_condition(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl113_assignment_in_condition(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """BSLLS ``AssignmentInCondition`` — in BSL ``=`` in ``Если`` is comparison, not assignment."""
         return []
 
@@ -11484,9 +11807,7 @@ class DiagnosticEngine:
     # BSL114 — Empty module
     # ------------------------------------------------------------------
 
-    def _rule_bsl114_empty_module(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl114_empty_module(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag modules with no executable code (only blanks/comments)."""
         for line in lines:
             stripped = line.strip()
@@ -11510,9 +11831,7 @@ class DiagnosticEngine:
     # BSL115 — Double negation (НЕ НЕ)
     # ------------------------------------------------------------------
 
-    def _rule_bsl115_chained_negation(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl115_chained_negation(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag НЕ НЕ / Not Not double negation."""
         diags: list[Diagnostic] = []
         for idx, line in enumerate(lines):
@@ -11529,10 +11848,7 @@ class DiagnosticEngine:
                         end_character=m.end(),
                         severity=Severity.WARNING,
                         code="BSL115",
-                        message=(
-                            "Double negation НЕ НЕ — "
-                            "simplify to the positive condition."
-                        ),
+                        message=("Double negation НЕ НЕ — simplify to the positive condition."),
                     )
                 )
         return diags
@@ -11542,7 +11858,7 @@ class DiagnosticEngine:
     # ------------------------------------------------------------------
 
     _RE_FOR_INDEX = re.compile(
-        r'^\s*(?:Для|For)\s+\w+\s*=\s*\d+\s+(?:По|To)\b',
+        r"^\s*(?:Для|For)\s+\w+\s*=\s*\d+\s+(?:По|To)\b",
         re.IGNORECASE,
     )
 
@@ -11581,14 +11897,12 @@ class DiagnosticEngine:
     ) -> list[Diagnostic]:
         """Flag calls to known Процедура where the return value is used."""
         # Build set of procedure names (not functions)
-        procedure_names = {
-            p.name.lower() for p in procs if p.kind == "procedure"
-        }
+        procedure_names = {p.name.lower() for p in procs if p.kind == "procedure"}
         if not procedure_names:
             return []
         # Pattern: Var = ProcName(
         _re_proc_as_func = re.compile(
-            r'^\s*\w+\s*=\s*(' + '|'.join(re.escape(n) for n in procedure_names) + r')\s*\(',
+            r"^\s*\w+\s*=\s*(" + "|".join(re.escape(n) for n in procedure_names) + r")\s*\(",
             re.IGNORECASE,
         )
         diags: list[Diagnostic] = []
@@ -11626,7 +11940,7 @@ class DiagnosticEngine:
         for proc in procs:
             if proc.kind != "function":
                 continue
-            body_lines = lines[proc.start_idx: proc.end_idx + 1]
+            body_lines = lines[proc.start_idx : proc.end_idx + 1]
             body_text = "\n".join(body_lines)
             if not _RE_RETURN_VALUE.search(body_text):
                 header = lines[proc.start_idx]
@@ -11653,9 +11967,7 @@ class DiagnosticEngine:
 
     _MAX_LINE_LENGTH = 120
 
-    def _rule_bsl119_line_too_long(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl119_line_too_long(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag lines longer than MAX_LINE_LENGTH characters."""
         diags: list[Diagnostic] = []
         for idx, line in enumerate(lines):
@@ -11682,9 +11994,7 @@ class DiagnosticEngine:
     # BSL120 — Trailing whitespace
     # ------------------------------------------------------------------
 
-    def _rule_bsl120_trailing_whitespace(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl120_trailing_whitespace(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag lines that have trailing whitespace."""
         diags: list[Diagnostic] = []
         for idx, line in enumerate(lines):
@@ -11708,9 +12018,7 @@ class DiagnosticEngine:
     # BSL121 — Tab indentation
     # ------------------------------------------------------------------
 
-    def _rule_bsl121_tab_indentation(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl121_tab_indentation(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag lines that use tab characters for indentation."""
         diags: list[Diagnostic] = []
         for idx, line in enumerate(lines):
@@ -11742,15 +12050,13 @@ class DiagnosticEngine:
         for proc in procs:
             if not proc.params:
                 continue
-            body_lines = lines[proc.start_idx + 1: proc.end_idx]
+            body_lines = lines[proc.start_idx + 1 : proc.end_idx]
             body_text = "\n".join(body_lines).lower()
             for param in proc.params:
                 # Strip default value and leading &/Val markers
                 raw = param.lstrip("&").split("=")[0].strip()
                 # Remove leading Val/Значение keyword
-                pname = re.sub(
-                    r'^\s*(?:Значение|Val)\s+', "", raw, flags=re.IGNORECASE
-                ).strip()
+                pname = re.sub(r"^\s*(?:Значение|Val)\s+", "", raw, flags=re.IGNORECASE).strip()
                 if not pname:
                     continue
                 if pname.lower() not in body_text:
@@ -11765,8 +12071,7 @@ class DiagnosticEngine:
                             severity=Severity.WARNING,
                             code="BSL122",
                             message=(
-                                f"Parameter '{pname}' in '{proc.name}' "
-                                "is never used in the body."
+                                f"Parameter '{pname}' in '{proc.name}' is never used in the body."
                             ),
                         )
                     )
@@ -11776,9 +12081,7 @@ class DiagnosticEngine:
     # BSL123 — Commented-out code
     # ------------------------------------------------------------------
 
-    def _rule_bsl123_commented_out_code(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl123_commented_out_code(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag comment lines that appear to contain commented-out code."""
         diags: list[Diagnostic] = []
         for idx, line in enumerate(lines):
@@ -11835,9 +12138,7 @@ class DiagnosticEngine:
     # BSL125 — Break (Прервать) outside a loop
     # ------------------------------------------------------------------
 
-    def _rule_bsl125_break_outside_loop(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl125_break_outside_loop(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag Прервать/Break statements that appear outside any loop."""
         diags: list[Diagnostic] = []
         loop_depth = 0
@@ -11868,9 +12169,7 @@ class DiagnosticEngine:
     # BSL126 — Continue (Продолжить) outside a loop
     # ------------------------------------------------------------------
 
-    def _rule_bsl126_continue_outside_loop(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl126_continue_outside_loop(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag Продолжить/Continue statements that appear outside any loop."""
         diags: list[Diagnostic] = []
         loop_depth = 0
@@ -11909,7 +12208,7 @@ class DiagnosticEngine:
         for proc in procs:
             if proc.kind != "function":
                 continue
-            body_lines = lines[proc.start_idx + 1: proc.end_idx]
+            body_lines = lines[proc.start_idx + 1 : proc.end_idx]
             # Count top-level Возврат statements (not inside nested if/loop)
             depth = 0
             top_returns: list[int] = []
@@ -11948,7 +12247,6 @@ class DiagnosticEngine:
                         )
                     )
         return diags
-
 
     # ------------------------------------------------------------------
     # BSL128 — DeadCodeAfterReturn
@@ -12044,9 +12342,7 @@ class DiagnosticEngine:
     # BSL130 — LongCommentLine
     # ------------------------------------------------------------------
 
-    def _rule_bsl130_long_comment_line(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl130_long_comment_line(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag comment-only lines longer than 120 characters."""
         diags: list[Diagnostic] = []
         for idx, line in enumerate(lines):
@@ -12072,9 +12368,7 @@ class DiagnosticEngine:
     # BSL131 — EmptyRegion
     # ------------------------------------------------------------------
 
-    def _rule_bsl131_empty_region(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl131_empty_region(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag #Область immediately followed by #КонецОбласти with no code in between."""
         diags: list[Diagnostic] = []
         for idx, line in enumerate(lines):
@@ -12229,9 +12523,7 @@ class DiagnosticEngine:
     # BSL135 — NestedFunctionCalls
     # ------------------------------------------------------------------
 
-    def _rule_bsl135_nested_function_calls(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl135_nested_function_calls(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag lines where a function call is passed directly as an argument to another."""
         diags: list[Diagnostic] = []
         for idx, line in enumerate(lines):
@@ -12322,9 +12614,7 @@ class DiagnosticEngine:
     # BSL138 — UseOfDebugOutput
     # ------------------------------------------------------------------
 
-    def _rule_bsl138_use_of_debug_output(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl138_use_of_debug_output(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag calls to Сообщить()/Message()/Предупреждение()/Warning() debug output."""
         diags: list[Diagnostic] = []
         for idx, line in enumerate(lines):
@@ -12388,9 +12678,7 @@ class DiagnosticEngine:
     # BSL140 — UnreachableElseIf
     # ------------------------------------------------------------------
 
-    def _rule_bsl140_unreachable_elseif(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl140_unreachable_elseif(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag ИначеЕсли/ElsIf that immediately follows an unconditional Иначе/Else."""
         diags: list[Diagnostic] = []
         depth = 0
@@ -12582,9 +12870,7 @@ class DiagnosticEngine:
     # BSL144 — UnnecessaryParentheses
     # ------------------------------------------------------------------
 
-    def _rule_bsl144_unnecessary_parentheses(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl144_unnecessary_parentheses(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag 'Возврат (expr)' where the return value is wrapped in redundant parens."""
         diags: list[Diagnostic] = []
         for idx, line in enumerate(lines):
@@ -12657,8 +12943,7 @@ class DiagnosticEngine:
             for i in range(proc.start_idx, proc.end_idx + 1):
                 inside_proc.add(i)
 
-
-        _re_exec = re.compile(r'[А-Яа-яA-Za-z0-9_]')
+        _re_exec = re.compile(r"[А-Яа-яA-Za-z0-9_]")
 
         for idx, line in enumerate(lines):
             if idx in inside_proc:
@@ -12760,19 +13045,21 @@ class DiagnosticEngine:
                 if not found_try:
                     col = len(line) - len(line.lstrip())
                     m = _re_begin.search(line)
-                    diags.append(Diagnostic(
-                        file=path,
-                        line=idx + 1,
-                        character=m.start() if m else col,
-                        end_line=idx + 1,
-                        end_character=(m.end() if m else col + 20),
-                        severity=Severity.ERROR,
-                        code="BSL151",
-                        message=(
-                            "НачатьТранзакцию() должна находиться непосредственно "
-                            "перед блоком Попытка"
-                        ),
-                    ))
+                    diags.append(
+                        Diagnostic(
+                            file=path,
+                            line=idx + 1,
+                            character=m.start() if m else col,
+                            end_line=idx + 1,
+                            end_character=(m.end() if m else col + 20),
+                            severity=Severity.ERROR,
+                            code="BSL151",
+                            message=(
+                                "НачатьТранзакцию() должна находиться непосредственно "
+                                "перед блоком Попытка"
+                            ),
+                        )
+                    )
         return diags
 
     # ------------------------------------------------------------------
@@ -13051,19 +13338,21 @@ class DiagnosticEngine:
                     depth -= 1
             if not inside_try:
                 m = _re_commit.search(line)
-                diags.append(Diagnostic(
-                    file=path,
-                    line=idx + 1,
-                    character=m.start() if m else 0,
-                    end_line=idx + 1,
-                    end_character=m.end() if m else len(line),
-                    severity=Severity.ERROR,
-                    code="BSL157",
-                    message=(
-                        "ЗафиксироватьТранзакцию() должна вызываться внутри блока "
-                        "Попытка (перед Исключение)"
-                    ),
-                ))
+                diags.append(
+                    Diagnostic(
+                        file=path,
+                        line=idx + 1,
+                        character=m.start() if m else 0,
+                        end_line=idx + 1,
+                        end_character=m.end() if m else len(line),
+                        severity=Severity.ERROR,
+                        code="BSL157",
+                        message=(
+                            "ЗафиксироватьТранзакцию() должна вызываться внутри блока "
+                            "Попытка (перед Исключение)"
+                        ),
+                    )
+                )
         return diags
 
     # ------------------------------------------------------------------
@@ -13079,9 +13368,7 @@ class DiagnosticEngine:
             r"^\s*(?:Для\s+Каждого|For\s+Each)\s+(\w+)\s+(?:Из|In)\s+(\w+(?:\.\w+)*)",
             re.IGNORECASE | re.UNICODE,
         )
-        _re_end_loop = re.compile(
-            r"^\s*(?:КонецЦикла|EndDo)\b", re.IGNORECASE
-        )
+        _re_end_loop = re.compile(r"^\s*(?:КонецЦикла|EndDo)\b", re.IGNORECASE)
         _re_delete = re.compile(
             r"(\w+(?:\.\w+)*)\s*\.\s*(?:Удалить|Delete)\s*\(",
             re.IGNORECASE | re.UNICODE,
@@ -13110,21 +13397,27 @@ class DiagnosticEngine:
                             obj = dm.group(1).casefold().split(".")[-1]
                             arg_start = bl.find("(", dm.end() - 1) + 1
                             arg_end = bl.find(")", arg_start) if arg_start > 0 else -1
-                            arg = bl[arg_start:arg_end].strip().casefold() if arg_end > arg_start else ""
+                            arg = (
+                                bl[arg_start:arg_end].strip().casefold()
+                                if arg_end > arg_start
+                                else ""
+                            )
                             if obj == collection or arg == iter_var:
-                                diags.append(Diagnostic(
-                                    file=path,
-                                    line=j + 1,
-                                    character=dm.start(),
-                                    end_line=j + 1,
-                                    end_character=dm.end(),
-                                    severity=Severity.ERROR,
-                                    code="BSL173",
-                                    message=(
-                                        "Удаление элемента коллекции внутри цикла "
-                                        "«Для Каждого» может привести к ошибке"
-                                    ),
-                                ))
+                                diags.append(
+                                    Diagnostic(
+                                        file=path,
+                                        line=j + 1,
+                                        character=dm.start(),
+                                        end_line=j + 1,
+                                        end_character=dm.end(),
+                                        severity=Severity.ERROR,
+                                        code="BSL173",
+                                        message=(
+                                            "Удаление элемента коллекции внутри цикла "
+                                            "«Для Каждого» может привести к ошибке"
+                                        ),
+                                    )
+                                )
                     j += 1
             i += 1
         return diags
@@ -13156,32 +13449,32 @@ class DiagnosticEngine:
             if not _re_handler.match(line):
                 continue
             # Check if any line in the proc body references ОбменДаннымиЗагрузка
-            body_lines = lines[start:proc.end_idx]
+            body_lines = lines[start : proc.end_idx]
             has_check = any(_re_exchange.search(bl) for bl in body_lines)
             if not has_check:
                 m = _re_handler.match(line)
-                diags.append(Diagnostic(
-                    file=path,
-                    line=start + 1,
-                    character=m.start() if m else 0,
-                    end_line=start + 1,
-                    end_character=m.end() if m else len(line),
-                    severity=Severity.WARNING,
-                    code="BSL172",
-                    message=(
-                        "Обработчик не проверяет «ОбменДаннымиЗагрузка» — "
-                        "добавьте проверку в начало метода"
-                    ),
-                ))
+                diags.append(
+                    Diagnostic(
+                        file=path,
+                        line=start + 1,
+                        character=m.start() if m else 0,
+                        end_line=start + 1,
+                        end_character=m.end() if m else len(line),
+                        severity=Severity.WARNING,
+                        code="BSL172",
+                        message=(
+                            "Обработчик не проверяет «ОбменДаннымиЗагрузка» — "
+                            "добавьте проверку в начало метода"
+                        ),
+                    )
+                )
         return diags
 
     # ------------------------------------------------------------------
     # BSL186 — ExtraCommas
     # ------------------------------------------------------------------
 
-    def _rule_bsl186_extra_commas(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl186_extra_commas(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Detect trailing commas in method calls or declarations."""
         diags: list[Diagnostic] = []
         for idx, line in enumerate(lines):
@@ -13193,16 +13486,18 @@ class DiagnosticEngine:
                 clean = clean[:comment_pos]
             m = _RE_BSL186_TRAILING_COMMA.search(clean)
             if m:
-                diags.append(Diagnostic(
-                    file=path,
-                    line=idx + 1,
-                    character=m.start(),
-                    end_line=idx + 1,
-                    end_character=m.start() + 1,
-                    severity=Severity.WARNING,
-                    code="BSL186",
-                    message="Лишняя запятая перед закрывающей скобкой или точкой с запятой",
-                ))
+                diags.append(
+                    Diagnostic(
+                        file=path,
+                        line=idx + 1,
+                        character=m.start(),
+                        end_line=idx + 1,
+                        end_character=m.start() + 1,
+                        severity=Severity.WARNING,
+                        code="BSL186",
+                        message="Лишняя запятая перед закрывающей скобкой или точкой с запятой",
+                    )
+                )
         return diags
 
     # ------------------------------------------------------------------
@@ -13215,10 +13510,10 @@ class DiagnosticEngine:
         """Flag SELECT fields in embedded queries that lack an explicit КАК/AS alias."""
         diags: list[Diagnostic] = []
         # State machine across continuation lines
-        in_query = False    # inside a multi-line query string
-        in_select = False   # currently collecting SELECT field lines
-        skip_select = False # next SELECT's fields are skipped (after UNION)
-        paren_depth = 0     # parens depth for nested subqueries
+        in_query = False  # inside a multi-line query string
+        in_select = False  # currently collecting SELECT field lines
+        skip_select = False  # next SELECT's fields are skipped (after UNION)
+        paren_depth = 0  # parens depth for nested subqueries
 
         for idx, line in enumerate(lines):
             stripped = line.rstrip()
@@ -13276,7 +13571,7 @@ class DiagnosticEngine:
                 skip_select = False
                 paren_depth = 0
                 # If ВЫБРАТЬ follows the ; on the same piece, handle below
-                after_semi = content[content.index(";") + 1:].strip()
+                after_semi = content[content.index(";") + 1 :].strip()
                 if _RE_BSL149_SELECT.search(after_semi):
                     in_select = not skip_select
                     skip_select = False
@@ -13345,9 +13640,7 @@ class DiagnosticEngine:
     # BSL210 — LogicalOrInTheWhereSectionOfQuery
     # ------------------------------------------------------------------
 
-    def _rule_bsl210_logical_or_in_where(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl210_logical_or_in_where(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag ИЛИ/OR inside embedded-query WHERE sections (BSLLS parity heuristic)."""
         diags: list[Diagnostic] = []
         in_query = False
@@ -13447,18 +13740,13 @@ class DiagnosticEngine:
 
         return diags
 
-    def _bsl210_scan_line_literal_queries(
-        self, path: str, idx: int, line: str
-    ) -> list[Diagnostic]:
+    def _bsl210_scan_line_literal_queries(self, path: str, idx: int, line: str) -> list[Diagnostic]:
         """One-line (or same-line) literals: ВЫБРАТЬ ... ГДЕ ... ИЛИ ..."""
         if _RE_COMMENT_LINE.match(line):
             return []
         diags: list[Diagnostic] = []
         for quote_pos, literal in _bsl210_iter_double_quoted_segments(line):
-            if not (
-                _RE_BSL149_SELECT.search(literal)
-                and _RE_QUERY_WHERE.search(literal)
-            ):
+            if not (_RE_BSL149_SELECT.search(literal) and _RE_QUERY_WHERE.search(literal)):
                 continue
             offset_base = 0
             for part in literal.split(";"):
@@ -13482,9 +13770,7 @@ class DiagnosticEngine:
     # BSL190 — FormDataToValue
     # ------------------------------------------------------------------
 
-    def _rule_bsl190_form_data_to_value(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl190_form_data_to_value(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Flag calls to ДанныеФормыВЗначение()/FormDataToValue() — slow operation.
 
         BSLLS: prefer working with server objects directly instead of converting
@@ -13500,19 +13786,21 @@ class DiagnosticEngine:
                 clean = clean[:comment_pos]
             m = _RE_BSL190_FORM_DATA.search(clean)
             if m:
-                diags.append(Diagnostic(
-                    file=path,
-                    line=idx + 1,
-                    character=m.start(),
-                    end_line=idx + 1,
-                    end_character=m.end(),
-                    severity=Severity.WARNING,
-                    code="BSL190",
-                    message=(
-                        "ДанныеФормыВЗначение()/FormDataToValue() — медленная операция; "
-                        "работайте с серверными объектами напрямую"
-                    ),
-                ))
+                diags.append(
+                    Diagnostic(
+                        file=path,
+                        line=idx + 1,
+                        character=m.start(),
+                        end_line=idx + 1,
+                        end_character=m.end(),
+                        severity=Severity.WARNING,
+                        code="BSL190",
+                        message=(
+                            "ДанныеФормыВЗначение()/FormDataToValue() — медленная операция; "
+                            "работайте с серверными объектами напрямую"
+                        ),
+                    )
+                )
         return diags
 
     # ------------------------------------------------------------------
@@ -13560,19 +13848,21 @@ class DiagnosticEngine:
             for b_start, b_body in branches:
                 key = "\n".join(b_body)
                 if len(b_body) >= 1 and key and key in seen:
-                    diags.append(Diagnostic(
-                        file=path,
-                        line=b_start + 1,
-                        character=0,
-                        end_line=b_start + 1,
-                        end_character=len(lines[b_start]),
-                        severity=Severity.WARNING,
-                        code="BSL197",
-                        message=(
-                            "Тело этой ветки «ИначеЕсли/Иначе» идентично "
-                            f"телу ветки на строке {seen[key] + 1}"
-                        ),
-                    ))
+                    diags.append(
+                        Diagnostic(
+                            file=path,
+                            line=b_start + 1,
+                            character=0,
+                            end_line=b_start + 1,
+                            end_character=len(lines[b_start]),
+                            severity=Severity.WARNING,
+                            code="BSL197",
+                            message=(
+                                "Тело этой ветки «ИначеЕсли/Иначе» идентично "
+                                f"телу ветки на строке {seen[key] + 1}"
+                            ),
+                        )
+                    )
                 else:
                     seen[key] = b_start
             i = j + 1
@@ -13608,19 +13898,21 @@ class DiagnosticEngine:
                     if em:
                         cond = em.group(1).strip().casefold()
                         if cond in conditions:
-                            diags.append(Diagnostic(
-                                file=path,
-                                line=j + 1,
-                                character=0,
-                                end_line=j + 1,
-                                end_character=len(bl),
-                                severity=Severity.WARNING,
-                                code="BSL198",
-                                message=(
-                                    f"Условие «ИначеЕсли» совпадает с условием "
-                                    f"на строке {conditions[cond] + 1} — ветка недостижима"
-                                ),
-                            ))
+                            diags.append(
+                                Diagnostic(
+                                    file=path,
+                                    line=j + 1,
+                                    character=0,
+                                    end_line=j + 1,
+                                    end_character=len(bl),
+                                    severity=Severity.WARNING,
+                                    code="BSL198",
+                                    message=(
+                                        f"Условие «ИначеЕсли» совпадает с условием "
+                                        f"на строке {conditions[cond] + 1} — ветка недостижима"
+                                    ),
+                                )
+                            )
                         else:
                             conditions[cond] = j
                 j += 1
@@ -13670,28 +13962,28 @@ class DiagnosticEngine:
                 elif ch == ";" and depth == 0:
                     semi_count += 1
             if semi_count >= 2:
-                diags.append(Diagnostic(
-                    file=path,
-                    line=idx + 1,
-                    character=0,
-                    end_line=idx + 1,
-                    end_character=len(line),
-                    severity=Severity.INFORMATION,
-                    code="BSL227",
-                    message=(
-                        "Несколько операторов на одной строке "
-                        "— разместите каждый на отдельной строке"
-                    ),
-                ))
+                diags.append(
+                    Diagnostic(
+                        file=path,
+                        line=idx + 1,
+                        character=0,
+                        end_line=idx + 1,
+                        end_character=len(line),
+                        severity=Severity.INFORMATION,
+                        code="BSL227",
+                        message=(
+                            "Несколько операторов на одной строке "
+                            "— разместите каждый на отдельной строке"
+                        ),
+                    )
+                )
         return diags
 
     # ------------------------------------------------------------------
     # BSL258 — UnionAll
     # ------------------------------------------------------------------
 
-    def _rule_bsl258_union_without_all(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl258_union_without_all(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Detect ОБЪЕДИНИТЬ/UNION without ALL in query strings."""
         diags: list[Diagnostic] = []
         # ОБЪЕДИНИТЬ not followed by ВСЕ (after optional whitespace)
@@ -13712,19 +14004,21 @@ class DiagnosticEngine:
             check_line = line if in_query else line
             m = _re_union.search(check_line)
             if m:
-                diags.append(Diagnostic(
-                    file=path,
-                    line=idx + 1,
-                    character=m.start(),
-                    end_line=idx + 1,
-                    end_character=m.end(),
-                    severity=Severity.WARNING,
-                    code="BSL258",
-                    message=(
-                        "«ОБЪЕДИНИТЬ» без «ВСЕ» выполняет дедупликацию — "
-                        "используйте «ОБЪЕДИНИТЬ ВСЕ» если дубли допустимы"
-                    ),
-                ))
+                diags.append(
+                    Diagnostic(
+                        file=path,
+                        line=idx + 1,
+                        character=m.start(),
+                        end_line=idx + 1,
+                        end_character=m.end(),
+                        severity=Severity.WARNING,
+                        code="BSL258",
+                        message=(
+                            "«ОБЪЕДИНИТЬ» без «ВСЕ» выполняет дедупликацию — "
+                            "используйте «ОБЪЕДИНИТЬ ВСЕ» если дубли допустимы"
+                        ),
+                    )
+                )
         return diags
 
     # ------------------------------------------------------------------
@@ -13733,24 +14027,45 @@ class DiagnosticEngine:
 
     # BSL canonical keyword forms (title case)
     _CANONICAL_KEYWORDS: dict[str, str] = {
-        "если": "Если", "иначеесли": "ИначеЕсли", "иначе": "Иначе",
-        "конецесли": "КонецЕсли", "для": "Для",
+        "если": "Если",
+        "иначеесли": "ИначеЕсли",
+        "иначе": "Иначе",
+        "конецесли": "КонецЕсли",
+        "для": "Для",
         # "каждого" omitted — BSLLS accepts both "Каждого" and "каждого" (EACH_LO variant)
-        "из": "Из", "цикл": "Цикл", "конеццикла": "КонецЦикла",
-        "пока": "Пока", "прервать": "Прервать", "продолжить": "Продолжить",
-        "попытка": "Попытка", "исключение": "Исключение",
-        "конецпопытки": "КонецПопытки", "вызватьисключение": "ВызватьИсключение",
-        "возврат": "Возврат", "перейти": "Перейти",
-        "процедура": "Процедура", "функция": "Функция",
-        "конецпроцедуры": "КонецПроцедуры", "конецфункции": "КонецФункции",
-        "перем": "Перем", "тогда": "Тогда", "по": "По", "новый": "Новый",
-        "экспорт": "Экспорт", "знач": "Знач", "не": "Не", "и": "И",
-        "или": "Или", "истина": "Истина", "ложь": "Ложь",
-        "неопределено": "Неопределено", "null": "Null",
+        "из": "Из",
+        "цикл": "Цикл",
+        "конеццикла": "КонецЦикла",
+        "пока": "Пока",
+        "прервать": "Прервать",
+        "продолжить": "Продолжить",
+        "попытка": "Попытка",
+        "исключение": "Исключение",
+        "конецпопытки": "КонецПопытки",
+        "вызватьисключение": "ВызватьИсключение",
+        "возврат": "Возврат",
+        "перейти": "Перейти",
+        "процедура": "Процедура",
+        "функция": "Функция",
+        "конецпроцедуры": "КонецПроцедуры",
+        "конецфункции": "КонецФункции",
+        "перем": "Перем",
+        "тогда": "Тогда",
+        "по": "По",
+        "новый": "Новый",
+        "экспорт": "Экспорт",
+        "знач": "Знач",
+        "не": "Не",
+        "и": "И",
+        "или": "Или",
+        "истина": "Истина",
+        "ложь": "Ложь",
+        "неопределено": "Неопределено",
+        "null": "Null",
     }
     # Only flag words that differ in case from their canonical form
     _CANONICAL_RE = re.compile(
-        r'\b(?:' + '|'.join(re.escape(k) for k in _CANONICAL_KEYWORDS) + r')\b',
+        r"\b(?:" + "|".join(re.escape(k) for k in _CANONICAL_KEYWORDS) + r")\b",
         re.IGNORECASE | re.UNICODE,
     )
 
@@ -13801,18 +14116,18 @@ class DiagnosticEngine:
                     # in multi-line expressions and is not considered an error.
                     if word.upper() == word:
                         continue
-                    diags.append(Diagnostic(
-                        file=path,
-                        line=idx + 1,
-                        character=m.start(),
-                        end_line=idx + 1,
-                        end_character=m.end(),
-                        severity=Severity.INFORMATION,
-                        code="BSL153",
-                        message=(
-                            f"Ключевое слово «{word}» должно быть «{canonical}»"
-                        ),
-                    ))
+                    diags.append(
+                        Diagnostic(
+                            file=path,
+                            line=idx + 1,
+                            character=m.start(),
+                            end_line=idx + 1,
+                            end_character=m.end(),
+                            severity=Severity.INFORMATION,
+                            code="BSL153",
+                            message=(f"Ключевое слово «{word}» должно быть «{canonical}»"),
+                        )
+                    )
         return diags
 
     # ------------------------------------------------------------------
@@ -13833,8 +14148,7 @@ class DiagnosticEngine:
             # Skip blank lines and compiler directives (&НаКлиенте, &НаСервере...).
             block_end = proc.start_idx - 1
             while block_end >= 0 and (
-                lines[block_end].strip() == ""
-                or _RE_COMPILER_DIRECTIVE.match(lines[block_end])
+                lines[block_end].strip() == "" or _RE_COMPILER_DIRECTIVE.match(lines[block_end])
             ):
                 block_end -= 1
             # Check if there's a comment block above.
@@ -13846,7 +14160,7 @@ class DiagnosticEngine:
             while block_start > 0 and _RE_BSL215_COMMENT_LINE.match(lines[block_start - 1]):
                 block_start -= 1
 
-            comment_block = lines[block_start:block_end + 1]
+            comment_block = lines[block_start : block_end + 1]
 
             # Section separator lines (////////...) are not method descriptions.
             _re_separator = re.compile(r"^\s*/{10,}\s*$")
@@ -13872,30 +14186,31 @@ class DiagnosticEngine:
                 # No // Параметры: section — all params undocumented.
                 # Flag at the method name position (method header line).
                 header_line = lines[proc.start_idx]
-                diags.append(Diagnostic(
-                    file=path,
-                    line=proc.start_idx + 1,
-                    character=header_line.index(proc.name),
-                    end_line=proc.start_idx + 1,
-                    end_character=header_line.index(proc.name) + len(proc.name),
-                    severity=Severity.WARNING,
-                    code="BSL215",
-                    message=(
-                        f"Отсутствует описание параметров метода «{proc.name}» "
-                        "в комментарии"
-                    ),
-                ))
+                diags.append(
+                    Diagnostic(
+                        file=path,
+                        line=proc.start_idx + 1,
+                        character=header_line.index(proc.name),
+                        end_line=proc.start_idx + 1,
+                        end_character=header_line.index(proc.name) + len(proc.name),
+                        severity=Severity.WARNING,
+                        code="BSL215",
+                        message=(
+                            f"Отсутствует описание параметров метода «{proc.name}» в комментарии"
+                        ),
+                    )
+                )
                 continue
 
             # Extract documented param names from the section.
             documented_cf: dict[str, str] = {}  # casefold → original name
             # Collect lines after "// Параметры:" that look like param entries.
-            for cl in comment_block[params_section_start + 1:]:
+            for cl in comment_block[params_section_start + 1 :]:
                 # Stop at another section header (e.g. // Возвращаемое значение:)
                 stripped = cl.strip()
                 if stripped == "//" or (
-                    re.match(r"^\s*//\s*\w[\w\s]*:\s*$", cl) and
-                    not _RE_BSL215_PARAM_ENTRY.match(cl)
+                    re.match(r"^\s*//\s*\w[\w\s]*:\s*$", cl)
+                    and not _RE_BSL215_PARAM_ENTRY.match(cl)
                 ):
                     break
                 m = _RE_BSL215_PARAM_ENTRY.match(cl)
@@ -13938,19 +14253,21 @@ class DiagnosticEngine:
                     # Find column of param name.
                     m = re.search(r"\b" + re.escape(pname) + r"\b", pl, re.IGNORECASE)
                     col = m.start() if m else 0
-                    diags.append(Diagnostic(
-                        file=path,
-                        line=param_line_idx + 1,
-                        character=col,
-                        end_line=param_line_idx + 1,
-                        end_character=col + len(pname),
-                        severity=Severity.WARNING,
-                        code="BSL215",
-                        message=(
-                            f"Отсутствует описание параметра «{pname}» метода "
-                            f"«{proc.name}» в комментарии"
-                        ),
-                    ))
+                    diags.append(
+                        Diagnostic(
+                            file=path,
+                            line=param_line_idx + 1,
+                            character=col,
+                            end_line=param_line_idx + 1,
+                            end_character=col + len(pname),
+                            severity=Severity.WARNING,
+                            code="BSL215",
+                            message=(
+                                f"Отсутствует описание параметра «{pname}» метода "
+                                f"«{proc.name}» в комментарии"
+                            ),
+                        )
+                    )
 
             # Extra documented params not in signature → flag at method name.
             extra = [v for k, v in documented_cf.items() if k not in actual_params_cf]
@@ -13960,19 +14277,21 @@ class DiagnosticEngine:
                     col = header_line.index(proc.name)
                 except ValueError:
                     col = 0
-                diags.append(Diagnostic(
-                    file=path,
-                    line=proc.start_idx + 1,
-                    character=col,
-                    end_line=proc.start_idx + 1,
-                    end_character=col + len(proc.name),
-                    severity=Severity.WARNING,
-                    code="BSL215",
-                    message=(
-                        f"Параметры {', '.join(extra)!r} описаны в комментарии, "
-                        f"но отсутствуют в сигнатуре «{proc.name}»"
-                    ),
-                ))
+                diags.append(
+                    Diagnostic(
+                        file=path,
+                        line=proc.start_idx + 1,
+                        character=col,
+                        end_line=proc.start_idx + 1,
+                        end_character=col + len(proc.name),
+                        severity=Severity.WARNING,
+                        code="BSL215",
+                        message=(
+                            f"Параметры {', '.join(extra)!r} описаны в комментарии, "
+                            f"но отсутствуют в сигнатуре «{proc.name}»"
+                        ),
+                    )
+                )
 
         return diags
 
@@ -14021,20 +14340,17 @@ class DiagnosticEngine:
             # Walk backward to check for a comment block.
             block_end = proc.start_idx - 1
             while block_end >= 0 and (
-                lines[block_end].strip() == ""
-                or _RE_COMPILER_DIRECTIVE.match(lines[block_end])
+                lines[block_end].strip() == "" or _RE_COMPILER_DIRECTIVE.match(lines[block_end])
             ):
                 block_end -= 1
 
-            has_description = (
-                block_end >= 0 and _RE_BSL215_COMMENT_LINE.match(lines[block_end])
-            )
+            has_description = block_end >= 0 and _RE_BSL215_COMMENT_LINE.match(lines[block_end])
             # Skip section separators (////...) — not real descriptions.
             if has_description:
                 blk_s = block_end
                 while blk_s > 0 and _RE_BSL215_COMMENT_LINE.match(lines[blk_s - 1]):
                     blk_s -= 1
-                block = lines[blk_s:block_end + 1]
+                block = lines[blk_s : block_end + 1]
                 if any(re.match(r"^\s*/{10,}\s*$", cl) for cl in block):
                     has_description = False
 
@@ -14044,19 +14360,21 @@ class DiagnosticEngine:
                     col = header_line.index(proc.name)
                 except ValueError:
                     col = 0
-                diags.append(Diagnostic(
-                    file=path,
-                    line=proc.start_idx + 1,
-                    character=col,
-                    end_line=proc.start_idx + 1,
-                    end_character=col + len(proc.name),
-                    severity=Severity.INFORMATION,
-                    code="BSL233",
-                    message=(
-                        f"Экспортный метод «{proc.name}» в публичном API "
-                        "должен иметь описание в комментарии"
-                    ),
-                ))
+                diags.append(
+                    Diagnostic(
+                        file=path,
+                        line=proc.start_idx + 1,
+                        character=col,
+                        end_line=proc.start_idx + 1,
+                        end_character=col + len(proc.name),
+                        severity=Severity.INFORMATION,
+                        code="BSL233",
+                        message=(
+                            f"Экспортный метод «{proc.name}» в публичном API "
+                            "должен иметь описание в комментарии"
+                        ),
+                    )
+                )
 
         return diags
 
@@ -14104,19 +14422,21 @@ class DiagnosticEngine:
                 if endif_idx >= 0 and endif_idx < len(lines):
                     el = lines[endif_idx]
                     char = len(el) - len(el.lstrip())
-                    diags.append(Diagnostic(
-                        file=path,
-                        line=endif_idx + 1,
-                        character=char,
-                        end_line=endif_idx + 1,
-                        end_character=len(el),
-                        severity=Severity.WARNING,
-                        code="BSL199",
-                        message=(
-                            "Цепочка «Если/ИначеЕсли» не завершается веткой «Иначе» — "
-                            "добавьте обработку неожиданных значений"
-                        ),
-                    ))
+                    diags.append(
+                        Diagnostic(
+                            file=path,
+                            line=endif_idx + 1,
+                            character=char,
+                            end_line=endif_idx + 1,
+                            end_character=len(el),
+                            severity=Severity.WARNING,
+                            code="BSL199",
+                            message=(
+                                "Цепочка «Если/ИначеЕсли» не завершается веткой «Иначе» — "
+                                "добавьте обработку неожиданных значений"
+                            ),
+                        )
+                    )
             # Advance by 1 (not to j) so nested Если blocks are also examined.
             i += 1
         return diags
@@ -14125,9 +14445,7 @@ class DiagnosticEngine:
     # BSL216 — MissingSpace
     # ------------------------------------------------------------------
 
-    def _rule_bsl216_missing_space(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl216_missing_space(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Detect missing spaces around assignment and comparison operators."""
         diags: list[Diagnostic] = []
         # Build cross-line string state for multi-line string handling.
@@ -14143,52 +14461,58 @@ class DiagnosticEngine:
                 clean = clean[:comment_pos]
             # Skip = check on procedure/function headers — default parameter values
             # (Param = Default) use = without spaces by 1C convention; BSLLS skips these.
-            m = None if _RE_BSL216_PROC_HEADER.match(clean) else _RE_BSL216_ASSIGN_NOSPACE.search(clean)
+            m = (
+                None
+                if _RE_BSL216_PROC_HEADER.match(clean)
+                else _RE_BSL216_ASSIGN_NOSPACE.search(clean)
+            )
             if m:
-                diags.append(Diagnostic(
-                    file=path,
-                    line=idx + 1,
-                    character=m.start(),
-                    end_line=idx + 1,
-                    end_character=m.end(),
-                    severity=Severity.INFORMATION,
-                    code="BSL216",
-                    message=(
-                        "Пропущен пробел вокруг оператора «=» — "
-                        "добавьте пробелы для читаемости"
-                    ),
-                ))
+                diags.append(
+                    Diagnostic(
+                        file=path,
+                        line=idx + 1,
+                        character=m.start(),
+                        end_line=idx + 1,
+                        end_character=m.end(),
+                        severity=Severity.INFORMATION,
+                        code="BSL216",
+                        message=(
+                            "Пропущен пробел вокруг оператора «=» — добавьте пробелы для читаемости"
+                        ),
+                    )
+                )
             # Arithmetic operators: +, -, *, /
             for col in _arithmetic_missing_space_cols_in_line(line, in_str_start):
-                diags.append(Diagnostic(
-                    file=path,
-                    line=idx + 1,
-                    character=col,
-                    end_line=idx + 1,
-                    end_character=col + 1,
-                    severity=Severity.INFORMATION,
-                    code="BSL216",
-                    message=(
-                        "Пропущен пробел вокруг арифметического оператора — "
-                        "добавьте пробелы для читаемости"
-                    ),
-                ))
+                diags.append(
+                    Diagnostic(
+                        file=path,
+                        line=idx + 1,
+                        character=col,
+                        end_line=idx + 1,
+                        end_character=col + 1,
+                        severity=Severity.INFORMATION,
+                        code="BSL216",
+                        message=(
+                            "Пропущен пробел вокруг арифметического оператора — "
+                            "добавьте пробелы для читаемости"
+                        ),
+                    )
+                )
                 continue
             comma_col = _comma_missing_space_after_col_in_line(line.split("//", 1)[0])
             if comma_col is not None:
-                diags.append(Diagnostic(
-                    file=path,
-                    line=idx + 1,
-                    character=comma_col,
-                    end_line=idx + 1,
-                    end_character=comma_col + 1,
-                    severity=Severity.INFORMATION,
-                    code="BSL216",
-                    message=(
-                        "Пропущен пробел после запятой — "
-                        "добавьте пробел для читаемости"
-                    ),
-                ))
+                diags.append(
+                    Diagnostic(
+                        file=path,
+                        line=idx + 1,
+                        character=comma_col,
+                        end_line=idx + 1,
+                        end_character=comma_col + 1,
+                        severity=Severity.INFORMATION,
+                        code="BSL216",
+                        message=("Пропущен пробел после запятой — добавьте пробел для читаемости"),
+                    )
+                )
         return diags
 
     # ------------------------------------------------------------------
@@ -14213,7 +14537,11 @@ class DiagnosticEngine:
                 continue
             if not proc.params:
                 continue
-            missing_val = [p for p in proc.params if p and p.casefold() not in {n.casefold() for n in proc.val_params}]
+            missing_val = [
+                p
+                for p in proc.params
+                if p and p.casefold() not in {n.casefold() for n in proc.val_params}
+            ]
             if not missing_val:
                 continue
             callers = getattr(self._symbol_index, "find_callers", lambda *_args, **_kwargs: [])(
@@ -14268,9 +14596,7 @@ class DiagnosticEngine:
     # BSL255 — TryNumber
     # ------------------------------------------------------------------
 
-    def _rule_bsl255_try_number(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl255_try_number(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Detect Число()/Number() conversions inside Try/Except blocks."""
         diags: list[Diagnostic] = []
         _re_try = re.compile(r"^\s*(?:Попытка|Try)\b", re.IGNORECASE)
@@ -14288,28 +14614,28 @@ class DiagnosticEngine:
             if in_try_body:
                 m = _re_number.search(line)
                 if m:
-                    diags.append(Diagnostic(
-                        file=path,
-                        line=idx + 1,
-                        character=m.start(),
-                        end_line=idx + 1,
-                        end_character=m.end(),
-                        severity=Severity.WARNING,
-                        code="BSL255",
-                        message=(
-                            "«Число()» внутри блока «Попытка» — "
-                            "используйте проверку перед конвертацией"
-                        ),
-                    ))
+                    diags.append(
+                        Diagnostic(
+                            file=path,
+                            line=idx + 1,
+                            character=m.start(),
+                            end_line=idx + 1,
+                            end_character=m.end(),
+                            severity=Severity.WARNING,
+                            code="BSL255",
+                            message=(
+                                "«Число()» внутри блока «Попытка» — "
+                                "используйте проверку перед конвертацией"
+                            ),
+                        )
+                    )
         return diags
 
     # ------------------------------------------------------------------
     # BSL183 — ExecuteExternalCode
     # ------------------------------------------------------------------
 
-    def _rule_bsl183_execute_external_code(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl183_execute_external_code(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Detect Выполнить()/Execute() with non-literal arguments."""
         diags: list[Diagnostic] = []
         # Выполнить("literal") is less dangerous; Выполнить(var) is suspicious
@@ -14326,19 +14652,21 @@ class DiagnosticEngine:
             for m in _re_exec.finditer(line):
                 arg = m.group(1).strip()
                 if not _re_literal.match(arg):  # non-literal argument
-                    diags.append(Diagnostic(
-                        file=path,
-                        line=idx + 1,
-                        character=m.start(),
-                        end_line=idx + 1,
-                        end_character=m.end(),
-                        severity=Severity.WARNING,
-                        code="BSL183",
-                        message=(
-                            "«Выполнить()» с динамическим аргументом — "
-                            "потенциальная угроза безопасности"
-                        ),
-                    ))
+                    diags.append(
+                        Diagnostic(
+                            file=path,
+                            line=idx + 1,
+                            character=m.start(),
+                            end_line=idx + 1,
+                            end_character=m.end(),
+                            severity=Severity.WARNING,
+                            code="BSL183",
+                            message=(
+                                "«Выполнить()» с динамическим аргументом — "
+                                "потенциальная угроза безопасности"
+                            ),
+                        )
+                    )
         return diags
 
     # ------------------------------------------------------------------
@@ -14380,9 +14708,7 @@ class DiagnosticEngine:
                 # Latin/Cyrillic appears only as a trailing or leading block (no interleaving).
                 if len(word) >= 4 and _RE_BSL208_TRAILING_LANG.match(word):
                     continue
-                if not (
-                    _re_has_latin.search(word) and _re_has_cyrillic.search(word)
-                ):
+                if not (_re_has_latin.search(word) and _re_has_cyrillic.search(word)):
                     continue
                 if self._rule_enabled("BSL208") and word not in seen_bsl208:
                     seen_bsl208.add(word)
@@ -14437,8 +14763,12 @@ class DiagnosticEngine:
         """Detect unbalanced Begin/Commit/Rollback transaction calls."""
         diags: list[Diagnostic] = []
         _re_begin = re.compile(r"\b(?:НачатьТранзакцию|BeginTransaction)\s*\(", re.IGNORECASE)
-        _re_commit = re.compile(r"\b(?:ЗафиксироватьТранзакцию|CommitTransaction)\s*\(", re.IGNORECASE)
-        _re_rollback = re.compile(r"\b(?:ОтменитьТранзакцию|RollbackTransaction)\s*\(", re.IGNORECASE)
+        _re_commit = re.compile(
+            r"\b(?:ЗафиксироватьТранзакцию|CommitTransaction)\s*\(", re.IGNORECASE
+        )
+        _re_rollback = re.compile(
+            r"\b(?:ОтменитьТранзакцию|RollbackTransaction)\s*\(", re.IGNORECASE
+        )
         _re_comment = re.compile(r"^\s*//")
 
         for proc in procs:
@@ -14463,19 +14793,21 @@ class DiagnosticEngine:
                     rollback_count += 1
 
             if begin_count > 0 and commit_count == 0 and rollback_count == 0:
-                diags.append(Diagnostic(
-                    file=path,
-                    line=(begin_line or proc.start_idx) + 1,
-                    character=0,
-                    end_line=(begin_line or proc.start_idx) + 1,
-                    end_character=len(lines[begin_line or proc.start_idx]),
-                    severity=Severity.ERROR,
-                    code="BSL230",
-                    message=(
-                        "НачатьТранзакцию() без соответствующего "
-                        "ЗафиксироватьТранзакцию() или ОтменитьТранзакцию()"
-                    ),
-                ))
+                diags.append(
+                    Diagnostic(
+                        file=path,
+                        line=(begin_line or proc.start_idx) + 1,
+                        character=0,
+                        end_line=(begin_line or proc.start_idx) + 1,
+                        end_character=len(lines[begin_line or proc.start_idx]),
+                        severity=Severity.ERROR,
+                        code="BSL230",
+                        message=(
+                            "НачатьТранзакцию() без соответствующего "
+                            "ЗафиксироватьТранзакцию() или ОтменитьТранзакцию()"
+                        ),
+                    )
+                )
         return diags
 
     # ------------------------------------------------------------------
@@ -14563,24 +14895,25 @@ class DiagnosticEngine:
                 am = _RE_BSL240_ASSIGN.match(line)
                 if am:
                     lhs = am.group(1).casefold()
-                    if (lhs in val_cf
-                            and lhs not in _BSL062_SKIP_STANDARD_COMMAND_PARAMS):
+                    if lhs in val_cf and lhs not in _BSL062_SKIP_STANDARD_COMMAND_PARAMS:
                         # Check the RHS doesn't mention the param itself
-                        rhs = line[am.end():].strip()
+                        rhs = line[am.end() :].strip()
                         if lhs not in rhs.casefold():
-                            diags.append(Diagnostic(
-                                file=path,
-                                line=li + 1,
-                                character=am.start(),
-                                end_line=li + 1,
-                                end_character=am.end(),
-                                severity=Severity.WARNING,
-                                code="BSL240",
-                                message=(
-                                    f"Параметр «{am.group(1)}» перезаписывается "
-                                    "до первого использования — вероятно ошибка"
-                                ),
-                            ))
+                            diags.append(
+                                Diagnostic(
+                                    file=path,
+                                    line=li + 1,
+                                    character=am.start(),
+                                    end_line=li + 1,
+                                    end_character=am.end(),
+                                    severity=Severity.WARNING,
+                                    code="BSL240",
+                                    message=(
+                                        f"Параметр «{am.group(1)}» перезаписывается "
+                                        "до первого использования — вероятно ошибка"
+                                    ),
+                                )
+                            )
                             param_names.discard(lhs)
         return diags
 
@@ -14624,24 +14957,26 @@ class DiagnosticEngine:
                     if _re_comment.match(bl):
                         continue
                     clean = re.sub(r'"[^"]*"', '""', bl)
-                    if re.search(r'\b' + re.escape(iter_var) + r'\b', clean, re.IGNORECASE):
+                    if re.search(r"\b" + re.escape(iter_var) + r"\b", clean, re.IGNORECASE):
                         var_used = True
                         break
 
                 if not var_used and body_lines:
-                    diags.append(Diagnostic(
-                        file=path,
-                        line=i + 1,
-                        character=0,
-                        end_line=i + 1,
-                        end_character=len(lines[i]),
-                        severity=Severity.WARNING,
-                        code="BSL263",
-                        message=(
-                            f"Переменная «{m.group(1)}» в «Для Каждого» "
-                            "нигде не используется в теле цикла"
-                        ),
-                    ))
+                    diags.append(
+                        Diagnostic(
+                            file=path,
+                            line=i + 1,
+                            character=0,
+                            end_line=i + 1,
+                            end_character=len(lines[i]),
+                            severity=Severity.WARNING,
+                            code="BSL263",
+                            message=(
+                                f"Переменная «{m.group(1)}» в «Для Каждого» "
+                                "нигде не используется в теле цикла"
+                            ),
+                        )
+                    )
             i += 1
         return diags
 
@@ -14666,19 +15001,20 @@ class DiagnosticEngine:
                 continue
             m = _re_ternary.search(line)
             if m:
-                diags.append(Diagnostic(
-                    file=path,
-                    line=idx + 1,
-                    character=m.start(),
-                    end_line=idx + 1,
-                    end_character=m.end(),
-                    severity=Severity.WARNING,
-                    code="BSL265",
-                    message=(
-                        "Тернарный оператор возвращает Истина/Ложь — "
-                        "замените на само условие"
-                    ),
-                ))
+                diags.append(
+                    Diagnostic(
+                        file=path,
+                        line=idx + 1,
+                        character=m.start(),
+                        end_line=idx + 1,
+                        end_character=m.end(),
+                        severity=Severity.WARNING,
+                        code="BSL265",
+                        message=(
+                            "Тернарный оператор возвращает Истина/Ложь — замените на само условие"
+                        ),
+                    )
+                )
         return diags
 
     # ------------------------------------------------------------------
@@ -14704,28 +15040,27 @@ class DiagnosticEngine:
             clean = _RE_DOUBLE_QUOTED_STRING.sub('""', line)
             m = _re_unary.search(clean)
             if m:
-                diags.append(Diagnostic(
-                    file=path,
-                    line=idx + 1,
-                    character=m.start(),
-                    end_line=idx + 1,
-                    end_character=m.end(),
-                    severity=Severity.WARNING,
-                    code="BSL257",
-                    message=(
-                        "Унарный «+» перед значением при конкатенации — "
-                        "вероятно опечатка"
-                    ),
-                ))
+                diags.append(
+                    Diagnostic(
+                        file=path,
+                        line=idx + 1,
+                        character=m.start(),
+                        end_line=idx + 1,
+                        end_character=m.end(),
+                        severity=Severity.WARNING,
+                        code="BSL257",
+                        message=(
+                            "Унарный «+» перед значением при конкатенации — вероятно опечатка"
+                        ),
+                    )
+                )
         return diags
 
     # ------------------------------------------------------------------
     # BSL279 — YoLetterUsage
     # ------------------------------------------------------------------
 
-    def _rule_bsl279_yo_letter_usage(
-        self, path: str, lines: list[str]
-    ) -> list[Diagnostic]:
+    def _rule_bsl279_yo_letter_usage(self, path: str, lines: list[str]) -> list[Diagnostic]:
         """Detect use of letter «ё» in identifiers (BSL convention: use «е»)."""
         diags: list[Diagnostic] = []
         _re_yo = re.compile(r"[ёЁ]", re.UNICODE)
@@ -14743,19 +15078,21 @@ class DiagnosticEngine:
             if comment_pos >= 0:
                 clean = clean[:comment_pos]
             for m in _re_id_yo.finditer(clean):
-                diags.append(Diagnostic(
-                    file=path,
-                    line=idx + 1,
-                    character=m.start(),
-                    end_line=idx + 1,
-                    end_character=m.end(),
-                    severity=Severity.INFORMATION,
-                    code="BSL279",
-                    message=(
-                        f"Идентификатор «{m.group()}» содержит букву «ё» — "
-                        "используйте «е» для совместимости"
-                    ),
-                ))
+                diags.append(
+                    Diagnostic(
+                        file=path,
+                        line=idx + 1,
+                        character=m.start(),
+                        end_line=idx + 1,
+                        end_character=m.end(),
+                        severity=Severity.INFORMATION,
+                        code="BSL279",
+                        message=(
+                            f"Идентификатор «{m.group()}» содержит букву «ё» — "
+                            "используйте «е» для совместимости"
+                        ),
+                    )
+                )
         return diags
 
 
@@ -14801,8 +15138,8 @@ def _parse_suppressions(lines: list[str]) -> _Suppressions:
     result: _Suppressions = {}
 
     # Block-level BSLLS state tracked across lines
-    block_all: bool = False       # BSLLS-off (no specific rule) is active
-    block_codes: set[str] = set() # specific BSL codes currently block-suppressed
+    block_all: bool = False  # BSLLS-off (no specific rule) is active
+    block_codes: set[str] = set()  # specific BSL codes currently block-suppressed
 
     for idx, line in enumerate(lines):
         line_no = idx + 1

@@ -333,9 +333,7 @@ class TestIncrementalIndexerExtended:
         mock_result.stdout = "changed.bsl\n"
 
         with patch("subprocess.run", return_value=mock_result):
-            files = indexer.get_changed_files(
-                since_commit="abc123", workspace=str(tmp_path)
-            )
+            files = indexer.get_changed_files(since_commit="abc123", workspace=str(tmp_path))
 
         assert any("changed.bsl" in f for f in files)
 
@@ -357,9 +355,7 @@ class TestIncrementalIndexerExtended:
         mock_result.stdout = ""
 
         with patch("subprocess.run", return_value=mock_result):
-            files = indexer.get_changed_files(
-                since_commit="abc123", workspace=str(tmp_path)
-            )
+            files = indexer.get_changed_files(since_commit="abc123", workspace=str(tmp_path))
 
         # Falls back to full scan — should include our bsl file
         assert any("fallback.bsl" in f for f in files)
@@ -377,9 +373,7 @@ class TestIncrementalIndexerExtended:
         indexer = IncrementalIndexer(index=symbol_index)
 
         with patch("subprocess.run", side_effect=FileNotFoundError("git not found")):
-            files = indexer.get_changed_files(
-                since_commit="abc123", workspace=str(tmp_path)
-            )
+            files = indexer.get_changed_files(since_commit="abc123", workspace=str(tmp_path))
 
         assert any("nofallback.bsl" in f for f in files)
 
@@ -506,7 +500,7 @@ class TestIncrementalIndexerExtended:
         for i in range(file_count):
             p = tmp_path / f"mod_{i:03d}.bsl"
             p.write_text(
-                f"Процедура Тест{i}()\n    Сообщить(\"{i}\");\nКонецПроцедуры\n",
+                f'Процедура Тест{i}()\n    Сообщить("{i}");\nКонецПроцедуры\n',
                 encoding="utf-8",
             )
 
@@ -652,9 +646,15 @@ class TestFindUnusedSymbols:
         symbol_index.upsert_file(
             self._CALLER_FILE,
             [self._sym("КаллерМетод")],
-            [{"caller_file": self._CALLER_FILE, "caller_line": 10,
-              "caller_name": "КаллерМетод", "callee_name": "Вызывается",
-              "callee_args_count": 0}],
+            [
+                {
+                    "caller_file": self._CALLER_FILE,
+                    "caller_line": 10,
+                    "caller_name": "КаллерМетод",
+                    "callee_name": "Вызывается",
+                    "callee_args_count": 0,
+                }
+            ],
         )
         unused = symbol_index.find_unused_symbols(self._FILE)
         assert not any(u["name"] == "Вызывается" for u in unused)
@@ -670,9 +670,15 @@ class TestFindUnusedSymbols:
         symbol_index.upsert_file(
             self._FILE,
             [self._sym("Рекурсия")],
-            [{"caller_file": self._FILE, "caller_line": 3,
-              "caller_name": "Рекурсия", "callee_name": "Рекурсия",
-              "callee_args_count": 0}],
+            [
+                {
+                    "caller_file": self._FILE,
+                    "caller_line": 3,
+                    "caller_name": "Рекурсия",
+                    "callee_name": "Рекурсия",
+                    "callee_args_count": 0,
+                }
+            ],
         )
         unused = symbol_index.find_unused_symbols(self._FILE)
         assert any(u["name"] == "Рекурсия" for u in unused)
@@ -687,9 +693,15 @@ class TestFindUnusedSymbols:
         symbol_index.upsert_file(
             self._CALLER_FILE,
             [self._sym("Другая")],
-            [{"caller_file": self._CALLER_FILE, "caller_line": 5,
-              "caller_name": "Другая", "callee_name": "Функция2",
-              "callee_args_count": 0}],
+            [
+                {
+                    "caller_file": self._CALLER_FILE,
+                    "caller_line": 5,
+                    "caller_name": "Другая",
+                    "callee_name": "Функция2",
+                    "callee_args_count": 0,
+                }
+            ],
         )
         count = symbol_index.find_callers_count_non_recursive("Функция2")
         assert count == 1

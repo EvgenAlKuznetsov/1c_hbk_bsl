@@ -107,7 +107,7 @@ class TestBsl005HardcodeNetworkAddress:
         assert "BSL005" in _codes(diags)
 
     def test_no_hardcode_no_warning(self, tmp_path: Path) -> None:
-        content = 'Адрес = ПолучитьАдрес();\n'
+        content = "Адрес = ПолучитьАдрес();\n"
         diags = _check(content, tmp_path)
         assert "BSL005" not in _codes(diags)
 
@@ -189,7 +189,7 @@ class TestBsl007UnusedLocalVariable:
         assert "BSL007" in _codes(diags)
 
     def test_module_level_assign_unused(self, tmp_path: Path) -> None:
-        content = 'А = 1;\n'
+        content = "А = 1;\n"
         diags = _check(content, tmp_path, select={"BSL007"})
         assert "BSL007" in _codes(diags)
 
@@ -263,11 +263,7 @@ class TestBsl009SelfAssign:
 
     def test_property_assign_same_identifier_not_self_assign(self, tmp_path: Path) -> None:
         # BSLLS does not flag Obj.Field = Field as SelfAssign.
-        content = (
-            "Процедура Тест()\n"
-            "    ОписаниеСертификата.ИНН = ИНН;\n"
-            "КонецПроцедуры\n"
-        )
+        content = "Процедура Тест()\n    ОписаниеСертификата.ИНН = ИНН;\nКонецПроцедуры\n"
         diags = _check(content, tmp_path)
         assert "BSL009" not in _codes(diags)
 
@@ -450,16 +446,13 @@ class TestBsl014LineTooLong:
 
 class TestBsl015NumberOfOptionalParams:
     def test_too_many_optional_params(self, tmp_path: Path) -> None:
-        content = (
-            'Процедура Тест(А = 1, Б = 2, В = 3, Г = 4)\n'
-            'КонецПроцедуры\n'
-        )
+        content = "Процедура Тест(А = 1, Б = 2, В = 3, Г = 4)\nКонецПроцедуры\n"
         diags = _check(content, tmp_path, max_optional_params=3)
         bsl015 = [d for d in diags if d.code == "BSL015"]
         assert len(bsl015) >= 1
 
     def test_few_optional_params_no_warning(self, tmp_path: Path) -> None:
-        content = 'Процедура Тест(А, Б = 2, В = 3)\nКонецПроцедуры\n'
+        content = "Процедура Тест(А, Б = 2, В = 3)\nКонецПроцедуры\n"
         diags = _check(content, tmp_path, max_optional_params=3)
         assert "BSL015" not in _codes(diags)
 
@@ -543,7 +536,7 @@ class TestRuleSelection:
         assert all(d.code == "BSL009" for d in diags)
 
     def test_ignore_suppresses_rule(self, tmp_path: Path) -> None:
-        content = "Пароль = \"секрет123\";\n"
+        content = 'Пароль = "секрет123";\n'
         diags = _check(content, tmp_path, ignore={"BSL012"})
         assert "BSL012" not in _codes(diags)
 
@@ -569,10 +562,10 @@ class TestRuleSelection:
     def test_bslls_block_off_on(self, tmp_path: Path) -> None:
         """BSLLS:Rule-off suppresses from that line; -on re-enables."""
         content = (
-            "// BSLLS:UsingHardcodeSecretInformation-off\n"        # line 1 → BSL012 off
-            'Пароль = "СуперСекрет2024!";\n'                       # line 2 → suppressed
-            "// BSLLS:UsingHardcodeSecretInformation-on\n"         # line 3 → re-enable
-            'ТоженПароль = "МойПароль123@#";\n'                    # line 4 → reported
+            "// BSLLS:UsingHardcodeSecretInformation-off\n"  # line 1 → BSL012 off
+            'Пароль = "СуперСекрет2024!";\n'  # line 2 → suppressed
+            "// BSLLS:UsingHardcodeSecretInformation-on\n"  # line 3 → re-enable
+            'ТоженПароль = "МойПароль123@#";\n'  # line 4 → reported
         )
         diags = _check(content, tmp_path)
         lines_bsl012 = {d.line for d in diags if d.code == "BSL012"}
@@ -587,11 +580,7 @@ class TestRuleSelection:
 
     def test_bslls_all_off(self, tmp_path: Path) -> None:
         """BSLLS-off without rule name suppresses all diagnostics."""
-        content = (
-            "// BSLLS-off\n"
-            'Пароль = "секрет123";\n'
-            "// BSLLS-on\n"
-        )
+        content = '// BSLLS-off\nПароль = "секрет123";\n// BSLLS-on\n'
         diags = _check(content, tmp_path)
         assert not _codes(diags), "All diagnostics must be suppressed inside BSLLS-off block"
 
@@ -609,7 +598,7 @@ class TestRuleSelection:
         """BSLLS block and noqa can be used together without conflict."""
         content = (
             "// BSLLS:UsingHardcodeSecretInformation-off\n"
-            'Пароль = "секрет123";  // noqa: BSL009\n'   # both suppressions active
+            'Пароль = "секрет123";  // noqa: BSL009\n'  # both suppressions active
             "// BSLLS:UsingHardcodeSecretInformation-on\n"
         )
         diags = _check(content, tmp_path)
@@ -617,21 +606,18 @@ class TestRuleSelection:
 
     def test_bslls_unknown_name_ignored(self, tmp_path: Path) -> None:
         """Unknown BSLLS names are silently ignored — other rules still fire."""
-        content = (
-            "// BSLLS:NonExistentRule-off\n"
-            'Пароль = "секрет123";\n'
-        )
+        content = '// BSLLS:NonExistentRule-off\nПароль = "секрет123";\n'
         diags = _check(content, tmp_path)
         assert "BSL012" in _codes(diags)
 
     def test_bslls_nested_independent_rules(self, tmp_path: Path) -> None:
         """Two rules can be independently nested."""
         content = (
-            "// BSLLS:UsingHardcodeSecretInformation-off\n"   # BSL012 off
-            "// BSLLS:LineLength-off\n"                        # BSL014 off
-            'Пароль = "секрет123";\n'                          # both suppressed
-            "// BSLLS:UsingHardcodeSecretInformation-on\n"    # BSL012 back on
-            'Токен = "abc";\n'                                 # BSL012 fires, BSL014 still off
+            "// BSLLS:UsingHardcodeSecretInformation-off\n"  # BSL012 off
+            "// BSLLS:LineLength-off\n"  # BSL014 off
+            'Пароль = "секрет123";\n'  # both suppressed
+            "// BSLLS:UsingHardcodeSecretInformation-on\n"  # BSL012 back on
+            'Токен = "abc";\n'  # BSL012 fires, BSL014 still off
             "// BSLLS:LineLength-on\n"
         )
         diags = _check(content, tmp_path)
@@ -1078,10 +1064,7 @@ class TestBsl030HeaderSemicolon:
 
 class TestBsl031NumberOfParams:
     def test_too_many_params_detected(self, tmp_path: Path) -> None:
-        content = (
-            "Процедура Тест(А, Б, В, Г, Д, Е, Ж, З)\n"
-            "КонецПроцедуры\n"
-        )
+        content = "Процедура Тест(А, Б, В, Г, Д, Е, Ж, З)\nКонецПроцедуры\n"
         diags = _check(content, tmp_path, max_params=7)
         bsl031 = [d for d in diags if d.code == "BSL031"]
         assert len(bsl031) >= 1
@@ -1417,25 +1400,27 @@ class TestBsl208Bsl256MixedScriptVsTypo:
         diags = _check(content, tmp_path, select={"BSL208"})
         assert "BSL208" in _codes(diags)
 
-    def test_bslls_typo_sample_with_mocked_spellchecker(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_bslls_typo_sample_with_mocked_spellchecker(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """BSLLS TypoDiagnostic.bsl — three typos when spell matches BSLLS expectations."""
         monkeypatch.setattr(
             "onec_hbk_bsl.analysis.bslls_typo.default_spell_fn",
             lambda word: word in {"Варинаты", "Атмена", "ыть"},
         )
         content = (
-            'Функция Тест()\n'
+            "Функция Тест()\n"
             '\tСообщить("Атмена"); // Срабатывание здесь\n'
-            '\tВозврат;\n'
-            'КонецФункции\n'
-            '\n'
-            'Функция ВаринатыОплаты() // срабатывание здесь\n'
-            '\tТипЗнч(Ссылка); // нет срабатывания\n'
-            '\tВозврат;\n'
+            "\tВозврат;\n"
+            "КонецФункции\n"
+            "\n"
+            "Функция ВаринатыОплаты() // срабатывание здесь\n"
+            "\tТипЗнч(Ссылка); // нет срабатывания\n"
+            "\tВозврат;\n"
             '\tСообщить("ыть"); // срабатывание здесь\n'
             '\tДеньНедели = Формат(ДатаКолонки, "ДФ=ддд"); // Нет срабатывания\n'
-            '\tЗапроситьДанныеОКВЭДФССВТранзакции = Истина; // Нет срабатывания\n'
-            'КонецФункции\n'
+            "\tЗапроситьДанныеОКВЭДФССВТранзакции = Истина; // Нет срабатывания\n"
+            "КонецФункции\n"
         )
         path = tmp_path / "TypoSample.bsl"
         path.write_text(content, encoding="utf-8")
@@ -1504,12 +1489,12 @@ class TestBsl038StringConcatInLoop:
 
 class TestBsl039NestedTernary:
     def test_nested_ternary_detected(self, tmp_path: Path) -> None:
-        content = 'А = ?(Б, ?(В, 1, 2), 3);\n'
+        content = "А = ?(Б, ?(В, 1, 2), 3);\n"
         diags = _check(content, tmp_path)
         assert "BSL039" in _codes(diags)
 
     def test_simple_ternary_no_warning(self, tmp_path: Path) -> None:
-        content = 'А = ?(Б, 1, 2);\n'
+        content = "А = ?(Б, 1, 2);\n"
         diags = _check(content, tmp_path)
         assert "BSL039" not in _codes(diags)
 
@@ -1521,11 +1506,13 @@ class TestBsl039NestedTernary:
 
 class TestBsl041NotifyDescription:
     def test_notify_description_detected(self, tmp_path: Path) -> None:
-        content = "ОповещениеОЗакрытии = ОписаниеОповещения(\"ОбработкаЗакрытия\", ЭтотОбъект);\n"
+        content = 'ОповещениеОЗакрытии = ОписаниеОповещения("ОбработкаЗакрытия", ЭтотОбъект);\n'
         diags = _check(content, tmp_path, select={"BSL041"})
         assert "BSL041" in _codes(diags)
 
-    def test_notify_description_skipped_in_typical_client_command_handler(self, tmp_path: Path) -> None:
+    def test_notify_description_skipped_in_typical_client_command_handler(
+        self, tmp_path: Path
+    ) -> None:
         """ОписаниеОповещения в типовом ОбработкаКоманды (&НаКлиенте) — допустимый паттерн (не путь CommonCommands)."""
         content = """\
             &НаКлиенте
@@ -1537,7 +1524,7 @@ class TestBsl041NotifyDescription:
         assert "BSL041" not in _codes(diags)
 
     def test_in_comment_not_flagged(self, tmp_path: Path) -> None:
-        content = "// ОписаниеОповещения(\"ОбработкаЗакрытия\", ЭтотОбъект)\n"
+        content = '// ОписаниеОповещения("ОбработкаЗакрытия", ЭтотОбъект)\n'
         diags = _check(content, tmp_path)
         assert "BSL041" not in _codes(diags)
 
@@ -1590,9 +1577,7 @@ class TestBsl042EmptyExportMethod:
 
 class TestBsl043TooManyVariables:
     def test_many_variables_detected(self, tmp_path: Path) -> None:
-        vars_decl = "\n".join(
-            f"    Перем Переменная{i};" for i in range(16)
-        )
+        vars_decl = "\n".join(f"    Перем Переменная{i};" for i in range(16))
         content = f"Процедура Тест()\n{vars_decl}\nКонецПроцедуры\n"
         bsl_file = tmp_path / "test.bsl"
         bsl_file.write_text(content, encoding="utf-8")
@@ -2242,35 +2227,35 @@ class TestBsl057DeprecatedInputDialog:
 
 class TestBsl058QueryWithoutWhere:
     def test_query_without_where_detected(self, tmp_path: Path) -> None:
-        content = '''\
+        content = """\
             ТекстЗапроса = "ВЫБРАТЬ
             |   Код,
             |   Наименование
             |ИЗ
             |   Справочник.Номенклатура";
-        '''
+        """
         diags = _check(content, tmp_path, select={"BSL058"})
         assert "BSL058" in _codes(diags)
 
     def test_query_with_where_no_warning(self, tmp_path: Path) -> None:
-        content = '''\
+        content = """\
             ТекстЗапроса = "ВЫБРАТЬ
             |   Код
             |ИЗ
             |   Справочник.Номенклатура
             |ГДЕ
             |   Код = &Код";
-        '''
+        """
         diags = _check(content, tmp_path, select={"BSL058"})
         assert "BSL058" not in _codes(diags)
 
     def test_query_with_first_no_warning(self, tmp_path: Path) -> None:
-        content = '''\
+        content = """\
             ТекстЗапроса = "ВЫБРАТЬ ПЕРВЫЕ 10
             |   Код
             |ИЗ
             |   Справочник.Номенклатура";
-        '''
+        """
         diags = _check(content, tmp_path, select={"BSL058"})
         assert "BSL058" not in _codes(diags)
 
@@ -2282,38 +2267,34 @@ class TestBsl058QueryWithoutWhere:
 
 class TestBsl149AssignAliasFieldsInQuery:
     def test_multiline_select_without_alias_detected(self, tmp_path: Path) -> None:
-        content = '''\
+        content = """\
             ТекстЗапроса = "ВЫБРАТЬ
             |   Код,
             |   Наименование
             |ИЗ
             |   Справочник.Номенклатура";
-        '''
+        """
         diags = _check(content, tmp_path, select={"BSL149"})
         assert "BSL149" in _codes(diags)
 
     def test_multiline_select_with_alias_no_warning(self, tmp_path: Path) -> None:
-        content = '''\
+        content = """\
             ТекстЗапроса = "ВЫБРАТЬ
             |   Код КАК Код,
             |   Наименование КАК Наименование
             |ИЗ
             |   Справочник.Номенклатура";
-        '''
+        """
         diags = _check(content, tmp_path, select={"BSL149"})
         assert "BSL149" not in _codes(diags)
 
     def test_single_line_select_without_alias_detected(self, tmp_path: Path) -> None:
-        content = (
-            'А = "ВЫБРАТЬ Ссылка, Номер ИЗ Документ.РасходнаяНакладная";\n'
-        )
+        content = 'А = "ВЫБРАТЬ Ссылка, Номер ИЗ Документ.РасходнаяНакладная";\n'
         diags = _check(content, tmp_path, select={"BSL149"})
         assert "BSL149" in _codes(diags)
 
     def test_single_line_select_with_alias_no_warning(self, tmp_path: Path) -> None:
-        content = (
-            'А = "ВЫБРАТЬ Ссылка КАК С, Номер КАК Н ИЗ Документ.РасходнаяНакладная";\n'
-        )
+        content = 'А = "ВЫБРАТЬ Ссылка КАК С, Номер КАК Н ИЗ Документ.РасходнаяНакладная";\n'
         diags = _check(content, tmp_path, select={"BSL149"})
         assert "BSL149" not in _codes(diags)
 
@@ -2330,7 +2311,7 @@ class TestBsl149AssignAliasFieldsInQuery:
 
 class TestBsl210LogicalOrInWhereSection:
     def test_multiline_where_with_two_or_detected(self, tmp_path: Path) -> None:
-        content = '''\
+        content = """\
             ТекстЗапроса = "ВЫБРАТЬ
             |   Т.Ссылка
             |ИЗ
@@ -2341,7 +2322,7 @@ class TestBsl210LogicalOrInWhereSection:
             |   ИЛИ Т.Номер = 0
             |УПОРЯДОЧИТЬ ПО
             |   Т.Дата";
-        '''
+        """
         diags = _check(content, tmp_path, select={"BSL210"})
         bsl210 = [d for d in diags if d.code == "BSL210"]
         assert len(bsl210) == 2
@@ -2349,12 +2330,12 @@ class TestBsl210LogicalOrInWhereSection:
         assert lines[0] + 1 == lines[1]
 
     def test_no_where_no_bsl210(self, tmp_path: Path) -> None:
-        content = '''\
+        content = """\
             ТекстЗапроса = "ВЫБРАТЬ
             |   Код
             |ИЗ
             |   Справочник.Номенклатура";
-        '''
+        """
         diags = _check(content, tmp_path, select={"BSL210"})
         assert "BSL210" not in _codes(diags)
 
@@ -2412,9 +2393,7 @@ class TestBsl059BooleanLiteralComparison:
         assert "BSL059" not in _codes(diags)
 
     def test_bool_literal_in_elseif_detected(self, tmp_path: Path) -> None:
-        content = (
-            "Если А Тогда\n    Х=1;\nИначеЕсли Б = Ложь Тогда\n    У=2;\nКонецЕсли;\n"
-        )
+        content = "Если А Тогда\n    Х=1;\nИначеЕсли Б = Ложь Тогда\n    У=2;\nКонецЕсли;\n"
         diags = _check(content, tmp_path, select={"BSL059"})
         assert "BSL059" in _codes(diags)
 
@@ -2645,7 +2624,9 @@ class TestBsl254TransferringParameters:
             target="Module.bsl",
         )
         assert _codes(diags) == ["BSL254"]
-        assert diags[0].message == 'Установите модификатор "Знач" для параметра Документ метода Сервер'
+        assert (
+            diags[0].message == 'Установите модификатор "Знач" для параметра Документ метода Сервер'
+        )
 
     def test_server_method_without_client_call_is_not_reported(self, tmp_path: Path) -> None:
         diags = self._check_indexed(
@@ -2872,7 +2853,7 @@ class TestBsl066DeprecatedFind:
 
     def test_array_najti_not_flagged(self, tmp_path: Path) -> None:
         """МойМассив.Найти() — метод объекта, не глобальная функция — не флагуется."""
-        content = 'Элемент = МойМассив.Найти(Значение);\n'
+        content = "Элемент = МойМассив.Найти(Значение);\n"
         diags = _check(content, tmp_path, select={"BSL066"})
         assert "BSL066" not in _codes(diags)
 
@@ -2889,13 +2870,13 @@ class TestBsl066DeprecatedFind:
 
     def test_vreg_nreg_not_deprecated(self, tmp_path: Path) -> None:
         """Врег/НРег — текущие платформенные функции, не устаревшие."""
-        content = 'Рез = Врег(Строка) + НРег(Другая);\n'
+        content = "Рез = Врег(Строка) + НРег(Другая);\n"
         diags = _check(content, tmp_path, select={"BSL066"})
         assert "BSL066" not in _codes(diags)
 
     def test_sokr_functions_not_deprecated(self, tmp_path: Path) -> None:
         """СокрЛ/СокрП/СокрЛП — текущие платформенные функции, не устаревшие."""
-        content = 'Рез = СокрЛП(СокрЛ(СокрП(Строка)));\n'
+        content = "Рез = СокрЛП(СокрЛ(СокрП(Строка)));\n"
         diags = _check(content, tmp_path, select={"BSL066"})
         assert "BSL066" not in _codes(diags)
 
@@ -3400,6 +3381,7 @@ class TestBsl082MissingNewlineAtEof:
         p = tmp_path / "t.bsl"
         p.write_bytes("А = 1;".encode())  # no trailing newline
         from onec_hbk_bsl.analysis.diagnostics import DiagnosticEngine
+
         diags = DiagnosticEngine(select={"BSL082"}).check_file(str(p))
         assert any(d.code == "BSL082" for d in diags)
 
@@ -3670,12 +3652,12 @@ class TestBsl092EmptyElseBlock:
 
 class TestBsl093ComparisonToNull:
     def test_null_comparison_detected(self, tmp_path: Path) -> None:
-        content = 'Если А = NULL Тогда\n    Б = 1;\nКонецЕсли;\n'
+        content = "Если А = NULL Тогда\n    Б = 1;\nКонецЕсли;\n"
         diags = _check(content, tmp_path, select={"BSL093"})
         assert "BSL093" in _codes(diags)
 
     def test_undefined_comparison_no_warning(self, tmp_path: Path) -> None:
-        content = 'Если А = Неопределено Тогда\n    Б = 1;\nКонецЕсли;\n'
+        content = "Если А = Неопределено Тогда\n    Б = 1;\nКонецЕсли;\n"
         diags = _check(content, tmp_path, select={"BSL093"})
         assert "BSL093" not in _codes(diags)
 
@@ -4252,6 +4234,7 @@ class TestBsl121TabIndentation:
         p = tmp_path / "test.bsl"
         p.write_bytes("Процедура Тест()\n\tА = 1;\nКонецПроцедуры\n".encode())
         from onec_hbk_bsl.analysis.diagnostics import DiagnosticEngine
+
         diags = DiagnosticEngine(select={"BSL121"}).check_file(str(p))
         assert "BSL121" in _codes(diags)
 
@@ -4457,6 +4440,7 @@ class TestBsl130LongCommentLine:
         p = tmp_path / "test.bsl"
         p.write_text(long_comment, encoding="utf-8")
         from onec_hbk_bsl.analysis.diagnostics import DiagnosticEngine
+
         diags = DiagnosticEngine(select={"BSL130"}).check_file(str(p))
         assert "BSL130" in [d.code for d in diags]
 
@@ -4465,6 +4449,7 @@ class TestBsl130LongCommentLine:
         p = tmp_path / "test.bsl"
         p.write_text(content, encoding="utf-8")
         from onec_hbk_bsl.analysis.diagnostics import DiagnosticEngine
+
         diags = DiagnosticEngine(select={"BSL130"}).check_file(str(p))
         assert "BSL130" not in [d.code for d in diags]
 
@@ -4480,6 +4465,7 @@ class TestBsl131EmptyRegion:
         p = tmp_path / "test.bsl"
         p.write_text(content, encoding="utf-8")
         from onec_hbk_bsl.analysis.diagnostics import DiagnosticEngine
+
         diags = DiagnosticEngine(select={"BSL131"}).check_file(str(p))
         assert "BSL131" in [d.code for d in diags]
 
@@ -4488,6 +4474,7 @@ class TestBsl131EmptyRegion:
         p = tmp_path / "test.bsl"
         p.write_text(content, encoding="utf-8")
         from onec_hbk_bsl.analysis.diagnostics import DiagnosticEngine
+
         diags = DiagnosticEngine(select={"BSL131"}).check_file(str(p))
         assert "BSL131" not in [d.code for d in diags]
 
@@ -4508,18 +4495,16 @@ class TestBsl132RepeatedStringLiteral:
         p = tmp_path / "test.bsl"
         p.write_text(content, encoding="utf-8")
         from onec_hbk_bsl.analysis.diagnostics import DiagnosticEngine
+
         diags = DiagnosticEngine(select={"BSL132"}).check_file(str(p))
         assert "BSL132" in [d.code for d in diags]
 
     def test_repeated_3_times_no_warning(self, tmp_path: Path) -> None:
-        content = (
-            'А = "ТаблицаЗначений";\n'
-            'Б = "ТаблицаЗначений";\n'
-            'В = "ТаблицаЗначений";\n'
-        )
+        content = 'А = "ТаблицаЗначений";\nБ = "ТаблицаЗначений";\nВ = "ТаблицаЗначений";\n'
         p = tmp_path / "test.bsl"
         p.write_text(content, encoding="utf-8")
         from onec_hbk_bsl.analysis.diagnostics import DiagnosticEngine
+
         diags = DiagnosticEngine(select={"BSL132"}).check_file(str(p))
         assert "BSL132" not in [d.code for d in diags]
 
@@ -4557,14 +4542,12 @@ class TestBsl133RequiredParamAfterOptional:
 class TestBsl134CyclomaticComplexity:
     def test_high_complexity_detected(self, tmp_path: Path) -> None:
         # 11 Если blocks → CC = 12 > 10
-        ifs = "\n".join(
-            f"    Если А{i} Тогда\n        Б = {i};\n    КонецЕсли;"
-            for i in range(11)
-        )
+        ifs = "\n".join(f"    Если А{i} Тогда\n        Б = {i};\n    КонецЕсли;" for i in range(11))
         content = f"Функция Тест()\n{ifs}\n    Возврат 0;\nКонецФункции\n"
         p = tmp_path / "test.bsl"
         p.write_text(content, encoding="utf-8")
         from onec_hbk_bsl.analysis.diagnostics import DiagnosticEngine
+
         diags = DiagnosticEngine(select={"BSL134"}).check_file(str(p))
         assert "BSL134" in [d.code for d in diags]
 
@@ -4623,6 +4606,7 @@ class TestBsl136MissingSpaceBeforeComment:
         p = tmp_path / "test.bsl"
         p.write_text(content, encoding="utf-8")
         from onec_hbk_bsl.analysis.diagnostics import DiagnosticEngine
+
         diags = DiagnosticEngine(select={"BSL136"}).check_file(str(p))
         assert "BSL136" in [d.code for d in diags]
 
@@ -4631,6 +4615,7 @@ class TestBsl136MissingSpaceBeforeComment:
         p = tmp_path / "test.bsl"
         p.write_text(content, encoding="utf-8")
         from onec_hbk_bsl.analysis.diagnostics import DiagnosticEngine
+
         diags = DiagnosticEngine(select={"BSL136"}).check_file(str(p))
         assert "BSL136" not in [d.code for d in diags]
 
@@ -4938,7 +4923,7 @@ class TestBsl147UseOfUICall:
 
 class TestBsl190FormDataToValue:
     def test_form_data_ru_detected(self, tmp_path: Path) -> None:
-        content = "Рез = ДанныеФормыВЗначение(ДанныеФормы, Тип(\"CatalogObject\"));\n"
+        content = 'Рез = ДанныеФормыВЗначение(ДанныеФормы, Тип("CatalogObject"));\n'
         diags = _check(content, tmp_path, select={"BSL190"})
         assert "BSL190" in _codes(diags)
 
@@ -4961,6 +4946,7 @@ class TestBsl190FormDataToValue:
 class TestRuleMetadataCompleteness:
     def test_all_rules_in_metadata(self) -> None:
         from onec_hbk_bsl.analysis.diagnostics import RULE_METADATA
+
         expected = {f"BSL{i:03d}" for i in range(1, 148)}
         missing = expected - set(RULE_METADATA.keys())
         assert not missing, f"Missing RULE_METADATA entries: {missing}"

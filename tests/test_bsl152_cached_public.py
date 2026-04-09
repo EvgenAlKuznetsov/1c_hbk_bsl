@@ -21,11 +21,7 @@ def _write_cached_module(
     ext = base / "Ext"
     ext.mkdir(parents=True)
     bsl = ext / "Module.bsl"
-    proc_block = (
-        "\nПроцедура Публичная() Экспорт\nКонецПроцедуры\n"
-        if include_proc
-        else ""
-    )
+    proc_block = "\nПроцедура Публичная() Экспорт\nКонецПроцедуры\n" if include_proc else ""
     bsl.write_text(
         f"#Область {region_name}\n{proc_block}#КонецОбласти\n",
         encoding="utf-8",

@@ -59,10 +59,7 @@ class FileWatcher:
         try:
             from watchfiles import watch as wf_watch
         except ImportError:
-            logger.error(
-                "watchfiles is not installed. "
-                "Install with: pip install watchfiles"
-            )
+            logger.error("watchfiles is not installed. Install with: pip install watchfiles")
             return
 
         logger.info("Watching %s for BSL file changes…", workspace)

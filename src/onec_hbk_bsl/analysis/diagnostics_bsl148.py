@@ -275,7 +275,9 @@ def _fn_has_return(fn_def: Any) -> bool:
     return found
 
 
-def bsl148_function_name_spans(tree: Any, *, loops_executed_at_least_once: bool = True) -> list[_Span]:
+def bsl148_function_name_spans(
+    tree: Any, *, loops_executed_at_least_once: bool = True
+) -> list[_Span]:
     root = getattr(tree, "root_node", None)
     if root is None:
         return []

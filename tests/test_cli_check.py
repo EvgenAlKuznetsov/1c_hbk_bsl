@@ -275,9 +275,9 @@ class TestPrintSarif:
         _print_sarif([diag], project_root=str(tmp_path))
         captured = capsys.readouterr()
         data = json.loads(captured.out)
-        uri = data["runs"][0]["results"][0]["locations"][0]["physicalLocation"][
-            "artifactLocation"
-        ]["uri"]
+        uri = data["runs"][0]["results"][0]["locations"][0]["physicalLocation"]["artifactLocation"][
+            "uri"
+        ]
         assert "module.bsl" in uri
         assert not uri.startswith("/")
 
@@ -320,6 +320,7 @@ class TestCheckNewFeatures:
         )
         assert rc == 0
         import json as _json
+
         with open(baseline_path, encoding="utf-8") as f:
             data = _json.load(f)
         assert isinstance(data, list)

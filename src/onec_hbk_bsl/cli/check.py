@@ -146,24 +146,22 @@ def check(
     # --update-baseline: save & exit 0
     if update_baseline:
         from onec_hbk_bsl.cli.baseline import save_baseline
+
         n = save_baseline(all_diagnostics, update_baseline)
-        console.print(
-            f"[green]Baseline updated:[/green] {n} issue(s) written to {update_baseline}"
-        )
+        console.print(f"[green]Baseline updated:[/green] {n} issue(s) written to {update_baseline}")
         return 0
 
     # --baseline: suppress known issues
     if effective_baseline:
         from onec_hbk_bsl.cli.baseline import filter_baseline, load_baseline
+
         known = load_baseline(effective_baseline)
         suppressed = len(all_diagnostics) - len(
             [d for d in all_diagnostics if (Path(d.file).name, d.code, d.line) not in known]
         )
         all_diagnostics = filter_baseline(all_diagnostics, known)
         if suppressed:
-            console.print(
-                f"[dim]Suppressed {suppressed} baseline issue(s).[/dim]"
-            )
+            console.print(f"[dim]Suppressed {suppressed} baseline issue(s).[/dim]")
 
     if effective_format == "json":
         _print_json(all_diagnostics)
@@ -178,9 +176,7 @@ def check(
     else:
         _print_text(all_diagnostics, show_fix=show_fix)
         if not all_diagnostics:
-            console.print(
-                f"[green]All clean.[/green] Checked {len(all_files)} file(s)."
-            )
+            console.print(f"[green]All clean.[/green] Checked {len(all_files)} file(s).")
             return 0
         _print_summary(all_diagnostics, len(all_files))
 
@@ -363,6 +359,7 @@ def _run_checks(
                 if task_id is not None and progress_ctx is not None:
                     progress_ctx.advance(task_id)
         else:
+
             def _check_one(fp: str) -> list[Diagnostic]:
                 return _make_engine(cfg.get_file_ignores(fp)).check_file(fp)
 
@@ -380,9 +377,7 @@ def _run_checks(
 
     if progress_ctx is not None:
         with progress_ctx:
-            task_id = progress_ctx.add_task(
-                f"[cyan]Checking {len(files)} files…", total=len(files)
-            )
+            task_id = progress_ctx.add_task(f"[cyan]Checking {len(files)} files…", total=len(files))
             _run(task_id)
     else:
         _run()
@@ -428,9 +423,7 @@ def _print_json(diagnostics: list[Diagnostic]) -> None:
     print(json.dumps(data, indent=2, ensure_ascii=False))
 
 
-def _print_sonarqube(
-    diagnostics: list[Diagnostic], project_root: str | None = None
-) -> None:
+def _print_sonarqube(diagnostics: list[Diagnostic], project_root: str | None = None) -> None:
     """
     Print SonarQube Generic Issue Import Format JSON to stdout.
 
@@ -449,9 +442,7 @@ def _print_sonarqube(
                 pass  # keep absolute if not under project_root
 
         # Map severity
-        sonar_sev = meta.get("sonar_severity") or _SONAR_SEVERITY.get(
-            d.severity, "MAJOR"
-        )
+        sonar_sev = meta.get("sonar_severity") or _SONAR_SEVERITY.get(d.severity, "MAJOR")
         sonar_type = meta.get("sonar_type", "CODE_SMELL")
 
         issue: dict = {
@@ -475,9 +466,7 @@ def _print_sonarqube(
     print(json.dumps({"issues": issues}, indent=2, ensure_ascii=False))
 
 
-def _print_sarif(
-    diagnostics: list[Diagnostic], project_root: str | None = None
-) -> None:
+def _print_sarif(diagnostics: list[Diagnostic], project_root: str | None = None) -> None:
     """
     Print SARIF 2.1.0 JSON to stdout.
 
@@ -495,9 +484,7 @@ def _print_sarif(
                     "id": d.code,
                     "name": meta.get("name", d.code),
                     "shortDescription": {"text": meta.get("description", d.code)},
-                    "defaultConfiguration": {
-                        "level": _SARIF_LEVEL.get(d.severity, "warning")
-                    },
+                    "defaultConfiguration": {"level": _SARIF_LEVEL.get(d.severity, "warning")},
                     "properties": {"tags": meta.get("tags", [])},
                 }
             )
@@ -595,9 +582,7 @@ def _print_summary(diagnostics: list[Diagnostic], file_count: int) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _collect_files(
-    paths: list[str], config: BslConfig | None = None
-) -> list[str]:
+def _collect_files(paths: list[str], config: BslConfig | None = None) -> list[str]:
     """Recursively collect all .bsl/.os files from paths (files or dirs)."""
     cfg = config or _EMPTY
     result: list[str] = []

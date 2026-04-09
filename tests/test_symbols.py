@@ -240,9 +240,7 @@ class TestExtractSymbolsVariables:
 
         tree = _FakeRegexTree(BSL_EXPORT_VAR)
         result = extract_symbols(tree, file_path="test.bsl")
-        exported_vars = [
-            s for s in result if s.kind == "variable" and s.is_export
-        ]
+        exported_vars = [s for s in result if s.kind == "variable" and s.is_export]
         assert len(exported_vars) >= 1
         assert exported_vars[0].name == "МойЭкспорт"
 
@@ -297,10 +295,7 @@ class TestExtractSymbolsRealParser:
         assert len(exported) >= 2
         export_names = {s.name for s in exported}
         # The parser may truncate Cyrillic names; check with partial match
-        assert any(
-            "олучит" in n or "величит" in n or "брос" in n
-            for n in export_names
-        )
+        assert any("олучит" in n or "величит" in n or "брос" in n for n in export_names)
 
     def test_file_path_set_on_all_symbols(self, sample_bsl_path: str) -> None:
         from onec_hbk_bsl.analysis.symbols import extract_symbols
@@ -328,11 +323,7 @@ class TestExtractSymbolsRealParser:
         from onec_hbk_bsl.analysis.symbols import extract_symbols
         from onec_hbk_bsl.parser.bsl_parser import BslParser
 
-        src = (
-            "Функция ИННСертификата(СубъектСертификата)\n"
-            '\tВозврат "";\n'
-            "КонецФункции\n"
-        )
+        src = 'Функция ИННСертификата(СубъектСертификата)\n\tВозврат "";\nКонецФункции\n'
         parser = BslParser()
         tree = parser.parse_content(src, "t.bsl")
         result = extract_symbols(tree, file_path="t.bsl")

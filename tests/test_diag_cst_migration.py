@@ -14,61 +14,38 @@ from onec_hbk_bsl.parser.bsl_parser import BslParser
     "code,rule,expect_line",
     [
         (
-            "Процедура Т()\n"
-            "    Если НЕ НЕ Истина Тогда\n"
-            "    КонецЕсли;\n"
-            "КонецПроцедуры\n",
+            "Процедура Т()\n    Если НЕ НЕ Истина Тогда\n    КонецЕсли;\nКонецПроцедуры\n",
             "BSL060",
             2,
         ),
         (
-            "Процедура Т()\n"
-            "    ВызватьИсключение \"msg\";\n"
-            "КонецПроцедуры\n",
+            'Процедура Т()\n    ВызватьИсключение "msg";\nКонецПроцедуры\n',
             "BSL018",
             2,
         ),
         (
-            "Процедура Т()\n"
-            "    Если Истина Тогда\n"
-            "    КонецЕсли;\n"
-            "КонецПроцедуры\n",
+            "Процедура Т()\n    Если Истина Тогда\n    КонецЕсли;\nКонецПроцедуры\n",
             "BSL085",
             2,
         ),
         (
-            "Процедура Т()\n"
-            "Попытка\n"
-            "    А = 1;\n"
-            "Исключение\n"
-            "КонецПопытки\n"
-            "КонецПроцедуры\n",
+            "Процедура Т()\nПопытка\n    А = 1;\nИсключение\nКонецПопытки\nКонецПроцедуры\n",
             "BSL004",
             4,
         ),
         (
-            "Процедура Т()\n"
-            "Пока Истина Цикл\n"
-            "    // x\n"
-            "КонецЦикла\n"
-            "КонецПроцедуры\n",
+            "Процедура Т()\nПока Истина Цикл\n    // x\nКонецЦикла\nКонецПроцедуры\n",
             "BSL070",
             2,
         ),
         (
-            "Процедура Т()\n"
-            "Пока Истина Цикл\n"
-            "    Прервать;\n"
-            "КонецЦикла\n"
-            "КонецПроцедуры\n",
+            "Процедура Т()\nПока Истина Цикл\n    Прервать;\nКонецЦикла\nКонецПроцедуры\n",
             "BSL061",
             3,
         ),
     ],
 )
-def test_cst_rule_emits_on_fixture(
-    tmp_path: Path, code: str, rule: str, expect_line: int
-) -> None:
+def test_cst_rule_emits_on_fixture(tmp_path: Path, code: str, rule: str, expect_line: int) -> None:
     p = tmp_path / "m.bsl"
     p.write_text(code, encoding="utf-8")
     engine = DiagnosticEngine(parser=BslParser(), select={rule})
@@ -112,12 +89,7 @@ def test_bsl091_cst_elseif_return_then_else(tmp_path: Path) -> None:
 def test_bsl092_cst_empty_else(tmp_path: Path) -> None:
     p = tmp_path / "m.bsl"
     p.write_text(
-        "Процедура Т()\n"
-        "Если Истина Тогда\n"
-        "    Возврат;\n"
-        "Иначе\n"
-        "КонецЕсли;\n"
-        "КонецПроцедуры\n",
+        "Процедура Т()\nЕсли Истина Тогда\n    Возврат;\nИначе\nКонецЕсли;\nКонецПроцедуры\n",
         encoding="utf-8",
     )
     engine = DiagnosticEngine(parser=BslParser(), select={"BSL092"})

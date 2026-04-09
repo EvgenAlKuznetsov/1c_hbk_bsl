@@ -29,6 +29,7 @@ def _make_bsl(tmp_path: Path, name: str, content: str) -> str:
 class TestCreateMcpApp:
     def test_app_is_created(self) -> None:
         from onec_hbk_bsl.mcp_bridge.server import create_mcp_app
+
         app = create_mcp_app()
         assert app is not None
 
@@ -36,6 +37,7 @@ class TestCreateMcpApp:
         import asyncio
 
         from onec_hbk_bsl.mcp_bridge.server import create_mcp_app
+
         app = create_mcp_app()
         tools = asyncio.run(app.list_tools())
         tool_names = {t.name for t in tools}
@@ -84,21 +86,23 @@ class TestBslListRulesTool:
             # Create app and get the closure for bsl_list_rules
             # We test via the module-level RULE_METADATA directly
             from onec_hbk_bsl.analysis.diagnostics import RULE_METADATA
+
             assert len(RULE_METADATA) >= 67
         finally:
             mcp_module._index = original_index
 
     def test_list_rules_tag_filter(self) -> None:
         from onec_hbk_bsl.analysis.diagnostics import RULE_METADATA
+
         # Rules with 'security' tag
         security_rules = [
-            code for code, meta in RULE_METADATA.items()
-            if "security" in meta.get("tags", [])
+            code for code, meta in RULE_METADATA.items() if "security" in meta.get("tags", [])
         ]
         assert len(security_rules) > 0
 
     def test_all_rules_have_required_fields(self) -> None:
         from onec_hbk_bsl.analysis.diagnostics import RULE_METADATA
+
         required = {"name", "description", "severity", "sonar_type", "sonar_severity"}
         for code, meta in RULE_METADATA.items():
             missing = required - meta.keys()
@@ -116,6 +120,7 @@ class TestBslCheckFileTool:
             mcp_module._WORKSPACE = str(tmp_path)
             # Create DiagnosticEngine directly to verify behavior
             from onec_hbk_bsl.analysis.diagnostics import DiagnosticEngine
+
             engine = DiagnosticEngine(select={"BSL012"})
             issues = engine.check_file(bsl_path)
             assert any(d.code == "BSL012" for d in issues)
@@ -124,11 +129,13 @@ class TestBslCheckFileTool:
 
     def test_resolve_path_absolute(self, tmp_path: Path) -> None:
         from onec_hbk_bsl.mcp_bridge.server import _resolve_path
+
         abs_path = str(tmp_path / "module.bsl")
         assert _resolve_path(abs_path) == abs_path
 
     def test_resolve_path_relative(self, tmp_path: Path) -> None:
         from onec_hbk_bsl.mcp_bridge import server as mcp_module
+
         original = mcp_module._WORKSPACE
         try:
             mcp_module._WORKSPACE = str(tmp_path)
@@ -140,6 +147,7 @@ class TestBslCheckFileTool:
 
 def _resolve_path_via_module(path: str, mod) -> str:
     from pathlib import Path as P
+
     p = P(path)
     if p.is_absolute():
         return str(p)
@@ -185,6 +193,7 @@ def _make_app(tmp_path):
     os.environ["INDEX_DB_PATH"] = str(tmp_path / "idx.sqlite")
     os.environ["WORKSPACE_ROOT"] = str(tmp_path)
     from onec_hbk_bsl.mcp_bridge.server import create_mcp_app
+
     return create_mcp_app()
 
 
@@ -192,6 +201,7 @@ class TestBslHover:
     def test_hover_unknown_symbol(self, tmp_path) -> None:
         app = _make_app(tmp_path)
         import asyncio
+
         tools = {t.name: t for t in asyncio.run(app.list_tools())}
         result = tools["bsl_hover"].fn(symbol_name="НесуществующийСимволXYZ999")
         assert result["found"] is False
@@ -199,6 +209,7 @@ class TestBslHover:
     def test_hover_platform_function(self, tmp_path) -> None:
         app = _make_app(tmp_path)
         import asyncio
+
         # Сообщить is a known platform function
         tools = {t.name: t for t in asyncio.run(app.list_tools())}
         result = tools["bsl_hover"].fn(symbol_name="Сообщить")
@@ -207,9 +218,7 @@ class TestBslHover:
 
 
 class TestBsl1cHelpTools:
-    def test_1c_help_search_keyword_is_proxied_and_sorted(
-        self, tmp_path, monkeypatch
-    ) -> None:
+    def test_1c_help_search_keyword_is_proxied_and_sorted(self, tmp_path, monkeypatch) -> None:
         from onec_hbk_bsl.mcp_bridge import server as mcp_module
 
         mcp_module._help_keyword_cache.clear()
@@ -242,9 +251,7 @@ class TestBsl1cHelpTools:
         res2 = tools["bsl_1c_help_search_keyword"].fn(query="тест", limit=2)
         assert res2["cached"] is True
 
-    def test_1c_help_get_topic_is_proxied_and_cached(
-        self, tmp_path, monkeypatch
-    ) -> None:
+    def test_1c_help_get_topic_is_proxied_and_cached(self, tmp_path, monkeypatch) -> None:
         from onec_hbk_bsl.mcp_bridge import server as mcp_module
 
         mcp_module._help_keyword_cache.clear()
@@ -278,6 +285,7 @@ class TestBslReferences:
     def test_references_unknown(self, tmp_path) -> None:
         app = _make_app(tmp_path)
         import asyncio
+
         tools = {t.name: t for t in asyncio.run(app.list_tools())}
         result = tools["bsl_references"].fn(symbol_name="НесуществующийXYZ")
         assert result["definition_count"] == 0
@@ -290,6 +298,7 @@ class TestBslReadFile:
         f.write_text("А = 1;\nБ = 2;\n", encoding="utf-8")
         app = _make_app(tmp_path)
         import asyncio
+
         tools = {t.name: t for t in asyncio.run(app.list_tools())}
         result = tools["bsl_read_file"].fn(file_path=str(f))
         assert "А = 1;" in result["content"]
@@ -300,6 +309,7 @@ class TestBslReadFile:
         f.write_text("А = 1;\nБ = 2;\nВ = 3;\n", encoding="utf-8")
         app = _make_app(tmp_path)
         import asyncio
+
         tools = {t.name: t for t in asyncio.run(app.list_tools())}
         result = tools["bsl_read_file"].fn(file_path=str(f), start_line=2, end_line=2)
         assert "Б = 2;" in result["content"]
@@ -308,6 +318,7 @@ class TestBslReadFile:
     def test_read_nonexistent(self, tmp_path) -> None:
         app = _make_app(tmp_path)
         import asyncio
+
         tools = {t.name: t for t in asyncio.run(app.list_tools())}
         result = tools["bsl_read_file"].fn(file_path=str(tmp_path / "nope.bsl"))
         assert "error" in result
@@ -319,15 +330,18 @@ class TestBslSearch:
         f.write_text("Процедура МойМетод()\nКонецПроцедуры\n", encoding="utf-8")
         app = _make_app(tmp_path)
         import asyncio
+
         tools = {t.name: t for t in asyncio.run(app.list_tools())}
         # file_filter restricts search to our tmp directory
-        result = tools["bsl_search"].fn(query="МойМетод", search_type="text",
-                                        file_filter=f.name)
-        assert result["text_match_count"] >= 1 or result["text_match_count"] == 0  # depends on workspace
+        result = tools["bsl_search"].fn(query="МойМетод", search_type="text", file_filter=f.name)
+        assert (
+            result["text_match_count"] >= 1 or result["text_match_count"] == 0
+        )  # depends on workspace
 
     def test_search_symbol_empty_index(self, tmp_path) -> None:
         app = _make_app(tmp_path)
         import asyncio
+
         tools = {t.name: t for t in asyncio.run(app.list_tools())}
         result = tools["bsl_search"].fn(query="НечтоНесуществующее", search_type="symbol")
         assert result["symbols"] == []
@@ -335,6 +349,7 @@ class TestBslSearch:
     def test_search_invalid_regex(self, tmp_path) -> None:
         app = _make_app(tmp_path)
         import asyncio
+
         tools = {t.name: t for t in asyncio.run(app.list_tools())}
         result = tools["bsl_search"].fn(query="[invalid", search_type="text")
         assert "text_error" in result
@@ -346,6 +361,7 @@ class TestBslFormat:
         f.write_text("процедура Тест()\nконецпроцедуры\n", encoding="utf-8")
         app = _make_app(tmp_path)
         import asyncio
+
         tools = {t.name: t for t in asyncio.run(app.list_tools())}
         result = tools["bsl_format"].fn(file_path=str(f), write=False)
         assert result["changed"] is True
@@ -357,6 +373,7 @@ class TestBslFormat:
         f.write_text("процедура Тест()\nконецпроцедуры\n", encoding="utf-8")
         app = _make_app(tmp_path)
         import asyncio
+
         tools = {t.name: t for t in asyncio.run(app.list_tools())}
         result = tools["bsl_format"].fn(file_path=str(f), write=True)
         assert result["written"] is True
@@ -367,6 +384,7 @@ class TestBslFormat:
         f.write_text("Процедура Тест()\nКонецПроцедуры\n", encoding="utf-8")
         app = _make_app(tmp_path)
         import asyncio
+
         tools = {t.name: t for t in asyncio.run(app.list_tools())}
         result = tools["bsl_format"].fn(file_path=str(f), write=False)
         assert result["changed"] is False
@@ -376,14 +394,18 @@ class TestBslRename:
     def test_rename_dry_run_empty_index(self, tmp_path) -> None:
         app = _make_app(tmp_path)
         import asyncio
+
         tools = {t.name: t for t in asyncio.run(app.list_tools())}
-        result = tools["bsl_rename"].fn(old_name="СтараяФункция", new_name="НоваяФункция", apply=False)
+        result = tools["bsl_rename"].fn(
+            old_name="СтараяФункция", new_name="НоваяФункция", apply=False
+        )
         assert result["dry_run"] is True
         assert result["files_affected"] == 0
 
     def test_rename_invalid_name(self, tmp_path) -> None:
         app = _make_app(tmp_path)
         import asyncio
+
         tools = {t.name: t for t in asyncio.run(app.list_tools())}
         result = tools["bsl_rename"].fn(old_name="Тест", new_name="123invalid", apply=False)
         assert "error" in result
@@ -395,6 +417,7 @@ class TestBslFix:
         f.write_text("А = 1;\n", encoding="utf-8")
         app = _make_app(tmp_path)
         import asyncio
+
         tools = {t.name: t for t in asyncio.run(app.list_tools())}
         result = tools["bsl_fix"].fn(file_path=str(f), write=False)
         assert result["fixes_applied"] == 0
@@ -406,6 +429,7 @@ class TestBslFix:
         f.write_text("А = 1;\n", encoding="utf-8")
         app = _make_app(tmp_path)
         import asyncio
+
         tools = {t.name: t for t in asyncio.run(app.list_tools())}
         result = tools["bsl_fix"].fn(file_path=str(f), write=False)
         assert "fixes_applied" in result
@@ -418,6 +442,7 @@ class TestBslWorkspaceScan:
         (tmp_path / "b.bsl").write_text("Б = 2;\n", encoding="utf-8")
         app = _make_app(tmp_path)
         import asyncio
+
         tools = {t.name: t for t in asyncio.run(app.list_tools())}
         result = tools["bsl_workspace_scan"].fn(directory=str(tmp_path))
         assert result["file_count"] == 2
@@ -426,6 +451,7 @@ class TestBslWorkspaceScan:
     def test_scan_nonexistent(self, tmp_path) -> None:
         app = _make_app(tmp_path)
         import asyncio
+
         tools = {t.name: t for t in asyncio.run(app.list_tools())}
         result = tools["bsl_workspace_scan"].fn(directory=str(tmp_path / "nope"))
         assert "error" in result
@@ -466,26 +492,14 @@ class TestMcpMultiProject:
         tools = {t.name: t for t in asyncio.run(app.list_tools())}
 
         # Index both workspaces (separate DBs via .git/onec-hbk-bsl_index.sqlite).
-        tools["bsl_index_file"].fn(
-            file_path=str(f1), workspace_root=str(ws1)
-        )
-        tools["bsl_index_file"].fn(
-            file_path=str(f2), workspace_root=str(ws2)
-        )
+        tools["bsl_index_file"].fn(file_path=str(f1), workspace_root=str(ws1))
+        tools["bsl_index_file"].fn(file_path=str(f2), workspace_root=str(ws2))
 
-        r1 = tools["bsl_find_symbol"].fn(
-            name="ТолькоWS1", workspace_root=str(ws1)
-        )
-        r1_wrong = tools["bsl_find_symbol"].fn(
-            name="ТолькоWS1", workspace_root=str(ws2)
-        )
+        r1 = tools["bsl_find_symbol"].fn(name="ТолькоWS1", workspace_root=str(ws1))
+        r1_wrong = tools["bsl_find_symbol"].fn(name="ТолькоWS1", workspace_root=str(ws2))
 
-        r2 = tools["bsl_find_symbol"].fn(
-            name="ТолькоWS2", workspace_root=str(ws2)
-        )
-        r2_wrong = tools["bsl_find_symbol"].fn(
-            name="ТолькоWS2", workspace_root=str(ws1)
-        )
+        r2 = tools["bsl_find_symbol"].fn(name="ТолькоWS2", workspace_root=str(ws2))
+        r2_wrong = tools["bsl_find_symbol"].fn(name="ТолькоWS2", workspace_root=str(ws1))
 
         assert r1["count"] >= 1
         assert r1_wrong["count"] == 0

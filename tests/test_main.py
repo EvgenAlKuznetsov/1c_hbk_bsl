@@ -48,23 +48,39 @@ class TestParseCodes:
 class TestMainCheckNewFlags:
     def test_exit_zero_flag(self, tmp_path: Path) -> None:
         (tmp_path / "dirty.bsl").write_text('Пароль = "секрет123";\n', encoding="utf-8")
-        with patch("sys.argv", [
-            "onec-hbk-bsl", "--check", str(tmp_path),
-            "--select", "BSL012", "--exit-zero",
-        ]):
+        with patch(
+            "sys.argv",
+            [
+                "onec-hbk-bsl",
+                "--check",
+                str(tmp_path),
+                "--select",
+                "BSL012",
+                "--exit-zero",
+            ],
+        ):
             with pytest.raises(SystemExit) as exc_info:
                 main()
         assert exc_info.value.code == 0
 
     def test_sarif_format(self, tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
         (tmp_path / "ok.bsl").write_text("А = 1;\n", encoding="utf-8")
-        with patch("sys.argv", [
-            "onec-hbk-bsl", "--check", str(tmp_path),
-            "--format", "sarif", "--select", "BSL001",
-        ]):
+        with patch(
+            "sys.argv",
+            [
+                "onec-hbk-bsl",
+                "--check",
+                str(tmp_path),
+                "--format",
+                "sarif",
+                "--select",
+                "BSL001",
+            ],
+        ):
             with pytest.raises(SystemExit):
                 main()
         import json
+
         captured = capsys.readouterr()
         data = json.loads(captured.out)
         assert "runs" in data
@@ -72,10 +88,18 @@ class TestMainCheckNewFlags:
     def test_update_baseline_flag(self, tmp_path: Path) -> None:
         (tmp_path / "f.bsl").write_text('Пароль = "с123";\n', encoding="utf-8")
         baseline = str(tmp_path / "b.json")
-        with patch("sys.argv", [
-            "onec-hbk-bsl", "--check", str(tmp_path),
-            "--select", "BSL012", "--update-baseline", baseline,
-        ]):
+        with patch(
+            "sys.argv",
+            [
+                "onec-hbk-bsl",
+                "--check",
+                str(tmp_path),
+                "--select",
+                "BSL012",
+                "--update-baseline",
+                baseline,
+            ],
+        ):
             with pytest.raises(SystemExit) as exc_info:
                 main()
         assert exc_info.value.code == 0
@@ -85,17 +109,33 @@ class TestMainCheckNewFlags:
         (tmp_path / "f.bsl").write_text('Пароль = "с123";\n', encoding="utf-8")
         baseline = str(tmp_path / "b.json")
         # First, create baseline
-        with patch("sys.argv", [
-            "onec-hbk-bsl", "--check", str(tmp_path),
-            "--select", "BSL012", "--update-baseline", baseline,
-        ]):
+        with patch(
+            "sys.argv",
+            [
+                "onec-hbk-bsl",
+                "--check",
+                str(tmp_path),
+                "--select",
+                "BSL012",
+                "--update-baseline",
+                baseline,
+            ],
+        ):
             with pytest.raises(SystemExit):
                 main()
         # Then run with baseline — should exit 0
-        with patch("sys.argv", [
-            "onec-hbk-bsl", "--check", str(tmp_path),
-            "--select", "BSL012", "--baseline", baseline,
-        ]):
+        with patch(
+            "sys.argv",
+            [
+                "onec-hbk-bsl",
+                "--check",
+                str(tmp_path),
+                "--select",
+                "BSL012",
+                "--baseline",
+                baseline,
+            ],
+        ):
             with pytest.raises(SystemExit) as exc_info:
                 main()
         assert exc_info.value.code == 0
@@ -116,9 +156,7 @@ class TestMainCheck:
                 main()
         assert exc_info.value.code == 1
 
-    def test_check_with_json_format(
-        self, tmp_path: Path, capsys: pytest.CaptureFixture
-    ) -> None:
+    def test_check_with_json_format(self, tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
         (tmp_path / "ok.bsl").write_text("А = 1;\n", encoding="utf-8")
         with patch(
             "sys.argv",
@@ -129,6 +167,7 @@ class TestMainCheck:
         # JSON written to stdout (not stderr)
         captured = capsys.readouterr()
         import json
+
         data = json.loads(captured.out)
         assert isinstance(data, list)
 
@@ -139,13 +178,19 @@ class TestMainCheck:
         with patch(
             "sys.argv",
             [
-                "onec-hbk-bsl", "--check", str(tmp_path),
-                "--format", "sonarqube", "--select", "BSL001",
+                "onec-hbk-bsl",
+                "--check",
+                str(tmp_path),
+                "--format",
+                "sonarqube",
+                "--select",
+                "BSL001",
             ],
         ):
             with pytest.raises(SystemExit):
                 main()
         import json
+
         captured = capsys.readouterr()
         data = json.loads(captured.out)
         assert "issues" in data
@@ -240,10 +285,18 @@ class TestMainInit:
 class TestMainCompactFormat:
     def test_compact_format_output(self, tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
         (tmp_path / "t.bsl").write_text("А = А;\n", encoding="utf-8")
-        with patch("sys.argv", [
-            "onec-hbk-bsl", "--check", str(tmp_path),
-            "--format", "compact", "--select", "BSL009",
-        ]):
+        with patch(
+            "sys.argv",
+            [
+                "onec-hbk-bsl",
+                "--check",
+                str(tmp_path),
+                "--format",
+                "compact",
+                "--select",
+                "BSL009",
+            ],
+        ):
             with pytest.raises(SystemExit):
                 main()
         captured = capsys.readouterr()
@@ -259,10 +312,17 @@ class TestMainFixFlag:
     def test_fix_flag_removes_self_assign(self, tmp_path: Path) -> None:
         p = tmp_path / "t.bsl"
         p.write_text("А = А;\n", encoding="utf-8")
-        with patch("sys.argv", [
-            "onec-hbk-bsl", "--check", str(tmp_path),
-            "--select", "BSL009", "--fix",
-        ]):
+        with patch(
+            "sys.argv",
+            [
+                "onec-hbk-bsl",
+                "--check",
+                str(tmp_path),
+                "--select",
+                "BSL009",
+                "--fix",
+            ],
+        ):
             with pytest.raises(SystemExit) as exc_info:
                 main()
         assert exc_info.value.code == 0

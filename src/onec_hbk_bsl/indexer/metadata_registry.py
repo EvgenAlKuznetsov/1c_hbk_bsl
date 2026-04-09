@@ -31,30 +31,73 @@ class MetadataKindDef:
 _METADATA_KIND_DEFS: tuple[MetadataKindDef, ...] = (
     MetadataKindDef("Catalogs", "Catalog", "Справочники", ("catalogs",)),
     MetadataKindDef("Documents", "Document", "Документы", ("documents",)),
-    MetadataKindDef("DocumentJournals", "DocumentJournal", "ЖурналыДокументов", ("documentjournals",)),
+    MetadataKindDef(
+        "DocumentJournals", "DocumentJournal", "ЖурналыДокументов", ("documentjournals",)
+    ),
     MetadataKindDef("Enums", "Enum", "Перечисления", ("enums",)),
     MetadataKindDef("Reports", "Report", "Отчеты", ("reports",)),
     MetadataKindDef("DataProcessors", "DataProcessor", "Обработки", ("dataprocessors",)),
-    MetadataKindDef("ChartsOfCharacteristicTypes", "ChartOfCharacteristicTypes", "ПланыВидовХарактеристик", ("chartsofcharacteristictypes",)),
+    MetadataKindDef(
+        "ChartsOfCharacteristicTypes",
+        "ChartOfCharacteristicTypes",
+        "ПланыВидовХарактеристик",
+        ("chartsofcharacteristictypes",),
+    ),
     MetadataKindDef("ChartsOfAccounts", "ChartOfAccounts", "ПланыСчетов", ("chartsofaccounts",)),
-    MetadataKindDef("ChartsOfCalculationTypes", "ChartOfCalculationTypes", "ПланыВидовРасчета", ("chartsofcalculationtypes",)),
-    MetadataKindDef("InformationRegisters", "InformationRegister", "РегистрыСведений", ("informationregisters",)),
-    MetadataKindDef("AccumulationRegisters", "AccumulationRegister", "РегистрыНакопления", ("accumulationregisters",)),
-    MetadataKindDef("AccountingRegisters", "AccountingRegister", "РегистрыБухгалтерии", ("accountingregisters",)),
-    MetadataKindDef("CalculationRegisters", "CalculationRegister", "РегистрыРасчета", ("calculationregisters",)),
-    MetadataKindDef("BusinessProcesses", "BusinessProcess", "БизнесПроцессы", ("businessprocesses",)),
+    MetadataKindDef(
+        "ChartsOfCalculationTypes",
+        "ChartOfCalculationTypes",
+        "ПланыВидовРасчета",
+        ("chartsofcalculationtypes",),
+    ),
+    MetadataKindDef(
+        "InformationRegisters", "InformationRegister", "РегистрыСведений", ("informationregisters",)
+    ),
+    MetadataKindDef(
+        "AccumulationRegisters",
+        "AccumulationRegister",
+        "РегистрыНакопления",
+        ("accumulationregisters",),
+    ),
+    MetadataKindDef(
+        "AccountingRegisters", "AccountingRegister", "РегистрыБухгалтерии", ("accountingregisters",)
+    ),
+    MetadataKindDef(
+        "CalculationRegisters", "CalculationRegister", "РегистрыРасчета", ("calculationregisters",)
+    ),
+    MetadataKindDef(
+        "BusinessProcesses", "BusinessProcess", "БизнесПроцессы", ("businessprocesses",)
+    ),
     MetadataKindDef("Tasks", "Task", "Задачи", ("tasks",)),
     MetadataKindDef("ExchangePlans", "ExchangePlan", "ПланыОбмена", ("exchangeplans",)),
-    MetadataKindDef("ExternalDataSources", "ExternalDataSource", "ВнешниеИсточникиДанных", ("externaldatasources",)),
+    MetadataKindDef(
+        "ExternalDataSources",
+        "ExternalDataSource",
+        "ВнешниеИсточникиДанных",
+        ("externaldatasources",),
+    ),
     MetadataKindDef("Constants", "Constant", "Константы", ("constants",)),
     MetadataKindDef("CommonModules", "CommonModule", "ОбщиеМодули", ("commonmodules",)),
-    MetadataKindDef("SessionParameters", "SessionParameter", "ПараметрыСеанса", ("sessionparameters",)),
+    MetadataKindDef(
+        "SessionParameters", "SessionParameter", "ПараметрыСеанса", ("sessionparameters",)
+    ),
     MetadataKindDef("FilterCriteria", "FilterCriterion", "КритерииОтбора", ("filtercriteria",)),
     MetadataKindDef("ScheduledJobs", "ScheduledJob", "РегламентныеЗадания", ("scheduledjobs",)),
-    MetadataKindDef("FunctionalOptions", "FunctionalOption", "ФункциональныеОпции", ("functionaloptions",)),
-    MetadataKindDef("FunctionalOptionsParameters", "FunctionalOptionsParameter", "ПараметрыФункциональныхОпций", ("functionaloptionsparameters",)),
-    MetadataKindDef("SettingsStorages", "SettingsStorage", "ХранилищаНастроек", ("settingsstorages",)),
-    MetadataKindDef("EventSubscriptions", "EventSubscription", "ПодпискиНаСобытия", ("eventsubscriptions",)),
+    MetadataKindDef(
+        "FunctionalOptions", "FunctionalOption", "ФункциональныеОпции", ("functionaloptions",)
+    ),
+    MetadataKindDef(
+        "FunctionalOptionsParameters",
+        "FunctionalOptionsParameter",
+        "ПараметрыФункциональныхОпций",
+        ("functionaloptionsparameters",),
+    ),
+    MetadataKindDef(
+        "SettingsStorages", "SettingsStorage", "ХранилищаНастроек", ("settingsstorages",)
+    ),
+    MetadataKindDef(
+        "EventSubscriptions", "EventSubscription", "ПодпискиНаСобытия", ("eventsubscriptions",)
+    ),
     MetadataKindDef("CommandGroups", "CommandGroup", "ГруппыКоманд", ("commandgroups",)),
     MetadataKindDef("Roles", "Role", "Роли", ("roles",)),
     MetadataKindDef("Interfaces", "Interface", "Интерфейсы", ("interfaces",)),
@@ -62,7 +105,9 @@ _METADATA_KIND_DEFS: tuple[MetadataKindDef, ...] = (
     MetadataKindDef("WebServices", "WebService", "WebСервисы", ("webservices",)),
     MetadataKindDef("HTTPServices", "HTTPService", "HTTPСервисы", ("httpservices",)),
     MetadataKindDef("WSReferences", "WSReference", "WSСсылки", ("wsreferences",)),
-    MetadataKindDef("IntegrationServices", "IntegrationService", "СервисыИнтеграции", ("integrationservices",)),
+    MetadataKindDef(
+        "IntegrationServices", "IntegrationService", "СервисыИнтеграции", ("integrationservices",)
+    ),
     MetadataKindDef("Subsystems", "Subsystem", "Подсистемы", ("subsystems",)),
     MetadataKindDef("Sequences", "Sequence", "Последовательности", ("sequences",)),
     MetadataKindDef("DefinedTypes", "DefinedType", "ОпределяемыеТипы", ("definedtypes",)),
@@ -99,6 +144,7 @@ ALL_COLLECTION_NAMES_RU: Final[tuple[str, ...]] = tuple(
 
 # Kinds we index from Designer XML (for tests / diagnostics).
 ALL_KINDS: Final[frozenset[str]] = frozenset(d.kind for d in _METADATA_KIND_DEFS)
+
 
 def xml_root_tags_for_kind(kind: str) -> frozenset[str]:
     """Local XML element names that may represent the root of an object of *kind*."""

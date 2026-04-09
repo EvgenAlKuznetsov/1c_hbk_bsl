@@ -21,6 +21,7 @@ Wrapped procedure/function parameters (``Функция Имя(`` then parameter
 next lines) get one extra indent level so continuation lines use a "double"
 indent relative to the block baseline (BSL-LS style).
 """
+
 from __future__ import annotations
 
 import re
@@ -759,11 +760,23 @@ def _tail_ok_after_loop(tail: str) -> bool:
 
 # (pattern on layout line, tail validator)
 _BLOCK_HEADER_ONE_LINE: list[tuple[re.Pattern[str], Callable[[str], bool]]] = [
-    (re.compile(r"^(\s*)(Если\b.*\bТогда)\s+(.+)$", re.IGNORECASE | re.UNICODE), _tail_ok_after_then),
+    (
+        re.compile(r"^(\s*)(Если\b.*\bТогда)\s+(.+)$", re.IGNORECASE | re.UNICODE),
+        _tail_ok_after_then,
+    ),
     (re.compile(r"^(\s*)(If\b.*\bThen)\s+(.+)$", re.IGNORECASE | re.UNICODE), _tail_ok_after_then),
-    (re.compile(r"^(\s*)(ИначеЕсли\b.*\bТогда)\s+(.+)$", re.IGNORECASE | re.UNICODE), _tail_ok_after_then),
-    (re.compile(r"^(\s*)(ElsIf\b.*\bThen)\s+(.+)$", re.IGNORECASE | re.UNICODE), _tail_ok_after_then),
-    (re.compile(r"^(\s*)(Пока\b.*\bЦикл)\s+(.+)$", re.IGNORECASE | re.UNICODE), _tail_ok_after_loop),
+    (
+        re.compile(r"^(\s*)(ИначеЕсли\b.*\bТогда)\s+(.+)$", re.IGNORECASE | re.UNICODE),
+        _tail_ok_after_then,
+    ),
+    (
+        re.compile(r"^(\s*)(ElsIf\b.*\bThen)\s+(.+)$", re.IGNORECASE | re.UNICODE),
+        _tail_ok_after_then,
+    ),
+    (
+        re.compile(r"^(\s*)(Пока\b.*\bЦикл)\s+(.+)$", re.IGNORECASE | re.UNICODE),
+        _tail_ok_after_loop,
+    ),
     (re.compile(r"^(\s*)(While\b.*\bDo)\s+(.+)$", re.IGNORECASE | re.UNICODE), _tail_ok_after_loop),
     (re.compile(r"^(\s*)(Для\b.*\bЦикл)\s+(.+)$", re.IGNORECASE | re.UNICODE), _tail_ok_after_loop),
     (re.compile(r"^(\s*)(For\b.*\bDo)\s+(.+)$", re.IGNORECASE | re.UNICODE), _tail_ok_after_loop),
@@ -908,7 +921,11 @@ class BslFormatter:
         if target > len(full_lines):
             return 0
         base_levels = _compute_structural_indent_levels(full_lines, full_text)
-        next_struct = base_levels[target] if target < len(base_levels) else (base_levels[-1] if base_levels else 0)
+        next_struct = (
+            base_levels[target]
+            if target < len(base_levels)
+            else (base_levels[-1] if base_levels else 0)
+        )
         _, next_level = self._format_lines(
             full_lines[:target],
             indent_size=indent_size,

@@ -46,7 +46,9 @@ def line_in_any_region(line_idx: int, intervals: list[tuple[int, int]]) -> bool:
     return any(s <= line_idx <= e for s, e in intervals)
 
 
-def proc_fully_in_any_region(start_idx: int, end_idx: int, intervals: list[tuple[int, int]]) -> bool:
+def proc_fully_in_any_region(
+    start_idx: int, end_idx: int, intervals: list[tuple[int, int]]
+) -> bool:
     return any(s <= start_idx and end_idx <= e for s, e in intervals)
 
 

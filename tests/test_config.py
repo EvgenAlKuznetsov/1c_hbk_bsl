@@ -170,9 +170,7 @@ class TestLoadConfig:
         assert cfg.ignore == {"BSL001"}
 
     def test_reads_onec_hbk_bsl_toml_root_level(self, tmp_path: Path) -> None:
-        (tmp_path / "onec-hbk-bsl.toml").write_text(
-            'ignore = ["BSL002"]\n', encoding="utf-8"
-        )
+        (tmp_path / "onec-hbk-bsl.toml").write_text('ignore = ["BSL002"]\n', encoding="utf-8")
         cfg = load_config(str(tmp_path))
         assert cfg.ignore == {"BSL002"}
 
@@ -187,9 +185,7 @@ class TestLoadConfig:
         (tmp_path / "pyproject.toml").write_text(
             '[tool."onec-hbk-bsl"]\nselect = ["BSL001"]\n', encoding="utf-8"
         )
-        (tmp_path / "onec-hbk-bsl.toml").write_text(
-            'select = ["BSL009"]\n', encoding="utf-8"
-        )
+        (tmp_path / "onec-hbk-bsl.toml").write_text('select = ["BSL009"]\n', encoding="utf-8")
         cfg = load_config(str(tmp_path))
         assert cfg.select == {"BSL009"}
 
@@ -203,22 +199,18 @@ class TestLoadConfig:
         assert cfg.ignore == {"BSL014"}
 
     def test_pyproject_without_bsl_section_returns_empty(self, tmp_path: Path) -> None:
-        (tmp_path / "pyproject.toml").write_text(
-            "[tool.pytest]\naddopts = []\n", encoding="utf-8"
-        )
+        (tmp_path / "pyproject.toml").write_text("[tool.pytest]\naddopts = []\n", encoding="utf-8")
         cfg = load_config(str(tmp_path))
         assert cfg.select is None
 
     def test_malformed_toml_returns_empty(self, tmp_path: Path) -> None:
-        (tmp_path / "onec-hbk-bsl.toml").write_text(
-            "this is not valid toml [[[", encoding="utf-8"
-        )
+        (tmp_path / "onec-hbk-bsl.toml").write_text("this is not valid toml [[[", encoding="utf-8")
         cfg = load_config(str(tmp_path))
         assert cfg.select is None
 
     def test_config_thresholds(self, tmp_path: Path) -> None:
         (tmp_path / "onec-hbk-bsl.toml").write_text(
-            'max-line-length = 120\nmax-proc-lines = 80\n',
+            "max-line-length = 120\nmax-proc-lines = 80\n",
             encoding="utf-8",
         )
         cfg = load_config(str(tmp_path))

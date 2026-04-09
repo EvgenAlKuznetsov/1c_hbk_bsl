@@ -10,9 +10,7 @@ from onec_hbk_bsl.analysis.diagnostics import DiagnosticEngine
 def test_bsl155_skips_only_var_before_proc(tmp_path: Path) -> None:
     p = tmp_path / "m.bsl"
     p.write_text(
-        "Перем Глоб;\n"
-        "Процедура П() Экспорт\n"
-        "КонецПроцедуры\n",
+        "Перем Глоб;\nПроцедура П() Экспорт\nКонецПроцедуры\n",
         encoding="utf-8",
     )
     engine = DiagnosticEngine(select={"BSL155"})
@@ -22,9 +20,7 @@ def test_bsl155_skips_only_var_before_proc(tmp_path: Path) -> None:
 def test_bsl155_fires_executable_before_proc(tmp_path: Path) -> None:
     p = tmp_path / "m.bsl"
     p.write_text(
-        "а = 1;\n"
-        "Процедура П() Экспорт\n"
-        "КонецПроцедуры\n",
+        "а = 1;\nПроцедура П() Экспорт\nКонецПроцедуры\n",
         encoding="utf-8",
     )
     engine = DiagnosticEngine(select={"BSL155"})

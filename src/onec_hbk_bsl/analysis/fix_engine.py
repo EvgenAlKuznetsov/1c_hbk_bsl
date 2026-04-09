@@ -56,9 +56,9 @@ class FixResult:
     """Result of an `apply_fixes` call for one file."""
 
     file: str
-    applied: list[str] = field(default_factory=list)   # rule codes fixed
-    skipped: list[str] = field(default_factory=list)   # skipped (unsafe/unknown)
-    error: str | None = None                           # I/O error message
+    applied: list[str] = field(default_factory=list)  # rule codes fixed
+    skipped: list[str] = field(default_factory=list)  # skipped (unsafe/unknown)
+    error: str | None = None  # I/O error message
 
 
 # ---------------------------------------------------------------------------
@@ -68,11 +68,11 @@ class FixResult:
 _MAX_BLANK_LINES = 1
 
 # Regex for a plain empty return (matches the useless-return rule's target)
-_RE_EMPTY_RETURN = re.compile(r'^\s*(?:Возврат|Return)\s*;?\s*$', re.IGNORECASE)
+_RE_EMPTY_RETURN = re.compile(r"^\s*(?:Возврат|Return)\s*;?\s*$", re.IGNORECASE)
 
 # Regex for double negation
 _RE_DOUBLE_NEG = re.compile(
-    r'\b((?:НЕ|Not)\s+(?:НЕ|Not)\s+)',
+    r"\b((?:НЕ|Not)\s+(?:НЕ|Not)\s+)",
     re.IGNORECASE,
 )
 
@@ -82,7 +82,7 @@ def _fix_bsl009_self_assign(lines: list[str], diag: Diagnostic) -> list[str] | N
     idx = diag.line - 1  # convert to 0-based
     if idx < 0 or idx >= len(lines):
         return None
-    new_lines = lines[:idx] + lines[idx + 1:]
+    new_lines = lines[:idx] + lines[idx + 1 :]
     return new_lines
 
 
@@ -93,12 +93,10 @@ def _fix_bsl010_useless_return(lines: list[str], diag: Diagnostic) -> list[str] 
         return None
     if not _RE_EMPTY_RETURN.match(lines[idx]):
         return None  # safety re-check
-    return lines[:idx] + lines[idx + 1:]
+    return lines[:idx] + lines[idx + 1 :]
 
 
-def _fix_bsl055_consecutive_blank_lines(
-    lines: list[str], diag: Diagnostic
-) -> list[str] | None:
+def _fix_bsl055_consecutive_blank_lines(lines: list[str], diag: Diagnostic) -> list[str] | None:
     """Truncate a run of blank lines to MAX_BLANK_LINES."""
     # The diagnostic line (1-based) points to the start of the blank run
     start = diag.line - 1  # 0-based
@@ -112,7 +110,7 @@ def _fix_bsl055_consecutive_blank_lines(
     if run_length <= _MAX_BLANK_LINES:
         return None  # nothing to do
     # Keep only MAX_BLANK_LINES blank lines from the run
-    new_lines = lines[:start] + lines[start: start + _MAX_BLANK_LINES] + lines[end:]
+    new_lines = lines[:start] + lines[start : start + _MAX_BLANK_LINES] + lines[end:]
     return new_lines
 
 
@@ -228,9 +226,7 @@ def apply_fixes(
     # Atomic write via temp file in same directory
     dir_path = os.path.dirname(file_path) or "."
     try:
-        fd, tmp_path = tempfile.mkstemp(
-            dir=dir_path, prefix=".bsl-fix-", suffix=".tmp"
-        )
+        fd, tmp_path = tempfile.mkstemp(dir=dir_path, prefix=".bsl-fix-", suffix=".tmp")
         try:
             os.write(fd, new_bytes)
         finally:

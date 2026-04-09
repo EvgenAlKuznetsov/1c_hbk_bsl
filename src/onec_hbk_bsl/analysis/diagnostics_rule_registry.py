@@ -85,10 +85,15 @@ def infer_rule_invoke(code: str, meta: dict[str, Any] | None) -> RuleInvokeInfo:
 
     if "syntax" in tags or name == "ParseError":
         return RuleInvokeInfo(RulePhase.CST, "tags")
-    if "complexity" in tags or "brain-overload" in tags or name in (
-        "MethodSize",
-        "CognitiveComplexity",
-        "CyclomaticComplexity",
+    if (
+        "complexity" in tags
+        or "brain-overload" in tags
+        or name
+        in (
+            "MethodSize",
+            "CognitiveComplexity",
+            "CyclomaticComplexity",
+        )
     ):
         return RuleInvokeInfo(RulePhase.PROC, "tags")
     if "api" in tags or "region" in name.lower() or "Region" in name:

@@ -195,10 +195,12 @@ _SEV_MAP = {
     Severity.HINT: DiagnosticSeverity.Hint,
 }
 
+
 # Problems panel: ``source`` = ``onec-hbk-bsl · <internal rule id>`` so VS Code
 # "Group by Source" splits diagnostics by rule; ``code`` remains the BSLLS-style name.
 def _lsp_diagnostic_source(internal_rule_code: str) -> str:
     return f"onec-hbk-bsl · {internal_rule_code}"
+
 
 # Map symbol kind strings → LSP SymbolKind
 _KIND_MAP = {
@@ -348,6 +350,7 @@ server = BslLanguageServer()
 # Git branch watcher — re-indexes when .git/HEAD changes (branch switch)
 # ---------------------------------------------------------------------------
 
+
 def _start_branch_watcher(ls: BslLanguageServer, workspace_root: str) -> None:
     """Watch .git/HEAD for branch switches and trigger incremental re-index.
 
@@ -367,7 +370,9 @@ def _start_branch_watcher(ls: BslLanguageServer, workspace_root: str) -> None:
             logger.info("LSP: watching %s for branch changes", git_head)
             for _ in watch(str(git_head), stop_event=None):
                 branch = _current_branch(git_head)
-                logger.warning("LSP: branch changed → %s — scheduling re-index %s", branch, workspace_root)
+                logger.warning(
+                    "LSP: branch changed → %s — scheduling re-index %s", branch, workspace_root
+                )
                 _schedule_workspace_reindex(ls, workspace_root, reason=f"branch:{branch}")
         except Exception as exc:
             logger.error("LSP: branch watcher crashed: %s", exc)
@@ -380,7 +385,7 @@ def _current_branch(git_head: Path) -> str:
     try:
         content = git_head.read_text(encoding="utf-8").strip()
         if content.startswith("ref: refs/heads/"):
-            return content[len("ref: refs/heads/"):]
+            return content[len("ref: refs/heads/") :]
         return content[:8]  # detached HEAD — show short hash
     except OSError:
         return "unknown"
@@ -479,9 +484,7 @@ def on_did_open(ls: BslLanguageServer, params: DidOpenTextDocumentParams) -> Non
     logger.debug("LSP: opened %s", doc.uri)
     path = _uri_to_path(doc.uri)
     if not ls.client_pull_diagnostics:
-        threading.Thread(
-            target=_publish_diagnostics, args=(ls, doc.uri, path), daemon=True
-        ).start()
+        threading.Thread(target=_publish_diagnostics, args=(ls, doc.uri, path), daemon=True).start()
 
 
 _DIAG_DEBOUNCE_SECS = 0.6  # fallback default; adaptive debounce used when timing is known
@@ -692,9 +695,7 @@ def _build_lsp_diagnostics_inner(ls: BslLanguageServer, uri: str, path: str) -> 
 def _publish_diagnostics(ls: BslLanguageServer, uri: str, path: str) -> None:
     """Push diagnostics (clients without textDocument/diagnostic pull support)."""
     lsp_diags = _build_lsp_diagnostics(ls, uri, path)
-    ls.text_document_publish_diagnostics(
-        PublishDiagnosticsParams(uri=uri, diagnostics=lsp_diags)
-    )
+    ls.text_document_publish_diagnostics(PublishDiagnosticsParams(uri=uri, diagnostics=lsp_diags))
 
 
 @server.feature(
@@ -717,9 +718,7 @@ def on_document_diagnostic(
 
 
 @server.feature(TEXT_DOCUMENT_DEFINITION)
-def on_definition(
-    ls: BslLanguageServer, params: DefinitionParams
-) -> list[LocationLink] | None:
+def on_definition(ls: BslLanguageServer, params: DefinitionParams) -> list[LocationLink] | None:
     """
     Resolve the definition of the symbol at the cursor.
 
@@ -748,7 +747,9 @@ def on_definition(
     #    skip local variable lookup so `Foo = Foo()` navigates to the function.
     _line_text = content.splitlines()[pos.line] if pos.line < len(content.splitlines()) else ""
     _word_end = pos.character
-    while _word_end < len(_line_text) and (_line_text[_word_end].isalnum() or _line_text[_word_end] == "_"):
+    while _word_end < len(_line_text) and (
+        _line_text[_word_end].isalnum() or _line_text[_word_end] == "_"
+    ):
         _word_end += 1
     _after = _line_text[_word_end:].lstrip()
     _is_call = _after.startswith("(")
@@ -765,12 +766,14 @@ def on_definition(
                         start=Position(line=decl_line, character=decl_char),
                         end=Position(line=decl_line, character=name_end),
                     )
-                    return [LocationLink(
-                        target_uri=uri,
-                        target_range=r,
-                        target_selection_range=r,
-                        origin_selection_range=origin_range,
-                    )]
+                    return [
+                        LocationLink(
+                            target_uri=uri,
+                            target_range=r,
+                            target_selection_range=r,
+                            origin_selection_range=origin_range,
+                        )
+                    ]
         except Exception:
             pass
 
@@ -913,10 +916,10 @@ def on_hover(ls: BslLanguageServer, params: HoverParams) -> Hover | None:
     # Detect `Новый TypeName` context: check word immediately before cursor on same line.
     lines = content.splitlines()
     _cur_line = lines[pos.line] if pos.line < len(lines) else ""
-    _before_word = _cur_line[:pos.character - len(word)].rstrip()
-    _after_new = _re.search(
-        r"(?:Новый|New)\s*$", _before_word, _re.IGNORECASE | _re.UNICODE
-    ) is not None
+    _before_word = _cur_line[: pos.character - len(word)].rstrip()
+    _after_new = (
+        _re.search(r"(?:Новый|New)\s*$", _before_word, _re.IGNORECASE | _re.UNICODE) is not None
+    )
 
     # 0. Local variable scope (parameters, Перем, loop vars, assignments).
     #    Check before workspace index — locals shadow global names.
@@ -1118,9 +1121,7 @@ def on_hover(ls: BslLanguageServer, params: HoverParams) -> Hover | None:
 
 
 @server.feature(TEXT_DOCUMENT_DOCUMENT_SYMBOL)
-def on_document_symbol(
-    ls: BslLanguageServer, params: DocumentSymbolParams
-) -> list[DocumentSymbol]:
+def on_document_symbol(ls: BslLanguageServer, params: DocumentSymbolParams) -> list[DocumentSymbol]:
     """Return all symbols defined in the current file."""
     path = _uri_to_path(params.text_document.uri)
     rows = ls.symbol_index.get_file_symbols(path)
@@ -1187,9 +1188,7 @@ def on_workspace_symbol(
 
 
 @server.feature(TEXT_DOCUMENT_REFERENCES)
-def on_references(
-    ls: BslLanguageServer, params: ReferenceParams
-) -> list[Location] | None:
+def on_references(ls: BslLanguageServer, params: ReferenceParams) -> list[Location] | None:
     """
     Return all locations where the symbol under the cursor is called/referenced.
 
@@ -1244,9 +1243,7 @@ def on_references(
 
 
 @server.feature(TEXT_DOCUMENT_PREPARE_RENAME)
-def on_prepare_rename(
-    ls: BslLanguageServer, params: PrepareRenameParams
-) -> Range | None:
+def on_prepare_rename(ls: BslLanguageServer, params: PrepareRenameParams) -> Range | None:
     """Check whether the symbol under the cursor can be renamed."""
     uri = params.text_document.uri
     pos = params.position
@@ -1276,9 +1273,7 @@ def on_prepare_rename(
 
 
 @server.feature(TEXT_DOCUMENT_RENAME)
-def on_rename(
-    ls: BslLanguageServer, params: RenameParams
-) -> WorkspaceEdit | None:
+def on_rename(ls: BslLanguageServer, params: RenameParams) -> WorkspaceEdit | None:
     """Rename the symbol under the cursor across the whole workspace."""
     uri = params.text_document.uri
     pos = params.position
@@ -1473,9 +1468,7 @@ _COMPLETION_KIND_MAP = {
     TEXT_DOCUMENT_COMPLETION,
     CompletionOptions(trigger_characters=["."]),
 )
-def on_completion(
-    ls: BslLanguageServer, params: CompletionParams
-) -> CompletionList | None:
+def on_completion(ls: BslLanguageServer, params: CompletionParams) -> CompletionList | None:
     """
     Provide completion suggestions at the cursor position.
 
@@ -1632,8 +1625,8 @@ def on_completion(
                     kind=_COMPLETION_KIND_MAP.get(kind_str, CompletionItemKind.Function),
                     detail=sym.get("signature") or "",
                     documentation=(
-                        sym.get("doc_comment") or ""
-                        + f"\n*{Path(sym['file_path']).name}:{sym['line']}*"
+                        sym.get("doc_comment")
+                        or "" + f"\n*{Path(sym['file_path']).name}:{sym['line']}*"
                     ),
                     insert_text=insert,
                     insert_text_format=fmt,
@@ -1836,12 +1829,14 @@ def _meta_dot_completions(
 # Local scope variable tracking (AST-based)
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class _LocalVar:
     """A local variable visible at a given cursor position."""
+
     name: str
-    kind: str       # 'parameter' | 'val_parameter' | 'var_decl' | 'loop_var' | 'assignment'
-    line: int       # 1-based declaration line
+    kind: str  # 'parameter' | 'val_parameter' | 'var_decl' | 'loop_var' | 'assignment'
+    line: int  # 1-based declaration line
     character: int  # 0-based column of the name token
     type_hint: str = ""  # e.g. "Массив" from «МойМассив = Новый Массив»
 
@@ -1878,12 +1873,14 @@ def _collect_local_vars(node: Any, up_to_line0: int, result: list[_LocalVar]) ->
         # Перем ИмяПерем; — may declare multiple names
         for child in node.children:
             if child.type == "identifier":
-                result.append(_LocalVar(
-                    name=_ast_node_text(child),
-                    kind="var_decl",
-                    line=node.start_point[0] + 1,
-                    character=child.start_point[1],
-                ))
+                result.append(
+                    _LocalVar(
+                        name=_ast_node_text(child),
+                        kind="var_decl",
+                        line=node.start_point[0] + 1,
+                        character=child.start_point[1],
+                    )
+                )
 
     elif node.type == "for_each_statement":
         # Для Каждого <iterator> Из <collection> Цикл
@@ -1893,12 +1890,14 @@ def _collect_local_vars(node: Any, up_to_line0: int, result: list[_LocalVar]) ->
             if child.type == "EACH_KEYWORD":
                 saw_each = True
             elif saw_each and child.type == "identifier":
-                result.append(_LocalVar(
-                    name=_ast_node_text(child),
-                    kind="loop_var",
-                    line=node.start_point[0] + 1,
-                    character=child.start_point[1],
-                ))
+                result.append(
+                    _LocalVar(
+                        name=_ast_node_text(child),
+                        kind="loop_var",
+                        line=node.start_point[0] + 1,
+                        character=child.start_point[1],
+                    )
+                )
                 break
         # Recurse into loop body
         for child in node.children:
@@ -1908,12 +1907,14 @@ def _collect_local_vars(node: Any, up_to_line0: int, result: list[_LocalVar]) ->
         # Для <var> = <start> По <end> Цикл
         for child in node.children:
             if child.type == "identifier":
-                result.append(_LocalVar(
-                    name=_ast_node_text(child),
-                    kind="loop_var",
-                    line=node.start_point[0] + 1,
-                    character=child.start_point[1],
-                ))
+                result.append(
+                    _LocalVar(
+                        name=_ast_node_text(child),
+                        kind="loop_var",
+                        line=node.start_point[0] + 1,
+                        character=child.start_point[1],
+                    )
+                )
                 break
         for child in node.children:
             _collect_local_vars(child, up_to_line0, result)
@@ -1949,19 +1950,25 @@ def _collect_local_vars(node: Any, up_to_line0: int, result: list[_LocalVar]) ->
                                         break
                         if _obj_n and _meth_n:
                             _obj_type = next(
-                                (v.type_hint for v in result if v.name.casefold() == _obj_n.casefold() and v.type_hint),
+                                (
+                                    v.type_hint
+                                    for v in result
+                                    if v.name.casefold() == _obj_n.casefold() and v.type_hint
+                                ),
                                 _obj_n,
                             )
                             _key = f"{_obj_type.casefold()}.{_meth_n.casefold()}"
                             type_hint = _TYPE_RETURN_MAP.get(_key, "")
         if target_node is not None:
-            result.append(_LocalVar(
-                name=_ast_node_text(target_node),
-                kind="assignment",
-                line=node.start_point[0] + 1,
-                character=target_node.start_point[1],
-                type_hint=type_hint,
-            ))
+            result.append(
+                _LocalVar(
+                    name=_ast_node_text(target_node),
+                    kind="assignment",
+                    line=node.start_point[0] + 1,
+                    character=target_node.start_point[1],
+                    type_hint=type_hint,
+                )
+            )
 
     else:
         for child in node.children:
@@ -2001,19 +2008,28 @@ def _extract_scope_vars(tree: Any, cursor_line0: int) -> list[_LocalVar]:
                 is_val = any(pc.type == "VAL_KEYWORD" for pc in param.children)
                 for pc in param.children:
                     if pc.type == "identifier":
-                        vars.append(_LocalVar(
-                            name=_ast_node_text(pc),
-                            kind="val_parameter" if is_val else "parameter",
-                            line=proc_node.start_point[0] + 1,
-                            character=pc.start_point[1],
-                        ))
+                        vars.append(
+                            _LocalVar(
+                                name=_ast_node_text(pc),
+                                kind="val_parameter" if is_val else "parameter",
+                                line=proc_node.start_point[0] + 1,
+                                character=pc.start_point[1],
+                            )
+                        )
                         break
 
     # 2. Body: Перем, loop vars, assignments up to cursor
-    skip_types = frozenset({
-        "PROCEDURE_KEYWORD", "FUNCTION_KEYWORD", "ENDPROCEDURE_KEYWORD",
-        "ENDFUNCTION_KEYWORD", "EXPORT_KEYWORD", "identifier", "parameters",
-    })
+    skip_types = frozenset(
+        {
+            "PROCEDURE_KEYWORD",
+            "FUNCTION_KEYWORD",
+            "ENDPROCEDURE_KEYWORD",
+            "ENDFUNCTION_KEYWORD",
+            "EXPORT_KEYWORD",
+            "identifier",
+            "parameters",
+        }
+    )
     for child in proc_node.children:
         if child.type not in skip_types:
             _collect_local_vars(child, cursor_line0, vars)
@@ -2102,8 +2118,10 @@ def _word_range_at_position(content: str, line: int, character: int) -> Range:
     """
     lines = content.splitlines()
     if line >= len(lines):
-        return Range(start=Position(line=line, character=character),
-                     end=Position(line=line, character=character))
+        return Range(
+            start=Position(line=line, character=character),
+            end=Position(line=line, character=character),
+        )
     text = lines[line]
     start = character
     while start > 0 and (text[start - 1].isalnum() or text[start - 1] == "_"):
@@ -2111,8 +2129,7 @@ def _word_range_at_position(content: str, line: int, character: int) -> Range:
     end = character
     while end < len(text) and (text[end].isalnum() or text[end] == "_"):
         end += 1
-    return Range(start=Position(line=line, character=start),
-                 end=Position(line=line, character=end))
+    return Range(start=Position(line=line, character=start), end=Position(line=line, character=end))
 
 
 # ---------------------------------------------------------------------------
@@ -2124,10 +2141,9 @@ def _word_range_at_position(content: str, line: int, character: int) -> Range:
 # Code Lens — cognitive / cyclomatic complexity above each procedure
 # ---------------------------------------------------------------------------
 
+
 @server.feature(TEXT_DOCUMENT_CODE_LENS)
-def on_code_lens(
-    ls: BslLanguageServer, params: CodeLensParams
-) -> list[CodeLens] | None:
+def on_code_lens(ls: BslLanguageServer, params: CodeLensParams) -> list[CodeLens] | None:
     """Return code lenses showing cognitive and cyclomatic complexity above each method."""
     uri = params.text_document.uri
     content = ls._doc_get(uri, "")
@@ -2159,10 +2175,9 @@ def on_code_lens(
 # Code Formatting
 # ---------------------------------------------------------------------------
 
+
 @server.feature(TEXT_DOCUMENT_FORMATTING)
-def on_formatting(
-    ls: BslLanguageServer, params: DocumentFormattingParams
-) -> list[TextEdit] | None:
+def on_formatting(ls: BslLanguageServer, params: DocumentFormattingParams) -> list[TextEdit] | None:
     """Format the entire document."""
     uri = params.text_document.uri
     content = ls._doc_get(uri, "")
@@ -2295,11 +2310,7 @@ def on_type_formatting(
         if first_kw in _DEDENT_BEFORE:
             indent_level = max(0, indent_level - 1)
 
-    wanted = (
-        (" " * (indent_level * indent_size))
-        if effective_insert
-        else ("\t" * indent_level)
-    )
+    wanted = (" " * (indent_level * indent_size)) if effective_insert else ("\t" * indent_level)
 
     # Current leading whitespace on the new line
     current_indent_len = len(current_line) - len(stripped) if stripped else len(current_line)
@@ -2357,6 +2368,7 @@ def on_document_highlight(
 
     highlights: list[DocumentHighlight] = []
     import re
+
     pattern = re.compile(
         r"(?<![А-ЯЁа-яёA-Za-z_\d])" + re.escape(word) + r"(?![А-ЯЁа-яёA-Za-z_\d])",
         re.IGNORECASE | re.UNICODE,
@@ -2391,21 +2403,23 @@ _REGION_PREPROC_OPEN_RE = _re.compile(r"^\s*#(?:Область|Region)\b", _re.I
 _REGION_PREPROC_CLOSE_RE = _re.compile(r"^\s*#(?:КонецОбласти|EndRegion)\b", _re.IGNORECASE)
 
 # AST node types that map to code-fold ranges (start_point → end_point)
-_FOLD_AST_TYPES = frozenset({
-    "procedure_definition",
-    "function_definition",
-    "if_statement",
-    "while_statement",
-    "for_statement",
-    "for_each_statement",
-    "try_statement",
-})
+_FOLD_AST_TYPES = frozenset(
+    {
+        "procedure_definition",
+        "function_definition",
+        "if_statement",
+        "while_statement",
+        "for_statement",
+        "for_each_statement",
+        "try_statement",
+    }
+)
 
 
 def _collect_ast_fold_ranges(node: Any, ranges: list[FoldingRange]) -> None:
     """Walk tree-sitter AST and collect folding ranges for block nodes."""
     if node.type in _FOLD_AST_TYPES:
-        start = node.start_point[0]   # 0-based row
+        start = node.start_point[0]  # 0-based row
         end = node.end_point[0]
         if end > start:
             ranges.append(FoldingRange(start_line=start, end_line=end, kind=None))
@@ -2442,9 +2456,13 @@ def on_folding_range(
         elif _REGION_PREPROC_CLOSE_RE.match(line) and region_stack:
             start = region_stack.pop()
             if idx > start:
-                ranges.append(FoldingRange(
-                    start_line=start, end_line=idx, kind=FoldingRangeKind.Region,
-                ))
+                ranges.append(
+                    FoldingRange(
+                        start_line=start,
+                        end_line=idx,
+                        kind=FoldingRangeKind.Region,
+                    )
+                )
 
     return ranges if ranges else None
 
@@ -2591,9 +2609,7 @@ def on_semantic_tokens_full(
 
 
 @server.feature(TEXT_DOCUMENT_INLAY_HINT)
-def on_inlay_hint(
-    ls: BslLanguageServer, params: InlayHintParams
-) -> list[InlayHint] | None:
+def on_inlay_hint(ls: BslLanguageServer, params: InlayHintParams) -> list[InlayHint] | None:
     """Show parameter name hints at function call sites."""
     uri = params.text_document.uri
     content = ls._doc_get(uri, "")
@@ -2632,6 +2648,7 @@ def on_inlay_hint(
             sig = syms[0].get("signature") or ""
             # Extract param names from signature: FuncName(Param1, Param2 = default)
             import re as _re_inner
+
             param_match = _re_inner.search(r"\(([^)]*)\)", sig)
             if not param_match:
                 continue
@@ -2681,6 +2698,7 @@ def on_inlay_hint(
 # Signature Help (parameter list on call sites)
 # ---------------------------------------------------------------------------
 
+
 def _count_commas_outside_strings(text: str) -> int:
     """Count commas not inside double-quoted string literals."""
     in_string = False
@@ -2718,9 +2736,7 @@ def _param_label(param: str) -> str:
 
 
 @server.feature(TEXT_DOCUMENT_SIGNATURE_HELP)
-def on_signature_help(
-    ls: BslLanguageServer, params: SignatureHelpParams
-) -> SignatureHelp | None:
+def on_signature_help(ls: BslLanguageServer, params: SignatureHelpParams) -> SignatureHelp | None:
     """Show signature and active parameter for the call under the cursor."""
     uri = params.text_document.uri
     content = ls._doc_get(uri, "")
@@ -2795,9 +2811,11 @@ def on_signature_help(
 # Reverse BSLLS name map: BSL code → BSLLS name (for suppression comments)
 # ---------------------------------------------------------------------------
 
+
 def _build_code_to_bslls() -> dict[str, str]:
     try:
         from onec_hbk_bsl.analysis.diagnostics import _BSLLS_NAME_TO_CODE
+
         result: dict[str, str] = {}
         for name, code in _BSLLS_NAME_TO_CODE.items():
             if code not in result:
@@ -2805,6 +2823,7 @@ def _build_code_to_bslls() -> dict[str, str]:
         return result
     except Exception:
         return {}
+
 
 _CODE_TO_BSLLS_NAME: dict[str, str] = _build_code_to_bslls()
 
@@ -2826,9 +2845,7 @@ def _fix_bsl024_space_after_double_slash(line: str) -> str | None:
 
 
 @server.feature(TEXT_DOCUMENT_CODE_ACTION)
-def on_code_action(
-    ls: BslLanguageServer, params: CodeActionParams
-) -> list[CodeAction] | None:
+def on_code_action(ls: BslLanguageServer, params: CodeActionParams) -> list[CodeAction] | None:
     """
     Возвращает действия быстрого исправления для диагностик в указанном диапазоне.
 
@@ -2847,7 +2864,7 @@ def on_code_action(
         code = _internal_rule_code_from_lsp_diagnostic(diag)
         try:
             diag_line = int(diag.range.start.line)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             continue
 
         if 0 <= diag_line < len(doc_lines):
@@ -2861,40 +2878,62 @@ def on_code_action(
 
             # ── 1. Игнорировать строку (noqa) ──────────────────────────────
             # If the line already has a noqa comment, append the code to it.
-            _noqa_existing = _re.search(
-                r"//\s*noqa:\s*([\w,\s]+?)\s*$", line_text, _re.IGNORECASE
-            )
+            _noqa_existing = _re.search(r"//\s*noqa:\s*([\w,\s]+?)\s*$", line_text, _re.IGNORECASE)
             if _noqa_existing and code:
                 _existing_codes = [c.strip() for c in _noqa_existing.group(1).split(",")]
                 if code not in _existing_codes:
                     _new_comment = f"  // noqa: {', '.join(_existing_codes + [code])}"
-                    actions.append(CodeAction(
-                        title=f"Добавить {code} к noqa-комментарию",
-                        kind=CodeActionKind.QuickFix,
-                        diagnostics=[diag],
-                        edit=WorkspaceEdit(changes={uri: [TextEdit(
-                            range=Range(
-                                start=Position(line=diag_line, character=_noqa_existing.start()),
-                                end=Position(line=diag_line, character=line_end_char),
+                    actions.append(
+                        CodeAction(
+                            title=f"Добавить {code} к noqa-комментарию",
+                            kind=CodeActionKind.QuickFix,
+                            diagnostics=[diag],
+                            edit=WorkspaceEdit(
+                                changes={
+                                    uri: [
+                                        TextEdit(
+                                            range=Range(
+                                                start=Position(
+                                                    line=diag_line, character=_noqa_existing.start()
+                                                ),
+                                                end=Position(
+                                                    line=diag_line, character=line_end_char
+                                                ),
+                                            ),
+                                            new_text=_new_comment,
+                                        )
+                                    ]
+                                }
                             ),
-                            new_text=_new_comment,
-                        )]}),
-                    ))
+                        )
+                    )
             else:
                 noqa_suffix = f"  // noqa: {code}" if code else "  // noqa"
-                noqa_title = f"Игнорировать строку — {display_name}" if display_name != code else f"Игнорировать строку ({code})"
-                actions.append(CodeAction(
-                    title=noqa_title,
-                    kind=CodeActionKind.QuickFix,
-                    diagnostics=[diag],
-                    edit=WorkspaceEdit(changes={uri: [TextEdit(
-                        range=Range(
-                            start=Position(line=diag_line, character=line_end_char),
-                            end=Position(line=diag_line, character=line_end_char),
+                noqa_title = (
+                    f"Игнорировать строку — {display_name}"
+                    if display_name != code
+                    else f"Игнорировать строку ({code})"
+                )
+                actions.append(
+                    CodeAction(
+                        title=noqa_title,
+                        kind=CodeActionKind.QuickFix,
+                        diagnostics=[diag],
+                        edit=WorkspaceEdit(
+                            changes={
+                                uri: [
+                                    TextEdit(
+                                        range=Range(
+                                            start=Position(line=diag_line, character=line_end_char),
+                                            end=Position(line=diag_line, character=line_end_char),
+                                        ),
+                                        new_text=noqa_suffix,
+                                    )
+                                ]
+                            }
                         ),
-                        new_text=noqa_suffix,
-                    )]}),
-                ))
+                    )
+                )
 
             # ── 2. Обернуть правило BSLLS-off / -on ────────────────────────
             bslls_name = _CODE_TO_BSLLS_NAME.get(code)
@@ -2913,104 +2952,153 @@ def on_code_action(
                         end=Position(line=diag_line + 1, character=0),
                     )
                     after_new_text = f"{pad}// BSLLS:{bslls_name}-on\n"
-                actions.append(CodeAction(
-                    title=f"Отключить «{display_name}» для этой строки (BSLLS-off/on)",
-                    kind=CodeActionKind.QuickFix,
-                    diagnostics=[diag],
-                    edit=WorkspaceEdit(changes={uri: [
-                        TextEdit(
-                            range=Range(start=insert_before, end=insert_before),
-                            new_text=f"{pad}// BSLLS:{bslls_name}-off\n",
+                actions.append(
+                    CodeAction(
+                        title=f"Отключить «{display_name}» для этой строки (BSLLS-off/on)",
+                        kind=CodeActionKind.QuickFix,
+                        diagnostics=[diag],
+                        edit=WorkspaceEdit(
+                            changes={
+                                uri: [
+                                    TextEdit(
+                                        range=Range(start=insert_before, end=insert_before),
+                                        new_text=f"{pad}// BSLLS:{bslls_name}-off\n",
+                                    ),
+                                    TextEdit(range=after_range, new_text=after_new_text),
+                                ]
+                            }
                         ),
-                        TextEdit(range=after_range, new_text=after_new_text),
-                    ]}),
-                ))
+                    )
+                )
 
                 # ── 3. Отключить правило во всём файле ─────────────────────
-                actions.append(CodeAction(
-                    title=f"Отключить «{display_name}» в этом файле (BSLLS-off)",
-                    kind=CodeActionKind.QuickFix,
-                    diagnostics=[diag],
-                    edit=WorkspaceEdit(changes={uri: [TextEdit(
-                        range=Range(
-                            start=Position(line=0, character=0),
-                            end=Position(line=0, character=0),
+                actions.append(
+                    CodeAction(
+                        title=f"Отключить «{display_name}» в этом файле (BSLLS-off)",
+                        kind=CodeActionKind.QuickFix,
+                        diagnostics=[diag],
+                        edit=WorkspaceEdit(
+                            changes={
+                                uri: [
+                                    TextEdit(
+                                        range=Range(
+                                            start=Position(line=0, character=0),
+                                            end=Position(line=0, character=0),
+                                        ),
+                                        new_text=f"// BSLLS:{bslls_name}-off\n",
+                                    )
+                                ]
+                            }
                         ),
-                        new_text=f"// BSLLS:{bslls_name}-off\n",
-                    )]}),
-                ))
+                    )
+                )
 
             # ── BSL065: вставить блок описания экспортного метода ─────────────
             if code == "BSL065":
                 doc_fix = _generate_doc_comment(doc_lines[diag_line], diag_line, doc_lines)
                 if doc_fix:
-                    actions.append(CodeAction(
-                        title="Вставить описание экспортного метода (// …)",
-                        kind=CodeActionKind.QuickFix,
-                        diagnostics=[diag],
-                        edit=WorkspaceEdit(changes={uri: [TextEdit(
-                            range=Range(
-                                start=Position(line=diag_line, character=0),
-                                end=Position(line=diag_line, character=0),
+                    actions.append(
+                        CodeAction(
+                            title="Вставить описание экспортного метода (// …)",
+                            kind=CodeActionKind.QuickFix,
+                            diagnostics=[diag],
+                            edit=WorkspaceEdit(
+                                changes={
+                                    uri: [
+                                        TextEdit(
+                                            range=Range(
+                                                start=Position(line=diag_line, character=0),
+                                                end=Position(line=diag_line, character=0),
+                                            ),
+                                            new_text=doc_fix,
+                                        )
+                                    ]
+                                }
                             ),
-                            new_text=doc_fix,
-                        )]}),
-                    ))
+                        )
+                    )
 
             # ── BSL024: пробел после // (как в правиле SpaceAtStartComment) ──
             if code == "BSL024":
                 fixed_line = _fix_bsl024_space_after_double_slash(line_text)
                 if fixed_line is not None and fixed_line != line_text:
-                    actions.append(CodeAction(
-                        title="Вставить пробел после «//» (BSL024)",
-                        kind=CodeActionKind.QuickFix,
-                        diagnostics=[diag],
-                        edit=WorkspaceEdit(changes={uri: [TextEdit(
-                            range=Range(
-                                start=Position(line=diag_line, character=0),
-                                end=Position(line=diag_line, character=line_end_char),
+                    actions.append(
+                        CodeAction(
+                            title="Вставить пробел после «//» (BSL024)",
+                            kind=CodeActionKind.QuickFix,
+                            diagnostics=[diag],
+                            edit=WorkspaceEdit(
+                                changes={
+                                    uri: [
+                                        TextEdit(
+                                            range=Range(
+                                                start=Position(line=diag_line, character=0),
+                                                end=Position(
+                                                    line=diag_line, character=line_end_char
+                                                ),
+                                            ),
+                                            new_text=fixed_line,
+                                        )
+                                    ]
+                                }
                             ),
-                            new_text=fixed_line,
-                        )]}),
-                    ))
+                        )
+                    )
 
     # ── 4. Сгенерировать комментарий к методу ──────────────────────────────
     try:
         cursor_line = int(params.range.start.line)
-    except (TypeError, ValueError, AttributeError):
+    except TypeError, ValueError, AttributeError:
         cursor_line = -1
     if 0 <= cursor_line < len(doc_lines):
         doc_block = _generate_doc_comment(doc_lines[cursor_line], cursor_line, doc_lines)
         if doc_block:
-            actions.append(CodeAction(
-                title="Сгенерировать комментарий к методу",
-                kind=CodeActionKind.RefactorExtract,
-                edit=WorkspaceEdit(changes={uri: [TextEdit(
-                    range=Range(
-                        start=Position(line=cursor_line, character=0),
-                        end=Position(line=cursor_line, character=0),
+            actions.append(
+                CodeAction(
+                    title="Сгенерировать комментарий к методу",
+                    kind=CodeActionKind.RefactorExtract,
+                    edit=WorkspaceEdit(
+                        changes={
+                            uri: [
+                                TextEdit(
+                                    range=Range(
+                                        start=Position(line=cursor_line, character=0),
+                                        end=Position(line=cursor_line, character=0),
+                                    ),
+                                    new_text=doc_block,
+                                )
+                            ]
+                        }
                     ),
-                    new_text=doc_block,
-                )]}),
-            ))
+                )
+            )
 
     # ── 5. Переформатировать документ (если есть что форматировать) ────────
     if content:
         try:
             from onec_hbk_bsl.analysis.formatter import default_formatter
+
             formatted = default_formatter.format(content)
             if formatted != content:
-                actions.append(CodeAction(
-                    title="Переформатировать документ",
-                    kind=CodeActionKind.SourceFixAll,
-                    edit=WorkspaceEdit(changes={uri: [TextEdit(
-                        range=Range(
-                            start=Position(line=0, character=0),
-                            end=Position(line=len(doc_lines), character=0),
+                actions.append(
+                    CodeAction(
+                        title="Переформатировать документ",
+                        kind=CodeActionKind.SourceFixAll,
+                        edit=WorkspaceEdit(
+                            changes={
+                                uri: [
+                                    TextEdit(
+                                        range=Range(
+                                            start=Position(line=0, character=0),
+                                            end=Position(line=len(doc_lines), character=0),
+                                        ),
+                                        new_text=formatted,
+                                    )
+                                ]
+                            }
                         ),
-                        new_text=formatted,
-                    )]}),
-                ))
+                    )
+                )
         except Exception:
             pass
 
@@ -3046,9 +3134,7 @@ def _first_word(line: str) -> str:
     return m.group(1).lower() if m else ""
 
 
-def _build_selection_range(
-    lines: list[str], cursor_line: int
-) -> SelectionRange | None:
+def _build_selection_range(lines: list[str], cursor_line: int) -> SelectionRange | None:
     """
     Return a chain of SelectionRange nodes for the cursor position:
       word → current line → enclosing block → outer block → …

@@ -90,6 +90,7 @@ def extract_symbols(tree: Any, file_path: str) -> list[Symbol]:
 # Tree-sitter extraction
 # ---------------------------------------------------------------------------
 
+
 def _extract_from_ts(tree: Any, file_path: str) -> list[Symbol]:
     """Extract symbols using tree-sitter node types."""
     symbols: list[Symbol] = []
@@ -319,6 +320,7 @@ def _extract_from_source(content: str, file_path: str) -> list[Symbol]:
 # ---------------------------------------------------------------------------
 # Utilities
 # ---------------------------------------------------------------------------
+
 
 def _node_text(node: Any) -> str:
     """Extract text from a tree-sitter node (handles bytes or str)."""

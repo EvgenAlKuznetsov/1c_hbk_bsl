@@ -10,6 +10,7 @@ the reference BSLLS rule names. It is the runtime source of truth for:
 
 from __future__ import annotations
 
+import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -39,6 +40,16 @@ BSLLS_DEFAULT_DISABLED_NAMES = frozenset(
         "UsingLikeInQuery",
     }
 )
+
+
+def runtime_rule_codes_from_diagnostics_source(source: str) -> set[str]:
+    """Collect BSL rule codes registered via ``_rule_tasks.append`` in ``diagnostics.py``.
+
+    Ruff may break ``append`` calls across lines or place the ``\"BSLnnn\"`` token on its
+    own line inside a nested tuple; this must stay in sync with tests and
+    ``scripts/generate_bslls_parity_artifact.py``.
+    """
+    return set(re.findall(r'_rule_tasks\.append\(\s*\(\s*["\'](BSL\d{3})', source))
 
 
 @dataclass(frozen=True, slots=True)
@@ -144,7 +155,9 @@ def build_parity_rows(
         canonical_names |= set(bslls_names)
 
     rows: list[ParityRow] = []
-    seen_current_names = {str(meta.get("name")) for meta in rule_metadata.values() if meta.get("name")}
+    seen_current_names = {
+        str(meta.get("name")) for meta in rule_metadata.values() if meta.get("name")
+    }
 
     for code in sorted(rule_metadata):
         meta = rule_metadata[code]

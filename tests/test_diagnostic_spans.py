@@ -14,7 +14,7 @@ def _single_diag(content: str, code: str, tmp_path: Path, **engine_kwargs):
 
 
 def test_bsl014_uses_full_line_span_from_column_zero(tmp_path: Path) -> None:
-    diag = _single_diag("А = \"" + ("x" * 130) + "\";\n", "BSL014", tmp_path)
+    diag = _single_diag('А = "' + ("x" * 130) + '";\n', "BSL014", tmp_path)
     assert diag.character == 0
     assert diag.end_character > 120
 

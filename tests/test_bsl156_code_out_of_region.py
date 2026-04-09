@@ -10,8 +10,7 @@ from onec_hbk_bsl.analysis.diagnostics import DiagnosticEngine
 def test_bsl156_no_regions_flags_line1(tmp_path: Path) -> None:
     p = tmp_path / "m.bsl"
     p.write_text(
-        "Процедура П() Экспорт\n"
-        "КонецПроцедуры\n",
+        "Процедура П() Экспорт\nКонецПроцедуры\n",
         encoding="utf-8",
     )
     engine = DiagnosticEngine(select={"BSL156"})
@@ -23,10 +22,7 @@ def test_bsl156_no_regions_flags_line1(tmp_path: Path) -> None:
 def test_bsl156_proc_inside_region_clean(tmp_path: Path) -> None:
     p = tmp_path / "m.bsl"
     p.write_text(
-        "#Область ПрограммныйИнтерфейс\n"
-        "Процедура П() Экспорт\n"
-        "КонецПроцедуры\n"
-        "#КонецОбласти\n",
+        "#Область ПрограммныйИнтерфейс\nПроцедура П() Экспорт\nКонецПроцедуры\n#КонецОбласти\n",
         encoding="utf-8",
     )
     engine = DiagnosticEngine(select={"BSL156"})
@@ -52,11 +48,7 @@ def test_bsl156_proc_outside_region(tmp_path: Path) -> None:
 def test_bsl156_module_var_outside_region(tmp_path: Path) -> None:
     p = tmp_path / "m.bsl"
     p.write_text(
-        "#Область О\n"
-        "Процедура П() Экспорт\n"
-        "КонецПроцедуры\n"
-        "#КонецОбласти\n"
-        "Перем Глоб;\n",
+        "#Область О\nПроцедура П() Экспорт\nКонецПроцедуры\n#КонецОбласти\nПерем Глоб;\n",
         encoding="utf-8",
     )
     engine = DiagnosticEngine(select={"BSL156"})

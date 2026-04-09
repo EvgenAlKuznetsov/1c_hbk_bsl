@@ -24,7 +24,7 @@ def _run_git(args: list[str], cwd: str) -> list[str]:
         if result.returncode != 0:
             return []
         return [line.strip() for line in result.stdout.splitlines() if line.strip()]
-    except (FileNotFoundError, subprocess.TimeoutExpired):
+    except FileNotFoundError, subprocess.TimeoutExpired:
         return []
 
 
@@ -79,5 +79,8 @@ def git_changed_files(workspace: str, since: str | None = None) -> list[str]:
 
 def git_root(path: str) -> str | None:
     """Return the git root for the given path, or None if not in a repository."""
-    lines = _run_git(["rev-parse", "--show-toplevel"], cwd=os.path.dirname(path) if os.path.isfile(path) else path)
+    lines = _run_git(
+        ["rev-parse", "--show-toplevel"],
+        cwd=os.path.dirname(path) if os.path.isfile(path) else path,
+    )
     return lines[0] if lines else None

@@ -25,12 +25,36 @@ _RE_CALL = re.compile(
 # Words that look like calls but are BSL keywords
 _BSL_KEYWORDS = frozenset(
     {
-        "если", "пока", "для", "каждого", "из", "по", "цикл",
-        "процедура", "функция", "перем", "возврат", "новый",
-        "попытка", "исключение", "конецпопытки",
-        "if", "while", "for", "each", "in", "do", "loop",
-        "procedure", "function", "var", "return", "new",
-        "try", "except", "endtry",
+        "если",
+        "пока",
+        "для",
+        "каждого",
+        "из",
+        "по",
+        "цикл",
+        "процедура",
+        "функция",
+        "перем",
+        "возврат",
+        "новый",
+        "попытка",
+        "исключение",
+        "конецпопытки",
+        "if",
+        "while",
+        "for",
+        "each",
+        "in",
+        "do",
+        "loop",
+        "procedure",
+        "function",
+        "var",
+        "return",
+        "new",
+        "try",
+        "except",
+        "endtry",
     }
 )
 
@@ -78,6 +102,7 @@ def extract_calls(tree: Any, file_path: str) -> list[Call]:
 # ---------------------------------------------------------------------------
 # Tree-sitter extraction
 # ---------------------------------------------------------------------------
+
 
 def _root_source_lines(root: Any) -> list[str]:
     full = getattr(root, "text", None) or b""
@@ -134,11 +159,7 @@ def _ts_method_call_to_record(
         if ct == "identifier":
             callee_name = _node_text(child)
         elif ct == "arguments":
-            args_count = sum(
-                1
-                for c in child.children
-                if c.type not in ("(", ")", ",")
-            )
+            args_count = sum(1 for c in child.children if c.type not in ("(", ")", ","))
 
     if not callee_name or callee_name.lower() in _BSL_KEYWORDS:
         return None
@@ -160,6 +181,7 @@ def _ts_method_call_to_record(
 # ---------------------------------------------------------------------------
 # Regex-based extraction (fallback)
 # ---------------------------------------------------------------------------
+
 
 def _extract_from_source(content: str, file_path: str) -> list[Call]:
     calls: list[Call] = []
@@ -191,7 +213,7 @@ def _extract_from_source(content: str, file_path: str) -> list[Call]:
             if name.lower() in _BSL_KEYWORDS:
                 continue
             # Count arguments (rough estimate via commas after opening paren)
-            rest = line[m.end():]
+            rest = line[m.end() :]
             paren_depth = 1
             args_count = 1 if rest.strip() and rest.strip()[0] != ")" else 0
             for ch in rest:
@@ -221,6 +243,7 @@ def _extract_from_source(content: str, file_path: str) -> list[Call]:
 # ---------------------------------------------------------------------------
 # Call graph builder
 # ---------------------------------------------------------------------------
+
 
 def build_call_graph(
     index: SymbolIndex,
@@ -275,9 +298,7 @@ def build_call_graph(
         if definition:
             start = definition.get("line", 0)
             end = definition.get("end_line", 9999999)
-            callees_raw = [
-                c for c in callees_raw if start <= c.get("caller_line", 0) <= end
-            ]
+            callees_raw = [c for c in callees_raw if start <= c.get("caller_line", 0) <= end]
 
     return {
         "name": symbol_name,
@@ -302,6 +323,7 @@ def build_call_graph(
 # ---------------------------------------------------------------------------
 # Utilities
 # ---------------------------------------------------------------------------
+
 
 def _node_text(node: Any) -> str:
     if node.text is None:

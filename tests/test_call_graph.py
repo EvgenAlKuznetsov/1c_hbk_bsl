@@ -146,7 +146,7 @@ class TestExtractCallsRegexFallback:
     def test_args_count_single_arg(self) -> None:
         from onec_hbk_bsl.analysis.call_graph import extract_calls
 
-        source = "ЗаписатьЛог(\"Сообщение\");\n"
+        source = 'ЗаписатьЛог("Сообщение");\n'
         tree = _FakeRegexTree(source)
         result = extract_calls(tree, file_path="test.bsl")
         calls_named = [c for c in result if c.callee_name == "ЗаписатьЛог"]
@@ -333,9 +333,7 @@ class TestBuildCallGraph:
 
         assert result["callers"] == []
 
-    def test_build_call_graph_with_real_index(
-        self, populated_index: Any
-    ) -> None:
+    def test_build_call_graph_with_real_index(self, populated_index: Any) -> None:
         from onec_hbk_bsl.analysis.call_graph import build_call_graph
 
         result = build_call_graph(populated_index, "ЗаписатьЛог")

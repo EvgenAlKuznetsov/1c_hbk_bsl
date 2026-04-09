@@ -39,7 +39,7 @@ def test_diagnostic_overlaps_inside_string() -> None:
 
 
 def test_diagnostic_outside_string() -> None:
-    content = 'Процедура Т()\nКонецПроцедуры\n'
+    content = "Процедура Т()\nКонецПроцедуры\n"
     r = double_quoted_string_ranges(content)
     assert not diagnostic_overlaps_string_literal(
         content,

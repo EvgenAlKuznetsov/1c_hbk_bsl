@@ -96,9 +96,7 @@ def test_bsl159_invalid_all_flags_false(tmp_path: Path) -> None:
 
 def test_bsl159_valid_server(tmp_path: Path) -> None:
     # Server-side (BSLLS ``isServer``): Server + ExternalConnection + COA, no CMA
-    bsl = _write_module_xml(
-        tmp_path, server="true", ext="true", coa="true", cma="false"
-    )
+    bsl = _write_module_xml(tmp_path, server="true", ext="true", coa="true", cma="false")
     assert common_module_xml_flags_invalid(str(bsl)) is False
     engine = DiagnosticEngine(select={"BSL159"})
     assert not [d for d in engine.check_file(str(bsl)) if d.code == "BSL159"]
@@ -123,19 +121,14 @@ def test_bsl159_valid_server_call(tmp_path: Path) -> None:
 
 
 def test_bsl159_valid_client_server(tmp_path: Path) -> None:
-    bsl = _write_module_xml(
-        tmp_path, server="true", ext="true", coa="true", cma="true"
-    )
+    bsl = _write_module_xml(tmp_path, server="true", ext="true", coa="true", cma="true")
     assert common_module_xml_flags_invalid(str(bsl)) is False
 
 
 def test_bsl160_fires_without_api_region(tmp_path: Path) -> None:
     bsl = _write_module_xml(tmp_path, server="true")
     bsl.write_text(
-        "#Область Прочее\n"
-        "Процедура П() Экспорт\n"
-        "КонецПроцедуры\n"
-        "#КонецОбласти\n",
+        "#Область Прочее\nПроцедура П() Экспорт\nКонецПроцедуры\n#КонецОбласти\n",
         encoding="utf-8",
     )
     engine = DiagnosticEngine(select={"BSL160"})
@@ -146,10 +139,7 @@ def test_bsl160_fires_without_api_region(tmp_path: Path) -> None:
 def test_bsl160_clean_with_public_and_export(tmp_path: Path) -> None:
     bsl = _write_module_xml(tmp_path, server="true")
     bsl.write_text(
-        "#Область ПрограммныйИнтерфейс\n"
-        "Процедура П() Экспорт\n"
-        "КонецПроцедуры\n"
-        "#КонецОбласти\n",
+        "#Область ПрограммныйИнтерфейс\nПроцедура П() Экспорт\nКонецПроцедуры\n#КонецОбласти\n",
         encoding="utf-8",
     )
     engine = DiagnosticEngine(select={"BSL160"})
@@ -172,9 +162,7 @@ def test_common_module_has_api_region_names() -> None:
         ),
     ],
 )
-def test_bsl160_no_export_triggers(
-    tmp_path: Path, body: str, expect: bool
-) -> None:
+def test_bsl160_no_export_triggers(tmp_path: Path, body: str, expect: bool) -> None:
     bsl = _write_module_xml(tmp_path, server="true")
     bsl.write_text(body, encoding="utf-8")
     engine = DiagnosticEngine(select={"BSL160"})
@@ -201,9 +189,7 @@ def test_bsl162_client_name(tmp_path: Path) -> None:
 
 
 def test_bsl163_client_server_name(tmp_path: Path) -> None:
-    bsl = _write_module_xml(
-        tmp_path, server="true", ext="true", coa="true", cma="true"
-    )
+    bsl = _write_module_xml(tmp_path, server="true", ext="true", coa="true", cma="true")
     assert "BSL163" in {c for c, _ in common_module_name_convention_issues(str(bsl))}
     bsl_ok = _write_module_xml(
         tmp_path / "ok",
@@ -272,7 +258,9 @@ def test_bsl167_server_call_name(tmp_path: Path) -> None:
 
 
 def test_bsl168_forbidden_word_in_name(tmp_path: Path) -> None:
-    bsl = _write_module_xml(tmp_path, folder_name="ТестМодуль", server="true", ext="true", coa="true")
+    bsl = _write_module_xml(
+        tmp_path, folder_name="ТестМодуль", server="true", ext="true", coa="true"
+    )
     assert "BSL168" in {c for c, _ in common_module_name_convention_issues(str(bsl))}
     engine = DiagnosticEngine(select={"BSL168"})
     assert [d for d in engine.check_file(str(bsl)) if d.code == "BSL168"]

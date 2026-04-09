@@ -34,7 +34,7 @@ def _version() -> str:
                     from setuptools_scm import get_version
 
                     return get_version(root=str(repo_root))
-                except (ImportError, LookupError):
+                except ImportError, LookupError:
                     pass
     try:
         return version("onec-hbk-bsl")
@@ -45,7 +45,7 @@ def _version() -> str:
 
         root = Path(__file__).resolve().parents[2]
         return get_version(root=str(root))
-    except (ImportError, LookupError):
+    except ImportError, LookupError:
         pass
     return "0.0.0+unknown"
 

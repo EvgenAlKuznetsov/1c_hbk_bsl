@@ -107,7 +107,9 @@ _help_keyword_cache: dict[tuple[str, int], list[dict]] = {}
 _help_topic_cache: dict[str, str] = {}
 
 
-def _post_1c_help_tool(tool_name: str, arguments: dict[str, object], timeout: float = 5.0) -> list[dict]:
+def _post_1c_help_tool(
+    tool_name: str, arguments: dict[str, object], timeout: float = 5.0
+) -> list[dict]:
     """Call 1c-help MCP tool and return the parsed `content` list (best-effort)."""
     payload = {
         "jsonrpc": "2.0",
@@ -308,9 +310,13 @@ def create_mcp_app() -> FastMCP:
     # bsl_status
     # ------------------------------------------------------------------
 
-    @mcp.tool(description="Return current indexing status: files indexed, last commit, ready state.")
+    @mcp.tool(
+        description="Return current indexing status: files indexed, last commit, ready state."
+    )
     def bsl_status(
-        workspace_root: Annotated[str | None, "Workspace root for the index (defaults to server WORKSPACE_ROOT)"] = None,
+        workspace_root: Annotated[
+            str | None, "Workspace root for the index (defaults to server WORKSPACE_ROOT)"
+        ] = None,
     ) -> dict:
         """
         Check the health of the BSL symbol index.
@@ -344,7 +350,9 @@ def create_mcp_app() -> FastMCP:
         )
     )
     def bsl_find_symbol(
-        name: Annotated[str, "Symbol name to search for (case-insensitive, prefix match supported)"],
+        name: Annotated[
+            str, "Symbol name to search for (case-insensitive, prefix match supported)"
+        ],
         file_filter: Annotated[
             str | None, "Optional: restrict results to files matching this substring"
         ] = None,
@@ -607,8 +615,7 @@ def create_mcp_app() -> FastMCP:
         ] = None,
         ignore: Annotated[
             str | None,
-            "Comma-separated rules to skip. "
-            "If omitted, uses BSL_IGNORE env (same as LSP).",
+            "Comma-separated rules to skip. If omitted, uses BSL_IGNORE env (same as LSP).",
         ] = None,
         include_unused: Annotated[
             bool,
@@ -937,7 +944,7 @@ def create_mcp_app() -> FastMCP:
         all_lines = text.splitlines()
         total = len(all_lines)
         s = (start_line or 1) - 1
-        e = (end_line or total)
+        e = end_line or total
         selected = all_lines[max(0, s) : e]
         return {
             "file_path": path,
@@ -963,7 +970,9 @@ def create_mcp_app() -> FastMCP:
             str,
             "One of: 'symbol' (index lookup), 'text' (grep in files), 'both' (default)",
         ] = "both",
-        file_filter: Annotated[str | None, "Restrict to files whose path contains this string"] = None,
+        file_filter: Annotated[
+            str | None, "Restrict to files whose path contains this string"
+        ] = None,
         case_sensitive: Annotated[bool, "Case-sensitive text search (default False)"] = False,
         limit: Annotated[int, "Max results per search type (default 20)"] = 20,
         workspace_root: Annotated[
@@ -1102,7 +1111,9 @@ def create_mcp_app() -> FastMCP:
     def bsl_rename(
         old_name: Annotated[str, "Current symbol name"],
         new_name: Annotated[str, "New symbol name"],
-        apply: Annotated[bool, "If True, actually write changes to files (default False — dry run)"] = False,
+        apply: Annotated[
+            bool, "If True, actually write changes to files (default False — dry run)"
+        ] = False,
         workspace_root: Annotated[
             str | None, "Workspace root for resolving the index DB and file edits"
         ] = None,
@@ -1187,7 +1198,9 @@ def create_mcp_app() -> FastMCP:
     )
     def bsl_fix(
         file_path: Annotated[str, "Absolute or workspace-relative path to the .bsl file"],
-        write: Annotated[bool, "Write fixed content back to file (default False — dry run)"] = False,
+        write: Annotated[
+            bool, "Write fixed content back to file (default False — dry run)"
+        ] = False,
         rules: Annotated[
             str | None,
             "Comma-separated rules to fix (BSL### or BSLLS names). Default: all fixable.",
@@ -1263,10 +1276,10 @@ def create_mcp_app() -> FastMCP:
     def bsl_workspace_scan(
         directory: Annotated[str | None, "Directory to scan (default: WORKSPACE_ROOT)"] = None,
         max_files: Annotated[int, "Maximum files to include in result (default 200)"] = 200,
-        include_metrics: Annotated[bool, "Include line/symbol counts per file (default True)"] = True,
-        workspace_root: Annotated[
-            str | None, "Workspace root for resolving relative paths"
-        ] = None,
+        include_metrics: Annotated[
+            bool, "Include line/symbol counts per file (default True)"
+        ] = True,
+        workspace_root: Annotated[str | None, "Workspace root for resolving relative paths"] = None,
     ) -> dict:
         """
         Walk *directory* and list all .bsl files with optional per-file metrics.
@@ -1276,7 +1289,9 @@ def create_mcp_app() -> FastMCP:
             Each file entry has: path, size_bytes, line_count, symbol_count (if indexed).
         """
         ws = os.path.abspath(workspace_root) if workspace_root else _WORKSPACE
-        root = Path(_resolve_path(directory, workspace_root=workspace_root)) if directory else Path(ws)
+        root = (
+            Path(_resolve_path(directory, workspace_root=workspace_root)) if directory else Path(ws)
+        )
         if not root.is_dir():
             return {"error": f"Not a directory: {root}"}
 
@@ -1302,7 +1317,9 @@ def create_mcp_app() -> FastMCP:
 
                 syms = index.get_file_symbols(str(bsl_file))
                 entry["symbol_count"] = len(syms)
-                entry["procedure_count"] = sum(1 for s in syms if s["kind"] in ("procedure", "function"))
+                entry["procedure_count"] = sum(
+                    1 for s in syms if s["kind"] in ("procedure", "function")
+                )
 
             files_info.append(entry)
 
@@ -1442,9 +1459,7 @@ def create_mcp_app() -> FastMCP:
         workspace: Annotated[
             str | None, "Workspace path to index (defaults to server WORKSPACE_ROOT)"
         ] = None,
-        workspace_root: Annotated[
-            str | None, "Workspace root alias for multi-project MCP"
-        ] = None,
+        workspace_root: Annotated[str | None, "Workspace root alias for multi-project MCP"] = None,
         config_root: Annotated[
             str | None, "Explicit 1C config root (Configuration.xml folder) override"
         ] = None,

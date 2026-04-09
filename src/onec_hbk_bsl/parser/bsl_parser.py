@@ -41,9 +41,7 @@ try:
     _TS_AVAILABLE = True
     logger.debug("tree-sitter BSL grammar loaded successfully")
 except Exception as exc:  # pragma: no cover
-    logger.warning(
-        "tree-sitter BSL grammar not available (%s). Using regex fallback.", exc
-    )
+    logger.warning("tree-sitter BSL grammar not available (%s). Using regex fallback.", exc)
 
 
 @dataclass
@@ -114,7 +112,9 @@ class BslParser:
                 tree = self._ts_parser.parse(content.encode("utf-8"))
                 return tree
             except Exception as exc:  # pragma: no cover
-                logger.warning("tree-sitter parse error for %s: %s. Using fallback.", file_path, exc)
+                logger.warning(
+                    "tree-sitter parse error for %s: %s. Using fallback.", file_path, exc
+                )
 
         return _RegexTree(content, file_path=file_path)
 
@@ -158,17 +158,19 @@ class BslParser:
     # Multi-line parenthesised RHS is valid BSL, e.g. ``А = (Б И В`` + newline + ``)``;
     # lone '(' / ')' may appear as ERROR under assignment_statement (not only if_statement),
     # and also inside procedure/function call arguments, for-loop ranges, return values, etc.
-    _ASSIGNMENT_SUPPRESS_PARENT = frozenset({
-        "assignment_statement",
-        "call_statement",
-        "return_statement",
-        "for_statement",
-        "foreach_statement",
-        "arguments",
-        "expression",
-        "const_expression",
-        "property_access",
-    })
+    _ASSIGNMENT_SUPPRESS_PARENT = frozenset(
+        {
+            "assignment_statement",
+            "call_statement",
+            "return_statement",
+            "for_statement",
+            "foreach_statement",
+            "arguments",
+            "expression",
+            "const_expression",
+            "property_access",
+        }
+    )
 
     def _collect_errors(self, node: Any, errors: list[dict]) -> None:
         """Recursively collect ERROR and MISSING nodes from a tree-sitter tree."""

@@ -181,8 +181,9 @@ class SymbolIndex:
                 raise
         # Heavy data migrations (index build / data population) run in background
         # so they don't block LSP startup.
-        threading.Thread(target=self._migrate_background, daemon=True,
-                         name="bsl-db-migrate").start()
+        threading.Thread(
+            target=self._migrate_background, daemon=True, name="bsl-db-migrate"
+        ).start()
 
     def _migrate_sync(self, conn: sqlite3.Connection) -> None:
         """Fast, structural-only migrations that must complete before the server starts."""
@@ -231,7 +232,9 @@ class SymbolIndex:
             conn = self._conn()
             # Symbols: name_lower index (fast — index already built or instant for empty table)
             conn.execute("CREATE INDEX IF NOT EXISTS idx_symbols_name_lower ON symbols(name_lower)")
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_symbols_name_file ON symbols(name_lower, file_path)")
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_symbols_name_file ON symbols(name_lower, file_path)"
+            )
             # Populate name_lower for existing rows that have empty value
             conn.execute("UPDATE symbols SET name_lower = LOWER(name) WHERE name_lower = ''")
 
@@ -243,7 +246,9 @@ class SymbolIndex:
                 conn.execute("DROP INDEX idx_calls_callee")
             # Create correct index on callee_name_lower
             conn.execute("CREATE INDEX IF NOT EXISTS idx_calls_callee ON calls(callee_name_lower)")
-            conn.execute("UPDATE calls SET callee_name_lower = LOWER(callee_name) WHERE callee_name_lower = ''")
+            conn.execute(
+                "UPDATE calls SET callee_name_lower = LOWER(callee_name) WHERE callee_name_lower = ''"
+            )
 
             # Help query planner
             conn.execute("ANALYZE symbols")
@@ -263,6 +268,7 @@ class SymbolIndex:
             isolation_level=None,  # autocommit; we manage transactions manually
         )
         conn.row_factory = sqlite3.Row
+
         def _safe_pragma(sql: str) -> None:
             try:
                 conn.execute(sql)
@@ -278,7 +284,7 @@ class SymbolIndex:
         # failures when the LSP/MCP thread tries to write while the indexer thread
         # holds BEGIN IMMEDIATE (e.g. full workspace reindex on initialize).
         _safe_pragma("PRAGMA busy_timeout=10000")
-        _safe_pragma("PRAGMA cache_size=-131072")   # 128 MB page cache per connection
+        _safe_pragma("PRAGMA cache_size=-131072")  # 128 MB page cache per connection
         _safe_pragma("PRAGMA mmap_size=1073741824")  # 1 GB memory-mapped I/O
         _safe_pragma("PRAGMA temp_store=MEMORY")
         # Override SQLite LOWER with Python's Unicode-aware casefold so that
@@ -834,7 +840,9 @@ class SymbolIndex:
         ).fetchone()
         return dict(row) if row else None
 
-    def find_meta_objects_by_collection(self, collection: str, prefix: str = "") -> list[dict[str, Any]]:
+    def find_meta_objects_by_collection(
+        self, collection: str, prefix: str = ""
+    ) -> list[dict[str, Any]]:
         """
         Return all objects in a 1C global collection (e.g. 'Справочники').
 
@@ -872,7 +880,9 @@ class SymbolIndex:
         call_count = conn.execute("SELECT COUNT(*) FROM calls").fetchone()[0]
         meta_count = conn.execute("SELECT COUNT(*) FROM meta_objects").fetchone()[0]
         last_commit = self.get_last_commit()
-        row = conn.execute("SELECT indexed_at, workspace_root FROM git_state WHERE id = 1").fetchone()
+        row = conn.execute(
+            "SELECT indexed_at, workspace_root FROM git_state WHERE id = 1"
+        ).fetchone()
         return {
             "symbol_count": symbol_count,
             "file_count": file_count,

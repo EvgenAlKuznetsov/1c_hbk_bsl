@@ -43,7 +43,9 @@ class MetaMember:
     """A single member of a metadata object (attribute, TS, form attribute, command, etc.)."""
 
     name: str
-    kind: str  # 'attribute' | 'tabular_section' | 'form_attribute' | 'form_command' | 'ts_attribute'
+    kind: (
+        str  # 'attribute' | 'tabular_section' | 'form_attribute' | 'form_command' | 'ts_attribute'
+    )
     parent_name: str  # object name (e.g. 'Контрагенты')
     parent_kind: str  # object kind (e.g. 'Catalog')
     type_info: str = ""  # human-readable type string if available
@@ -64,6 +66,7 @@ class MetaObject:
 # -----------------------------------------------------------------------
 # Namespace helpers
 # -----------------------------------------------------------------------
+
 
 def _strip_ns(tag: str) -> str:
     """Remove XML namespace from tag name: '{ns}LocalName' → 'LocalName'."""
@@ -101,6 +104,7 @@ def _find_descendant(elem: ET.Element, *path: str) -> ET.Element | None:
 # -----------------------------------------------------------------------
 # Object XML parser
 # -----------------------------------------------------------------------
+
 
 def parse_object_xml(xml_path: str | Path, kind: str, object_name: str) -> MetaObject:
     """
@@ -168,23 +172,27 @@ def parse_object_xml(xml_path: str | Path, kind: str, object_name: str) -> MetaO
             attr_name = _extract_attribute_name(child)
             if attr_name:
                 type_info = _extract_type_info(child)
-                obj.members.append(MetaMember(
-                    name=attr_name,
-                    kind="attribute",
-                    parent_name=object_name,
-                    parent_kind=kind,
-                    type_info=type_info,
-                ))
+                obj.members.append(
+                    MetaMember(
+                        name=attr_name,
+                        kind="attribute",
+                        parent_name=object_name,
+                        parent_kind=kind,
+                        type_info=type_info,
+                    )
+                )
 
         elif local == "TabularSection":
             ts_name = _extract_attribute_name(child)
             if ts_name:
-                obj.members.append(MetaMember(
-                    name=ts_name,
-                    kind="tabular_section",
-                    parent_name=object_name,
-                    parent_kind=kind,
-                ))
+                obj.members.append(
+                    MetaMember(
+                        name=ts_name,
+                        kind="tabular_section",
+                        parent_name=object_name,
+                        parent_kind=kind,
+                    )
+                )
                 # Parse TS attributes
                 ts_child_objects = _find_child(child, "ChildObjects")
                 if ts_child_objects is not None:
@@ -193,36 +201,42 @@ def parse_object_xml(xml_path: str | Path, kind: str, object_name: str) -> MetaO
                             ts_attr_name = _extract_attribute_name(ts_child)
                             if ts_attr_name:
                                 type_info = _extract_type_info(ts_child)
-                                obj.members.append(MetaMember(
-                                    name=f"{ts_name}.{ts_attr_name}",
-                                    kind="ts_attribute",
-                                    parent_name=object_name,
-                                    parent_kind=kind,
-                                    type_info=type_info,
-                                ))
+                                obj.members.append(
+                                    MetaMember(
+                                        name=f"{ts_name}.{ts_attr_name}",
+                                        kind="ts_attribute",
+                                        parent_name=object_name,
+                                        parent_kind=kind,
+                                        type_info=type_info,
+                                    )
+                                )
 
         elif local in ("Dimension", "Resource", "AccountingFlag", "ExtDimensionAccountingFlag"):
             # Register dimensions/resources
             attr_name = _extract_attribute_name(child)
             if attr_name:
                 type_info = _extract_type_info(child)
-                obj.members.append(MetaMember(
-                    name=attr_name,
-                    kind="attribute",
-                    parent_name=object_name,
-                    parent_kind=kind,
-                    type_info=type_info,
-                ))
+                obj.members.append(
+                    MetaMember(
+                        name=attr_name,
+                        kind="attribute",
+                        parent_name=object_name,
+                        parent_kind=kind,
+                        type_info=type_info,
+                    )
+                )
 
         elif local == "EnumValue":
             enum_name = _extract_attribute_name(child)
             if enum_name:
-                obj.members.append(MetaMember(
-                    name=enum_name,
-                    kind="attribute",
-                    parent_name=object_name,
-                    parent_kind=kind,
-                ))
+                obj.members.append(
+                    MetaMember(
+                        name=enum_name,
+                        kind="attribute",
+                        parent_name=object_name,
+                        parent_kind=kind,
+                    )
+                )
 
     return obj
 
@@ -251,9 +265,7 @@ def _extract_type_info(elem: ET.Element) -> str:
         td = type_elem
     types_elem = _find_child(td, "Types")
     if types_elem is not None:
-        types_text = " ".join(
-            (t.text or "").strip() for t in types_elem if (t.text or "").strip()
-        )
+        types_text = " ".join((t.text or "").strip() for t in types_elem if (t.text or "").strip())
         return types_text[:120]
     return ""
 
@@ -262,8 +274,10 @@ def _extract_type_info(elem: ET.Element) -> str:
 # Form XML parser
 # -----------------------------------------------------------------------
 
-def parse_form_xml(xml_path: str | Path, object_name: str, object_kind: str,
-                   form_name: str) -> list[MetaMember]:
+
+def parse_form_xml(
+    xml_path: str | Path, object_name: str, object_kind: str, form_name: str
+) -> list[MetaMember]:
     """
     Parse a 1C form XML file (Forms/FormName/Ext/Form.xml).
 
@@ -296,26 +310,30 @@ def parse_form_xml(xml_path: str | Path, object_name: str, object_kind: str,
             if _strip_ns(attr.tag) == "Attribute":
                 attr_name = attr.get("name", "").strip()
                 if attr_name:
-                    members.append(MetaMember(
-                        name=attr_name,
-                        kind="form_attribute",
-                        parent_name=object_name,
-                        parent_kind=object_kind,
-                        type_info=f"Форма.{form_name}",
-                    ))
+                    members.append(
+                        MetaMember(
+                            name=attr_name,
+                            kind="form_attribute",
+                            parent_name=object_name,
+                            parent_kind=object_kind,
+                            type_info=f"Форма.{form_name}",
+                        )
+                    )
 
     if commands_section is not None:
         for cmd in commands_section:
             if _strip_ns(cmd.tag) == "Command":
                 cmd_name = cmd.get("name", "").strip()
                 if cmd_name:
-                    members.append(MetaMember(
-                        name=cmd_name,
-                        kind="form_command",
-                        parent_name=object_name,
-                        parent_kind=object_kind,
-                        type_info=f"Форма.{form_name}",
-                    ))
+                    members.append(
+                        MetaMember(
+                            name=cmd_name,
+                            kind="form_command",
+                            parent_name=object_name,
+                            parent_kind=object_kind,
+                            type_info=f"Форма.{form_name}",
+                        )
+                    )
 
     return members
 
@@ -323,6 +341,7 @@ def parse_form_xml(xml_path: str | Path, object_name: str, object_kind: str,
 # -----------------------------------------------------------------------
 # Config root discovery and full crawl
 # -----------------------------------------------------------------------
+
 
 def find_config_root(workspace: str | Path, *, max_depth: int = 12) -> Path | None:
     """
@@ -414,9 +433,7 @@ def crawl_config(config_root: str | Path) -> list[MetaObject]:
                     form_xml = form_dir / "Ext" / "Form.xml"
                     if form_xml.exists():
                         try:
-                            form_members = parse_form_xml(
-                                form_xml, obj_name, kind, form_dir.name
-                            )
+                            form_members = parse_form_xml(form_xml, obj_name, kind, form_dir.name)
                             meta_obj.members.extend(form_members)
                         except Exception as exc:
                             logger.debug("Error parsing form %s: %s", form_xml, exc)

@@ -44,6 +44,7 @@ from onec_hbk_bsl import __version__
 
 def _setup_logging(level: str) -> None:
     from rich.console import Console
+
     logging.basicConfig(
         level=level.upper(),
         format="%(message)s",
@@ -60,12 +61,13 @@ def _run_lsp() -> None:
     # handler.  Rich colours are suppressed because stderr is not a TTY when
     # the process is spawned by VSCode.
     import sys
+
     # Signal all subsystems (especially IncrementalIndexer) that we are running
     # in LSP stdio mode.  Any Rich progress bars or other stdout output would
     # corrupt the JSON-RPC framing and crash the connection.
     os.environ["BSL_LSP_MODE"] = "1"
     logging.basicConfig(
-        level=logging.WARNING,   # silence noisy pygls INFO startup messages
+        level=logging.WARNING,  # silence noisy pygls INFO startup messages
         format="[bsl-lsp] %(levelname)s %(name)s: %(message)s",
         stream=sys.stderr,
         force=True,
@@ -76,6 +78,7 @@ def _run_lsp() -> None:
     logging.getLogger("pygls.protocol.json_rpc").setLevel(logging.ERROR)
     logging.getLogger("pygls.protocol").setLevel(logging.ERROR)
     from onec_hbk_bsl.lsp.server import start_lsp_server
+
     start_lsp_server()
 
 
@@ -99,11 +102,13 @@ def _autoindex_if_empty(workspace: str, db_path: str) -> None:
 
     def _index() -> None:
         from onec_hbk_bsl.indexer.incremental import IncrementalIndexer
+
         IncrementalIndexer(db_path=db_path).index_workspace(workspace)
         s = SymbolIndex(db_path=db_path).get_stats()
         logging.getLogger(__name__).info(
             "Background indexing complete: %d symbols in %d files",
-            s["symbol_count"], s["file_count"],
+            s["symbol_count"],
+            s["file_count"],
         )
 
     threading.Thread(target=_index, daemon=True, name="bsl-autoindex").start()
@@ -159,10 +164,12 @@ def _run_check(
     # --diff: resolve paths to git-changed BSL files
     if diff:
         from onec_hbk_bsl.cli.git_utils import git_changed_files
+
         workspace = paths[0] if len(paths) == 1 and os.path.isdir(paths[0]) else search_from
         git_paths = git_changed_files(workspace, since=since)
         if not git_paths:
             import logging
+
             logging.getLogger(__name__).info("--diff: no changed BSL files found")
             return 0
         paths = git_paths
@@ -213,9 +220,17 @@ def _run_watch(
     cfg = load_config(search_from)
     if profile:
         cfg._data["profile"] = profile
-    workspace = paths[0] if len(paths) == 1 and os.path.isdir(paths[0]) else os.path.commonpath(paths) if paths else os.getcwd()
+    workspace = (
+        paths[0]
+        if len(paths) == 1 and os.path.isdir(paths[0])
+        else os.path.commonpath(paths)
+        if paths
+        else os.getcwd()
+    )
 
-    _console.print(f"[bold green]Watching[/bold green] {workspace} for BSL changes (Ctrl+C to stop)")
+    _console.print(
+        f"[bold green]Watching[/bold green] {workspace} for BSL changes (Ctrl+C to stop)"
+    )
 
     def _on_change(changed: list[str]) -> None:
         _console.print(f"\n[dim]Changed:[/dim] {', '.join(os.path.basename(f) for f in changed)}")
@@ -248,7 +263,7 @@ def _run_init(target_dir: str) -> None:
         _console.print(f"[yellow]Config already exists:[/yellow] {config_path}")
         return
 
-    content = '''\
+    content = """\
 # onec-hbk-bsl.toml — configuration for onec-hbk-bsl
 # See: https://github.com/mussolene/1c_hbk_bsl
 
@@ -295,7 +310,7 @@ exclude = [
 # max-bool-ops             = 3      # BSL036
 # min-duplicate-uses       = 3      # BSL035
 # max-module-lines         = 1000   # BSL063
-'''
+"""
     with open(config_path, "w", encoding="utf-8") as f:
         f.write(content)
     _console.print(f"[green]Created:[/green] {config_path}")
@@ -305,6 +320,7 @@ exclude = [
 def _run_index(workspace: str, force: bool) -> None:
     from onec_hbk_bsl.indexer.db_path import resolve_index_db_path
     from onec_hbk_bsl.indexer.incremental import IncrementalIndexer
+
     db_path = resolve_index_db_path(workspace)
     indexer = IncrementalIndexer(db_path=db_path)
     indexer.index_workspace(workspace, force=force)
@@ -597,6 +613,7 @@ Examples:
 
     if args.list_rules:
         from onec_hbk_bsl.cli.check import list_rules
+
         list_rules(tag=args.tag)
         return
 

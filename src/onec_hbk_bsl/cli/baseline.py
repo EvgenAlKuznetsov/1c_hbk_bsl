@@ -55,7 +55,7 @@ def load_baseline(path: str) -> set[tuple[str, str, int]]:
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
         return {(item["file"], item["code"], item["line"]) for item in data}
-    except (FileNotFoundError, json.JSONDecodeError, KeyError, TypeError):
+    except FileNotFoundError, json.JSONDecodeError, KeyError, TypeError:
         return set()
 
 
@@ -65,10 +65,7 @@ def save_baseline(diagnostics: list[Diagnostic], path: str) -> int:
 
     Returns the number of entries written.
     """
-    data = [
-        {"file": Path(d.file).name, "code": d.code, "line": d.line}
-        for d in diagnostics
-    ]
+    data = [{"file": Path(d.file).name, "code": d.code, "line": d.line} for d in diagnostics]
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
     return len(data)

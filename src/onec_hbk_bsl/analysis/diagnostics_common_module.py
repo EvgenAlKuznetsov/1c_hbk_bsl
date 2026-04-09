@@ -78,16 +78,10 @@ def _execution_context_predicates(
         return oa and client_managed_application
 
     is_client_server = (
-        not server_call
-        and server
-        and external_connection
-        and _is_client_application()
+        not server_call and server and external_connection and _is_client_application()
     )
     is_client = (
-        not server_call
-        and not server
-        and not external_connection
-        and _is_client_application()
+        not server_call and not server and not external_connection and _is_client_application()
     )
     is_server_call = (
         server_call
@@ -97,11 +91,7 @@ def _execution_context_predicates(
         and not client_managed_application
     )
     is_server = (
-        not server_call
-        and server
-        and external_connection
-        and oa
-        and not client_managed_application
+        not server_call and server and external_connection and oa and not client_managed_application
     )
     return is_server, is_server_call, is_client, is_client_server
 
@@ -198,7 +188,7 @@ def _load_common_module_xml_snapshot(module_bsl_path: str) -> _CommonModuleXmlSn
         return None
     mod_dir = Path(module_bsl_path).parent.parent
     m = _RE_XML_NAME.search(raw)
-    module_name = (m.group(1).strip() if m else mod_dir.name)
+    module_name = m.group(1).strip() if m else mod_dir.name
     return _CommonModuleXmlSnapshot(
         module_name=module_name,
         is_global=_xml_bool_tag(raw, "Global"),

@@ -22,7 +22,9 @@ def test_git_repo_uses_dot_git_sqlite(tmp_path, monkeypatch: pytest.MonkeyPatch)
     assert resolve_index_db_path(str(tmp_path)) == expected
 
 
-def test_git_repo_uses_legacy_filename_when_present(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_git_repo_uses_legacy_filename_when_present(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.delenv("INDEX_DB_PATH", raising=False)
     (tmp_path / ".git").mkdir()
     legacy = tmp_path / ".git" / "bsl_index.sqlite"

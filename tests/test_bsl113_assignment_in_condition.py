@@ -6,12 +6,7 @@ from onec_hbk_bsl.analysis.diagnostics import DiagnosticEngine
 
 
 def test_bsl113_is_no_op_for_valid_bsl() -> None:
-    src = (
-        'Процедура Тест()\n'
-        '    Если А = 1 Тогда\n'
-        '    КонецЕсли;\n'
-        "КонецПроцедуры\n"
-    )
+    src = "Процедура Тест()\n    Если А = 1 Тогда\n    КонецЕсли;\nКонецПроцедуры\n"
     engine = DiagnosticEngine(select={"BSL113"})
     diags = engine.check_content("m.bsl", src)
     assert diags == []

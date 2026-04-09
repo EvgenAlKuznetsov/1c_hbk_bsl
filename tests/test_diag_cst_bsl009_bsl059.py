@@ -1,4 +1,5 @@
 """CST-first BSL009/BSL059 when tree-sitter parse has no ERROR nodes."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -10,9 +11,7 @@ from onec_hbk_bsl.parser.bsl_parser import BslParser
 def test_bsl009_cst_ignores_property_copy(tmp_path: Path) -> None:
     p = tmp_path / "m.bsl"
     p.write_text(
-        "Процедура Т()\n"
-        "    Описание.Поле = Поле;\n"
-        "КонецПроцедуры\n",
+        "Процедура Т()\n    Описание.Поле = Поле;\nКонецПроцедуры\n",
         encoding="utf-8",
     )
     engine = DiagnosticEngine(parser=BslParser(), select={"BSL009"})
@@ -40,11 +39,7 @@ def test_bsl059_cst_only_if_condition(tmp_path: Path) -> None:
 def test_bsl059_cst_elseif(tmp_path: Path) -> None:
     p = tmp_path / "m.bsl"
     p.write_text(
-        "Если А Тогда\n"
-        "    Х = 1;\n"
-        "ИначеЕсли Б = Ложь Тогда\n"
-        "    У = 2;\n"
-        "КонецЕсли;\n",
+        "Если А Тогда\n    Х = 1;\nИначеЕсли Б = Ложь Тогда\n    У = 2;\nКонецЕсли;\n",
         encoding="utf-8",
     )
     engine = DiagnosticEngine(parser=BslParser(), select={"BSL059"})

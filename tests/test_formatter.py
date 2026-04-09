@@ -1,4 +1,5 @@
 """Tests for BSL source code formatter."""
+
 from __future__ import annotations
 
 from onec_hbk_bsl.analysis.formatter import BslFormatter
@@ -55,12 +56,7 @@ class TestDocCommentBlocks:
 
     def test_returns_section(self) -> None:
         f = BslFormatter()
-        code = (
-            "// Возвращаемое значение:\n"
-            "// Булево - если ок\n"
-            "Функция Т()\n"
-            "КонецФункции\n"
-        )
+        code = "// Возвращаемое значение:\n// Булево - если ок\nФункция Т()\nКонецФункции\n"
         lines = f.format(code).splitlines()
         assert lines[0].strip() == "// Возвращаемое значение:"
         assert lines[1].strip() == "//   Булево - если ок"
@@ -83,12 +79,7 @@ class TestDocCommentBlocks:
 
     def test_english_headers(self) -> None:
         f = BslFormatter()
-        code = (
-            "// Parameters:\n"
-            "// Name - String\n"
-            "// Returns:\n"
-            "// True\n"
-        )
+        code = "// Parameters:\n// Name - String\n// Returns:\n// True\n"
         lines = f.format(code).splitlines()
         assert lines[0].strip() == "// Parameters:"
         assert lines[1].strip() == "//   Name - String"
@@ -118,11 +109,7 @@ class TestDocCommentBlocks:
 
     def test_strict_bslls_profile_keeps_comment_block_without_hanging_indent(self) -> None:
         f = BslFormatter(profile="strict-bslls")
-        code = (
-            "// Параметры:\n"
-            "// Имя - Строка - описание\n"
-            "// продолжение описания\n"
-        )
+        code = "// Параметры:\n// Имя - Строка - описание\n// продолжение описания\n"
         lines = f.format(code).splitlines()
         assert lines[0].strip() == "// Параметры:"
         assert lines[1].strip() == "// Имя - Строка - описание"
@@ -258,13 +245,7 @@ class TestIndentation:
     def test_multiline_function_params_double_indent(self) -> None:
         """Parameters on new lines after ``Функция Имя(`` get an extra indent level (BSL-LS style)."""
         f = BslFormatter()
-        code = (
-            "Функция Имя(\n"
-            "Параметр1,\n"
-            "Параметр2)\n"
-            "Возврат 0;\n"
-            "КонецФункции\n"
-        )
+        code = "Функция Имя(\nПараметр1,\nПараметр2)\nВозврат 0;\nКонецФункции\n"
         result = f.format(code)
         lines = result.splitlines()
         assert lines[0].strip().startswith("Функция Имя(")

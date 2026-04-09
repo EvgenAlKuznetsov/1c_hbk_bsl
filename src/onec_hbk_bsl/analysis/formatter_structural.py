@@ -4,6 +4,7 @@ Used by :mod:`onec_hbk_bsl.analysis.formatter` together with a heuristic fallbac
 when the parse tree is a regex stub, contains ERROR nodes, or for preprocessor /
 comment lines where layout follows sequential context.
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -70,9 +71,7 @@ def _visit_if_statement(out: list[int], node: Any, depth: int) -> None:
             if_line = c.start_point[0]
         elif c.type == "THEN_KEYWORD":
             then_line = c.start_point[0]
-    single_header = (
-        if_line is not None and then_line is not None and if_line == then_line
-    )
+    single_header = if_line is not None and then_line is not None and if_line == then_line
     cond_depth = depth if single_header else depth + 1
 
     for c in node.children:
@@ -104,9 +103,7 @@ def _visit_elseif_clause(out: list[int], node: Any, depth: int) -> None:
             elsif_line = c.start_point[0]
         elif c.type == "THEN_KEYWORD":
             then_line = c.start_point[0]
-    single_header = (
-        elsif_line is not None and then_line is not None and elsif_line == then_line
-    )
+    single_header = elsif_line is not None and then_line is not None and elsif_line == then_line
     cond_depth = depth if single_header else depth + 1
 
     for c in node.children:
@@ -141,9 +138,7 @@ def _visit_while_statement(out: list[int], node: Any, depth: int) -> None:
             while_line = c.start_point[0]
         elif c.type == "DO_KEYWORD":
             do_line = c.start_point[0]
-    single_header = (
-        while_line is not None and do_line is not None and while_line == do_line
-    )
+    single_header = while_line is not None and do_line is not None and while_line == do_line
     cond_depth = depth if single_header else depth + 1
 
     for c in node.children:

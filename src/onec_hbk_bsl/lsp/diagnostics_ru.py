@@ -630,18 +630,30 @@ def localize_rule_title(code: str) -> str:
 import re as _re  # noqa: E402
 
 _EXTRACT_PATTERNS: list[tuple[str, _re.Pattern[str], object]] = [
-    ("BSL002", _re.compile(r"'([^']+)' is (\d+) lines"), lambda m: f"'{m.group(1)}' — {m.group(2)} строк"),
+    (
+        "BSL002",
+        _re.compile(r"'([^']+)' is (\d+) lines"),
+        lambda m: f"'{m.group(1)}' — {m.group(2)} строк",
+    ),
     ("BSL003", _re.compile(r"'([^']+)' is in API"), lambda m: f"'{m.group(1)}'"),
     ("BSL007", _re.compile(r"variable '([^']+)'", _re.IGNORECASE), lambda m: f"'{m.group(1)}'"),
     ("BSL009", _re.compile(r"variable '([^']+)'", _re.IGNORECASE), lambda m: f"'{m.group(1)}'"),
-    ("BSL011", _re.compile(r"'([^']+)'.*?(\d+).*?(\d+)"), lambda m: f"'{m.group(1)}' — {m.group(2)}/{m.group(3)}"),
+    (
+        "BSL011",
+        _re.compile(r"'([^']+)'.*?(\d+).*?(\d+)"),
+        lambda m: f"'{m.group(1)}' — {m.group(2)}/{m.group(3)}",
+    ),
     ("BSL012", _re.compile(r"'([^']+)'"), lambda m: f"'{m.group(1)}'"),
     ("BSL005", _re.compile(r"'([^']+)'"), lambda m: f"'{m.group(1)}'"),
     ("BSL006", _re.compile(r"'([^']+)'"), lambda m: f"'{m.group(1)}'"),
     ("BSL014", _re.compile(r"(\d+).*?(\d+)"), lambda m: f"{m.group(1)} симв. (макс. {m.group(2)})"),
     ("BSL021", _re.compile(r"parameter '([^']+)'", _re.IGNORECASE), lambda m: f"'{m.group(1)}'"),
     ("BSL029", _re.compile(r"(\d[\d.]*)"), lambda m: f"{m.group(1)}"),
-    ("BSL031", _re.compile(r"'([^']+)'.*?(\d+).*?(\d+)"), lambda m: f"'{m.group(1)}' — {m.group(2)}/{m.group(3)} параметров"),
+    (
+        "BSL031",
+        _re.compile(r"'([^']+)'.*?(\d+).*?(\d+)"),
+        lambda m: f"'{m.group(1)}' — {m.group(2)}/{m.group(3)} параметров",
+    ),
     ("BSL034", _re.compile(r"Variable '([^']+)'", _re.IGNORECASE), lambda m: f"'{m.group(1)}'"),
     ("BSL035", _re.compile(r"'([^']+)'"), lambda m: f"'{m.group(1)}'"),
     ("BSL033", _re.compile(r"'([^']+)'"), lambda m: f"'{m.group(1)}'"),

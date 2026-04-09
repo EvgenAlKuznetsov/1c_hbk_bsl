@@ -1,4 +1,5 @@
 """Tests for tree-sitter structural indent (formatter_structural)."""
+
 from __future__ import annotations
 
 from onec_hbk_bsl.analysis.formatter_structural import ast_structural_indent_levels, tree_has_errors

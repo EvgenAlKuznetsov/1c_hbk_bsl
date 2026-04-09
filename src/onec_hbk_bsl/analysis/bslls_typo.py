@@ -25,12 +25,8 @@ from typing import Any
 _DEFAULT_MIN_WORD_LENGTH = 3
 
 # FORMAT_STRING_RU + FORMAT_STRING_EN (TypoDiagnostic.java)
-_FORMAT_STRING_RU = (
-    "Л=|ЧЦ=|ЧДЦ=|ЧС=|ЧРД=|ЧРГ=|ЧН=|ЧВН=|ЧГ=|ЧО=|ДФ=|ДЛФ=|ДП=|БЛ=|БИ="
-)
-_FORMAT_STRING_EN = (
-    "|L=|ND=|NFD=|NS=|NDS=|NGS=|NZ=|NLZ=|NG=|NN=|NF=|DF=|DLF=|DE=|BF=|BT="
-)
+_FORMAT_STRING_RU = "Л=|ЧЦ=|ЧДЦ=|ЧС=|ЧРД=|ЧРГ=|ЧН=|ЧВН=|ЧГ=|ЧО=|ДФ=|ДЛФ=|ДП=|БЛ=|БИ="
+_FORMAT_STRING_EN = "|L=|ND=|NFD=|NS=|NDS=|NGS=|NZ=|NLZ=|NG=|NN=|NF=|DF=|DLF=|DE=|BF=|BT="
 FORMAT_STRING_PATTERN = re.compile(
     _FORMAT_STRING_RU + _FORMAT_STRING_EN,
     re.IGNORECASE,
@@ -313,18 +309,30 @@ def spellcheck_typo_diagnostics(
         ntype = node.type
         if ntype == "string":
             raw_t = node.text
-            text = raw_t.decode("utf-8", errors="replace") if isinstance(raw_t, (bytes, bytearray)) else str(raw_t)
+            text = (
+                raw_t.decode("utf-8", errors="replace")
+                if isinstance(raw_t, (bytes, bytearray))
+                else str(raw_t)
+            )
             if FORMAT_STRING_PATTERN.search(text):
                 continue
             inner = _QUOTE_PATTERN.sub("", text).strip()
             _emit_parts_for_source_text(node, inner, cfg, _checker, path, diags)
         elif ntype == "identifier" and _identifier_typo_context_ok(node):
             raw_t = node.text
-            inner = raw_t.decode("utf-8", errors="replace") if isinstance(raw_t, (bytes, bytearray)) else str(raw_t)
+            inner = (
+                raw_t.decode("utf-8", errors="replace")
+                if isinstance(raw_t, (bytes, bytearray))
+                else str(raw_t)
+            )
             _emit_parts_for_source_text(node, inner, cfg, _checker, path, diags)
         elif ntype == "property" and _property_typo_context_ok(node):
             raw_t = node.text
-            inner = raw_t.decode("utf-8", errors="replace") if isinstance(raw_t, (bytes, bytearray)) else str(raw_t)
+            inner = (
+                raw_t.decode("utf-8", errors="replace")
+                if isinstance(raw_t, (bytes, bytearray))
+                else str(raw_t)
+            )
             _emit_parts_for_source_text(node, inner.strip(), cfg, _checker, path, diags)
 
     return diags

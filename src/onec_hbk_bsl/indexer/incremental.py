@@ -177,6 +177,7 @@ class IncrementalIndexer:
     def _start_metadata_indexing(self, workspace: str) -> None:
         """Start metadata indexing in a background thread."""
         import threading  # noqa: PLC0415
+
         threading.Thread(
             target=self.index_metadata,
             args=(workspace,),
@@ -270,7 +271,11 @@ class IncrementalIndexer:
             )
         )
         with progress_ctx as progress:
-            task = None if progress is None else progress.add_task("Indexing BSL files", total=len(files))
+            task = (
+                None
+                if progress is None
+                else progress.add_task("Indexing BSL files", total=len(files))
+            )
             with bulk_ctx():
                 existing: list[str] = []
                 for path in files:
@@ -404,13 +409,14 @@ class IncrementalIndexer:
                 timeout=10,
             )
             return result.stdout.strip() if result.returncode == 0 else None
-        except (FileNotFoundError, subprocess.TimeoutExpired):
+        except FileNotFoundError, subprocess.TimeoutExpired:
             return None
 
 
 # ---------------------------------------------------------------------------
 # Helper converters
 # ---------------------------------------------------------------------------
+
 
 def _symbol_to_dict(symbol: Any) -> dict:  # noqa: ANN401
     """Convert a Symbol dataclass to a plain dict for the index."""
@@ -437,5 +443,3 @@ def _call_to_dict(call: Any) -> dict:  # noqa: ANN401
         "callee_name": call.callee_name,
         "callee_args_count": call.callee_args_count,
     }
-
-
