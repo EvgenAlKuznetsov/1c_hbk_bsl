@@ -409,6 +409,16 @@ def _tokenize(line: str) -> list[tuple[str, str]]:
     return tokens
 
 
+# After comma, BSLLS FormatProvider inserts a space before the next token unless
+# the next char is closing / semicolon (see needAddSpace in FormatProvider.java).
+_COMMA_SPACE_AFTER = re.compile(r",(?=[^\s)\]\};])")
+
+
+def _ensure_comma_space_in_code(code: str) -> str:
+    """Insert single space after commas in a code-only fragment (strings already stripped)."""
+    return _COMMA_SPACE_AFTER.sub(", ", code)
+
+
 def _squeeze_whitespace_runs(code: str) -> str:
     """Collapse runs of spaces/tabs in a code fragment to a single space (no regex)."""
     out: list[str] = []
@@ -693,6 +703,7 @@ def _process_code_line_static(stripped: str, in_proc_header: bool) -> str:
         if ttype == "code":
             text = _normalize_keywords_in_code(text)
             text = _add_operator_spaces(text, in_proc_header=in_proc_header)
+            text = _ensure_comma_space_in_code(text)
         elif ttype == "comment" and text.startswith("//") and result_parts:
             # BSL136 / BSLLS MissingSpaceBeforeComment: space before trailing //
             prev = result_parts[-1]
@@ -803,13 +814,21 @@ class BslFormatter:
     def __init__(self, *, profile: str = "compat") -> None:
         self.profile = profile
 
+    @staticmethod
+    def _default_insert_spaces(profile: str, explicit: bool | None) -> bool:
+        """BSLLS ``format`` CLI uses tabs (insertSpaces=false); compat keeps spaces."""
+        if explicit is not None:
+            return explicit
+        return profile != "strict-bslls"
+
     def format(  # noqa: A003
         self,
         content: str,
         indent_size: int = 4,
-        insert_spaces: bool = True,
+        insert_spaces: bool | None = None,
     ) -> str:
         """Format an entire BSL source file."""
+        insert_spaces = self._default_insert_spaces(self.profile, insert_spaces)
         if content.startswith("\ufeff"):
             content = content[1:]
         lines = _expand_block_headers_one_line(content.splitlines())
@@ -839,7 +858,7 @@ class BslFormatter:
         start_line: int,
         end_line: int,
         indent_size: int = 4,
-        insert_spaces: bool = True,
+        insert_spaces: bool | None = None,
     ) -> str:
         """Format lines [start_line, end_line] (0-based, inclusive).
 
@@ -850,6 +869,7 @@ class BslFormatter:
         Returns the formatted text for the range only
         (TextEdit-compatible: replace lines start_line..end_line with this text).
         """
+        insert_spaces = self._default_insert_spaces(self.profile, insert_spaces)
         if content.startswith("\ufeff"):
             content = content[1:]
         all_lines = content.splitlines()
@@ -950,7 +970,11 @@ class BslFormatter:
 
             if not stripped:
                 if output:
-                    result.append("")
+                    if self.profile == "strict-bslls":
+                        lvl = base_levels[i] + initial_indent
+                        result.append(self._indent(lvl, indent_size, insert_spaces))
+                    else:
+                        result.append("")
                 continue
 
             # BSL multi-line string continuation: lines starting with | are string

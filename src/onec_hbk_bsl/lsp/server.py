@@ -2984,7 +2984,7 @@ def on_code_action(
     if content:
         try:
             from onec_hbk_bsl.analysis.formatter import default_formatter
-            formatted = default_formatter.format(content)
+            formatted = default_formatter.format(content, insert_spaces=True)
             if formatted != content:
                 actions.append(CodeAction(
                     title="Переформатировать документ",
