@@ -106,3 +106,31 @@ def test_bsl020_uses_bslls_default_nesting_depth(tmp_path: Path) -> None:
 """
     diag = _single_diag(content, "BSL020", tmp_path)
     assert diag.line == 6
+
+
+def test_bsl029_preserves_column_after_string_literals(tmp_path: Path) -> None:
+    content = """\
+Процедура Тест()
+    Таблица.Колонки.Добавить("Сумма", ОбщегоНазначения.ОписаниеТипаЧисло(15, 2));
+КонецПроцедуры
+"""
+    path = tmp_path / "Module.bsl"
+    path.write_text(content, encoding="utf-8")
+    diags = DiagnosticEngine(select={"BSL029"}).check_file(str(path))
+    cols = [d.character for d in diags]
+    assert cols == [73, 77]
+
+
+def test_bsl199_attaches_to_konec_esli_token(tmp_path: Path) -> None:
+    content = """\
+Процедура Тест()
+    Если А Тогда
+        Возврат;
+    ИначеЕсли Б Тогда
+        Возврат;
+    КонецЕсли;
+КонецПроцедуры
+"""
+    diag = _single_diag(content, "BSL199", tmp_path)
+    assert diag.line == 6
+    assert diag.character == "    КонецЕсли;".find("Если")

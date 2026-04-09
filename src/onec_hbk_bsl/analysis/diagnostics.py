@@ -7641,9 +7641,16 @@ class DiagnosticEngine:
                 # Skip constant-like declarations
                 if re.match(r"^\s*(?:Перем|Var)\s+\w+\s*=", line, re.IGNORECASE):
                     continue
-                # Remove string contents before scanning
-                code_part = _RE_DOUBLE_QUOTED_STRING.sub('""', line)
-                code_part = _RE_SINGLE_QUOTED_STRING.sub("''", code_part)
+                # Mask string contents before scanning while preserving original
+                # character offsets for resulting diagnostics.
+                code_part = _RE_DOUBLE_QUOTED_STRING.sub(
+                    lambda m: '"' + (" " * max(0, len(m.group(0)) - 2)) + '"',
+                    line,
+                )
+                code_part = _RE_SINGLE_QUOTED_STRING.sub(
+                    lambda m: "'" + (" " * max(0, len(m.group(0)) - 2)) + "'",
+                    code_part,
+                )
                 code_part = code_part.split("//")[0]
                 # Skip Для/For loop headers — BSLLS does not flag loop bounds
                 if _RE_BSL029_FOR_HEADER.match(code_part):
@@ -13846,10 +13853,13 @@ class DiagnosticEngine:
                 endif_idx = j - 1
                 if endif_idx >= 0 and endif_idx < len(lines):
                     el = lines[endif_idx]
+                    char = el.find("Если")
+                    if char < 0:
+                        char = len(el) - len(el.lstrip())
                     diags.append(Diagnostic(
                         file=path,
                         line=endif_idx + 1,
-                        character=0,
+                        character=char,
                         end_line=endif_idx + 1,
                         end_character=len(el),
                         severity=Severity.INFORMATION,
