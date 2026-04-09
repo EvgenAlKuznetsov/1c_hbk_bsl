@@ -13850,20 +13850,19 @@ class DiagnosticEngine:
                 j += 1
 
             if has_elseif and not has_else:
-                # BSLLS attaches this diagnostic to the closing «КонецЕсли» line.
+                # BSLLS attaches this diagnostic to the closing «КонецЕсли» line
+                # at the statement indentation, not to the nested token span.
                 endif_idx = j - 1
                 if endif_idx >= 0 and endif_idx < len(lines):
                     el = lines[endif_idx]
-                    char = el.find("Если")
-                    if char < 0:
-                        char = len(el) - len(el.lstrip())
+                    char = len(el) - len(el.lstrip())
                     diags.append(Diagnostic(
                         file=path,
                         line=endif_idx + 1,
                         character=char,
                         end_line=endif_idx + 1,
                         end_character=len(el),
-                        severity=Severity.INFORMATION,
+                        severity=Severity.WARNING,
                         code="BSL199",
                         message=(
                             "Цепочка «Если/ИначеЕсли» не завершается веткой «Иначе» — "

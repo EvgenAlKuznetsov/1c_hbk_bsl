@@ -133,7 +133,8 @@ def test_bsl199_attaches_to_konec_esli_token(tmp_path: Path) -> None:
 """
     diag = _single_diag(content, "BSL199", tmp_path)
     assert diag.line == 6
-    assert diag.character == "    КонецЕсли;".find("Если")
+    assert diag.character == len("    КонецЕсли;") - len("    КонецЕсли;".lstrip())
+    assert diag.severity.name == "WARNING"
 
 
 def test_bsl155_ignores_utf8_bom_before_preprocessor(tmp_path: Path) -> None:
