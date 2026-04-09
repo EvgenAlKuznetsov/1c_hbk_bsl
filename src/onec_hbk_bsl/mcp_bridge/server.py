@@ -52,6 +52,7 @@ from onec_hbk_bsl.analysis.diagnostics import (
     display_name_for_rule_code,
     normalize_rule_code_set,
     parse_env_rule_filters,
+    parse_env_rule_profile,
 )
 from onec_hbk_bsl.analysis.fix_engine import apply_fixes as _apply_fixes
 from onec_hbk_bsl.analysis.formatter import default_formatter
@@ -235,12 +236,13 @@ def _mcp_unused_diagnostics(file_path: str, idx: SymbolIndex) -> list[dict]:
 def _resolve_mcp_check_file_select_ignore(
     select: str | None,
     ignore: str | None,
-) -> tuple[set[str] | None, set[str] | None]:
+) -> tuple[set[str] | None, set[str] | None, str | None]:
     """
     Tool parameters override environment when non-empty; otherwise use
     ``BSL_SELECT`` / ``BSL_IGNORE`` (same as LSP).
     """
     env_sel, env_ign = parse_env_rule_filters()
+    env_profile = parse_env_rule_profile()
     if select and select.strip():
         sel = normalize_rule_code_set(select.split(","))
     else:
@@ -249,7 +251,7 @@ def _resolve_mcp_check_file_select_ignore(
         ign = normalize_rule_code_set(ignore.split(","))
     else:
         ign = env_ign
-    return sel, ign
+    return sel, ign, env_profile
 
 
 # ---------------------------------------------------------------------------
@@ -520,12 +522,14 @@ def create_mcp_app() -> FastMCP:
         """
         path = _resolve_path(file_path, workspace_root=workspace_root)
         env_sel, env_ign = parse_env_rule_filters()
+        env_profile = parse_env_rule_profile()
         idx = _get_index(workspace_root)
         engine = DiagnosticEngine(
             parser=_get_parser(),
             symbol_index=idx,
             select=env_sel,
             ignore=env_ign,
+            profile=env_profile,
         )
         issues = engine.check_file(path)
         diags = _mcp_diagnostic_list(issues)
@@ -628,13 +632,14 @@ def create_mcp_app() -> FastMCP:
             Dict with ``count``, ``has_errors``, and ``diagnostics`` list.
         """
         path = _resolve_path(file_path, workspace_root=workspace_root)
-        select_set, ignore_set = _resolve_mcp_check_file_select_ignore(select, ignore)
+        select_set, ignore_set, profile = _resolve_mcp_check_file_select_ignore(select, ignore)
         idx = _get_index(workspace_root)
         engine = DiagnosticEngine(
             parser=_get_parser(),
             symbol_index=idx,
             select=select_set,
             ignore=ignore_set,
+            profile=profile,
         )
         issues = engine.check_file(path)
         diags = _mcp_diagnostic_list(issues)
@@ -1210,6 +1215,7 @@ def create_mcp_app() -> FastMCP:
             symbol_index=_get_index(workspace_root),
             select=run_codes,
             ignore=None,
+            profile=parse_env_rule_profile(),
         )
         issues = engine.check_file(path)
         fixable = [d for d in issues if d.code in fixable_codes]

@@ -800,6 +800,9 @@ def _expand_block_headers_one_line(lines: list[str]) -> list[str]:
 class BslFormatter:
     """Formats BSL (1C:Enterprise) source code."""
 
+    def __init__(self, *, profile: str = "compat") -> None:
+        self.profile = profile
+
     def format(  # noqa: A003
         self,
         content: str,
@@ -929,7 +932,11 @@ class BslFormatter:
         if len(base_levels) != len(lines):
             base_levels = _compute_structural_indent_levels(lines, text)
 
-        comment_multiline = _precompute_multiline_doc_comment_stripped(lines)
+        comment_multiline = (
+            _precompute_multiline_doc_comment_stripped(lines)
+            if self.profile != "strict-bslls"
+            else {}
+        )
 
         result: list[str] = []
         continuation = False
@@ -1097,4 +1104,6 @@ class BslFormatter:
 # Singleton for use in LSP
 # ---------------------------------------------------------------------------
 
-default_formatter = BslFormatter()
+compat_formatter = BslFormatter(profile="compat")
+strict_bslls_formatter = BslFormatter(profile="strict-bslls")
+default_formatter = strict_bslls_formatter

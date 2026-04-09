@@ -116,6 +116,18 @@ class TestDocCommentBlocks:
         assert lines[0].strip() == "// Параметры:"
         assert lines[1].strip() == "//   Имя"
 
+    def test_strict_bslls_profile_keeps_comment_block_without_hanging_indent(self) -> None:
+        f = BslFormatter(profile="strict-bslls")
+        code = (
+            "// Параметры:\n"
+            "// Имя - Строка - описание\n"
+            "// продолжение описания\n"
+        )
+        lines = f.format(code).splitlines()
+        assert lines[0].strip() == "// Параметры:"
+        assert lines[1].strip() == "// Имя - Строка - описание"
+        assert lines[2].strip() == "// продолжение описания"
+
 
 class TestKeywordNormalisation:
     def test_procedure_normalised(self) -> None:

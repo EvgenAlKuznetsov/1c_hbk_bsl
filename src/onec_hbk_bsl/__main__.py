@@ -16,6 +16,7 @@ Usage:
 Check mode flags:
     --select BSL001,BSL002         Run only these rules
     --ignore BSL002                Skip these rules
+    --profile strict-bslls         Use canonical BSLLS core profile
     --format text|json|sonarqube|sarif  Output format (default: text)
     --jobs N                       Parallel workers (0 = auto, 1 = serial)
     --sonar-root PATH              Project root for SonarQube/SARIF relative paths
@@ -134,6 +135,7 @@ def _run_check(
     fmt: str,
     select: set[str] | None,
     ignore: set[str] | None,
+    profile: str | None,
     jobs: int,
     sonar_root: str | None,
     exit_zero: bool,
@@ -151,6 +153,8 @@ def _run_check(
     # Load config from the first checked path (or cwd)
     search_from = paths[0] if paths else os.getcwd()
     cfg = load_config(search_from)
+    if profile:
+        cfg._data["profile"] = profile
 
     # --diff: resolve paths to git-changed BSL files
     if diff:
@@ -185,6 +189,7 @@ def _run_watch(
     fmt: str,
     select: set[str] | None,
     ignore: set[str] | None,
+    profile: str | None,
     jobs: int,
     sonar_root: str | None,
     exit_zero: bool,
@@ -206,6 +211,8 @@ def _run_watch(
     _console = Console(stderr=True)
     search_from = paths[0] if paths else os.getcwd()
     cfg = load_config(search_from)
+    if profile:
+        cfg._data["profile"] = profile
     workspace = paths[0] if len(paths) == 1 and os.path.isdir(paths[0]) else os.path.commonpath(paths) if paths else os.getcwd()
 
     _console.print(f"[bold green]Watching[/bold green] {workspace} for BSL changes (Ctrl+C to stop)")
@@ -247,6 +254,9 @@ def _run_init(target_dir: str) -> None:
 
 # Rules to run (empty = all rules)
 # select = ["BSL001", "BSL002"]
+
+# Rule profile: "strict-bslls" or "compat"
+# profile = "strict-bslls"
 
 # Rules to always skip
 ignore = []
@@ -489,6 +499,12 @@ Examples:
         ),
     )
     parser.add_argument(
+        "--profile",
+        choices=["strict-bslls", "compat"],
+        default=None,
+        help="Rule profile: canonical BSLLS core or backward-compatible local set",
+    )
+    parser.add_argument(
         "--jobs",
         type=int,
         default=0,
@@ -605,6 +621,7 @@ Examples:
                 fmt=args.format,
                 select=_parse_codes(args.select),
                 ignore=_parse_codes(args.ignore),
+                profile=args.profile,
                 jobs=args.jobs,
                 sonar_root=args.sonar_root,
                 exit_zero=args.exit_zero,
@@ -625,6 +642,7 @@ Examples:
             fmt=args.format,
             select=_parse_codes(args.select),
             ignore=_parse_codes(args.ignore),
+            profile=args.profile,
             jobs=args.jobs,
             sonar_root=args.sonar_root,
             exit_zero=args.exit_zero,

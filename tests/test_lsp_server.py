@@ -64,6 +64,17 @@ class TestBslLanguageServerInit:
         ls = BslLanguageServer()
         assert ls._docs == {}
 
+    def test_server_close_closes_symbol_index(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.setenv("INDEX_DB_PATH", str(tmp_path / "idx.sqlite"))
+        from unittest.mock import MagicMock
+
+        from onec_hbk_bsl.lsp.server import BslLanguageServer
+
+        ls = BslLanguageServer()
+        ls.symbol_index.close = MagicMock()  # type: ignore[method-assign]
+        ls.close()
+        ls.symbol_index.close.assert_called_once()
+
 
 # ---------------------------------------------------------------------------
 # Diagnostics publishing helper (internal)
