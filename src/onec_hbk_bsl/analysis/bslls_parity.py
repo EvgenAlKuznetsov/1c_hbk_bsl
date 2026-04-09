@@ -67,23 +67,36 @@ def normalize_rule_profile(profile: str | None) -> str | None:
     return None
 
 
-def strict_bslls_rule_codes(bslls_name_to_code: dict[str, str]) -> frozenset[str]:
+def strict_bslls_rule_codes(
+    bslls_name_to_code: dict[str, str],
+    *,
+    default_disabled_codes: set[str] | frozenset[str] = frozenset(),
+) -> frozenset[str]:
     """Canonical BSLLS-compatible rule set aligned with BSLLS default BSL profile."""
     return frozenset(
         code
         for name, code in bslls_name_to_code.items()
-        if name not in BSLLS_OS_ONLY_NAMES and name not in BSLLS_DEFAULT_DISABLED_NAMES
+        if code not in default_disabled_codes
+        and name not in BSLLS_OS_ONLY_NAMES
+        and name not in BSLLS_DEFAULT_DISABLED_NAMES
     )
 
 
 def select_codes_for_profile(
     profile: str | None,
     bslls_name_to_code: dict[str, str],
+    *,
+    default_disabled_codes: set[str] | frozenset[str] = frozenset(),
 ) -> set[str] | None:
     """Return an implicit select-set for *profile*, or ``None`` for compat/all."""
     p = normalize_rule_profile(profile)
     if p == STRICT_BSLLS_PROFILE:
-        return set(strict_bslls_rule_codes(bslls_name_to_code))
+        return set(
+            strict_bslls_rule_codes(
+                bslls_name_to_code,
+                default_disabled_codes=default_disabled_codes,
+            )
+        )
     return None
 
 
@@ -91,6 +104,8 @@ def merge_profile_with_select(
     profile: str | None,
     select: set[str] | None,
     bslls_name_to_code: dict[str, str],
+    *,
+    default_disabled_codes: set[str] | frozenset[str] = frozenset(),
 ) -> set[str] | None:
     """
     Combine explicit ``select`` with profile defaults.
@@ -98,7 +113,11 @@ def merge_profile_with_select(
     In ``strict-bslls`` mode, explicit selection narrows the canonical BSLLS set
     instead of expanding it with local-only rules.
     """
-    profile_select = select_codes_for_profile(profile, bslls_name_to_code)
+    profile_select = select_codes_for_profile(
+        profile,
+        bslls_name_to_code,
+        default_disabled_codes=default_disabled_codes,
+    )
     if profile_select is None:
         return set(select) if select else None
     if not select:

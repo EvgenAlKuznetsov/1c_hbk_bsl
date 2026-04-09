@@ -14,6 +14,10 @@ _RE_COMPILER = re.compile(r"^\s*&\w", re.IGNORECASE)
 _RE_MODULE_VAR = re.compile(r"^\s*(?:Перем|Var)\b", re.IGNORECASE)
 
 
+def _raw_without_bom(line: str) -> str:
+    return line.strip().lstrip("\ufeff")
+
+
 def bsl155_code_block_before_sub(
     lines: list[str],
     procedures: list[tuple[int, int]],
@@ -29,7 +33,7 @@ def bsl155_code_block_before_sub(
     msg = "Исполняемый код перед объявлениями процедур и функций (BSLLS CodeBlockBeforeSub)."
     for i in range(first_proc):
         line = lines[i]
-        raw = line.strip()
+        raw = _raw_without_bom(line)
         if not raw or raw.startswith("//") or raw.startswith("#"):
             continue
         if _RE_COMPILER.match(line):

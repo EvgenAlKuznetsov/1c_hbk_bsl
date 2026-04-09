@@ -5898,6 +5898,7 @@ class DiagnosticEngine:
             profile,
             _user_select,
             _BSLLS_NAME_TO_CODE,
+            default_disabled_codes=self.DEFAULT_DISABLED,
         )
         # Instrumentation for benchmarks/debug: per-thread (free-threading safe).
         self._metrics_tls = threading.local()

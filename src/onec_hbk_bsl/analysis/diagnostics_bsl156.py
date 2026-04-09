@@ -24,6 +24,10 @@ _RE_RAISE_STMT = re.compile(
 )
 
 
+def _raw_without_bom(line: str) -> str:
+    return line.strip().lstrip("\ufeff")
+
+
 def module_region_intervals(lines: list[str]) -> list[tuple[int, int]]:
     """Return inclusive (start_line, end_line) for each region block, nesting-correct."""
     stack: list[int] = []
@@ -53,7 +57,7 @@ def _strip_line_comment(line: str) -> str:
 
 
 def _is_significant_module_line_raw(line: str) -> bool:
-    raw = line.strip()
+    raw = _raw_without_bom(line)
     if not raw:
         return False
     if raw.startswith("//"):

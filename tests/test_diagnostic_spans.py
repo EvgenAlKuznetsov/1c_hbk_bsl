@@ -134,3 +134,34 @@ def test_bsl199_attaches_to_konec_esli_token(tmp_path: Path) -> None:
     diag = _single_diag(content, "BSL199", tmp_path)
     assert diag.line == 6
     assert diag.character == "    КонецЕсли;".find("Если")
+
+
+def test_bsl155_ignores_utf8_bom_before_preprocessor(tmp_path: Path) -> None:
+    content = """\
+\ufeff
+#Если Сервер Тогда
+#КонецЕсли
+
+Процедура Тест()
+КонецПроцедуры
+"""
+    path = tmp_path / "Module.bsl"
+    path.write_text(content, encoding="utf-8")
+    diags = DiagnosticEngine(select={"BSL155"}).check_file(str(path))
+    assert not diags
+
+
+def test_bsl156_ignores_utf8_bom_before_regions(tmp_path: Path) -> None:
+    content = """\
+\ufeff
+#Если Сервер Тогда
+#Область ПрограммныйИнтерфейс
+Процедура Тест()
+КонецПроцедуры
+#КонецОбласти
+#КонецЕсли
+"""
+    path = tmp_path / "Module.bsl"
+    path.write_text(content, encoding="utf-8")
+    diags = DiagnosticEngine(select={"BSL156"}).check_file(str(path))
+    assert not diags
