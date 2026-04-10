@@ -2513,7 +2513,7 @@ RULE_METADATA: dict[str, dict] = {
         "sonar_type": "BUG",
         "sonar_severity": "CRITICAL",
         "tags": ["transaction", "error-handling"],
-        "implemented": False,
+        "implemented": True,
     },
     "BSL278": {
         "name": "WrongWebServiceHandler",
@@ -5121,6 +5121,44 @@ def _ts_child_of_type(node: Any, node_type: str) -> Any | None:
     return None
 
 
+def _ts_method_identifier_span(node: Any, line_texts: list[str]) -> tuple[int, int, int] | None:
+    """Return ``(line_1based, start_char, end_char)`` for method-call identifier."""
+    ident = _ts_child_of_type(node, "identifier")
+    if ident is None:
+        return None
+    line_idx = ident.start_point[0]
+    line_text = line_texts[line_idx] if 0 <= line_idx < len(line_texts) else ""
+    return (
+        line_idx + 1,
+        utf8_byte_offset_to_lsp_character(line_text, ident.start_point[1]),
+        utf8_byte_offset_to_lsp_character(line_text, ident.end_point[1]),
+    )
+
+
+def _ts_global_method_calls(node: Any, line_texts: list[str]) -> list[dict[str, Any]]:
+    """Collect global method calls under *node* in source order."""
+    out: list[dict[str, Any]] = []
+    for child in _ts_walk(node):
+        if getattr(child, "type", None) != "method_call":
+            continue
+        if getattr(getattr(child, "parent", None), "type", None) == "call_expression":
+            continue
+        span = _ts_method_identifier_span(child, line_texts)
+        if span is None:
+            continue
+        ident = _ts_child_of_type(child, "identifier")
+        out.append(
+            {
+                "node": child,
+                "name": _ts_node_text(ident),
+                "line": span[0],
+                "character": span[1],
+                "end_character": span[2],
+            }
+        )
+    return out
+
+
 def _find_procedures_from_tree(tree: Any) -> list[_ProcInfo]:
     """Extract procedure/function definitions from a tree-sitter CST.
 
@@ -6088,7 +6126,7 @@ class DiagnosticEngine:
             "BSL274",  # WrongDataPathForFormElements — TODO
             "BSL275",  # WrongHttpServiceHandler — TODO
             "BSL276",  # WrongUseFunctionProceedWithCall — TODO
-            "BSL277",  # WrongUseOfRollbackTransactionMethod — TODO
+            # "BSL277" enabled — WrongUseOfRollbackTransactionMethod implemented
             "BSL278",  # WrongWebServiceHandler — TODO
             # "BSL279" enabled — YoLetterUsage implemented
         }
@@ -7012,7 +7050,7 @@ class DiagnosticEngine:
             _rule_tasks.append(("BSL208_BSL256", _task_bsl208_bsl256))
         if self._rule_enabled("BSL230"):
             _rule_tasks.append(
-                ("BSL230", lambda: self._rule_bsl230_pairing_broken_transaction(path, lines, procs))
+                ("BSL230", lambda: self._rule_bsl230_pairing_broken_transaction(path, tree))
             )
         if self._rule_enabled("BSL240"):
             _rule_tasks.append(
@@ -7062,6 +7100,10 @@ class DiagnosticEngine:
             )
         if self._rule_enabled("BSL255"):
             _rule_tasks.append(("BSL255", lambda: self._rule_bsl255_try_number(path, lines)))
+        if self._rule_enabled("BSL277"):
+            _rule_tasks.append(
+                ("BSL277", lambda: self._rule_bsl277_wrong_use_of_rollback_transaction(path, tree))
+            )
         diagnostics = _execute_diagnostic_rule_tasks(_rule_tasks)
         # Apply inline suppressions
         diagnostics = [d for d in diagnostics if not _is_suppressed(d, suppressions)]
@@ -14931,57 +14973,174 @@ class DiagnosticEngine:
     # BSL230 — PairingBrokenTransaction
     # ------------------------------------------------------------------
 
-    def _rule_bsl230_pairing_broken_transaction(
-        self, path: str, lines: list[str], procs: list[Any]
-    ) -> list[Diagnostic]:
-        """Detect unbalanced Begin/Commit/Rollback transaction calls."""
+    def _rule_bsl230_pairing_broken_transaction(self, path: str, tree: Any) -> list[Diagnostic]:
+        """Detect broken Begin/Commit and Begin/Rollback pairing like BSLLS."""
+        root = getattr(tree, "root_node", None)
+        if root is None or not isinstance(getattr(root, "text", None), (bytes, bytearray)):
+            return []
+
+        line_texts = _ts_node_text(root).splitlines()
         diags: list[Diagnostic] = []
-        _re_begin = re.compile(r"\b(?:НачатьТранзакцию|BeginTransaction)\s*\(", re.IGNORECASE)
-        _re_commit = re.compile(
-            r"\b(?:ЗафиксироватьТранзакцию|CommitTransaction)\s*\(", re.IGNORECASE
-        )
-        _re_rollback = re.compile(
-            r"\b(?:ОтменитьТранзакцию|RollbackTransaction)\s*\(", re.IGNORECASE
-        )
-        _re_comment = re.compile(r"^\s*//")
+        begin_names = {"начатьтранзакцию", "begintransaction"}
 
-        for proc in procs:
-            begin_count = 0
-            commit_count = 0
-            rollback_count = 0
-            begin_line = None
+        pair_specs = (
+            (
+                {"начатьтранзакцию", "begintransaction", "зафиксироватьтранзакцию", "committransaction"},
+                {
+                    "начатьтранзакцию": "ЗафиксироватьТранзакцию",
+                    "begintransaction": "CommitTransaction",
+                    "зафиксироватьтранзакцию": "НачатьТранзакцию",
+                    "committransaction": "BeginTransaction",
+                },
+            ),
+            (
+                {"начатьтранзакцию", "begintransaction", "отменитьтранзакцию", "rollbacktransaction"},
+                {
+                    "начатьтранзакцию": "ОтменитьТранзакцию",
+                    "begintransaction": "RollbackTransaction",
+                    "отменитьтранзакцию": "НачатьТранзакцию",
+                    "rollbacktransaction": "BeginTransaction",
+                },
+            ),
+        )
 
-            for li in range(proc.start_idx, proc.end_idx):
-                if li >= len(lines):
-                    break
-                line = lines[li]
-                if _re_comment.match(line):
+        proc_nodes = [
+            node
+            for node in _ts_walk(root)
+            if getattr(node, "type", None) in {"procedure_definition", "function_definition"}
+        ]
+
+        for proc_node in proc_nodes:
+            calls = _ts_global_method_calls(proc_node, line_texts)
+            if not calls:
+                continue
+            for allowed_names, pair_names in pair_specs:
+                begin_stack: list[dict[str, Any]] = []
+                for call in calls:
+                    name_cf = str(call["name"]).casefold()
+                    if name_cf not in allowed_names:
+                        continue
+                    if name_cf in begin_names:
+                        begin_stack.append(call)
+                    elif begin_stack:
+                        begin_stack.pop()
+                    else:
+                        diags.append(
+                            Diagnostic(
+                                file=path,
+                                line=call["line"],
+                                character=call["character"],
+                                end_line=call["line"],
+                                end_character=call["end_character"],
+                                severity=Severity.ERROR,
+                                code="BSL230",
+                                message=(
+                                    f'Отсутствует парный вызов "{pair_names[name_cf]}" '
+                                    f'для метода "{call["name"]}"'
+                                ),
+                            )
+                        )
+                for call in begin_stack:
+                    name_cf = str(call["name"]).casefold()
+                    diags.append(
+                        Diagnostic(
+                            file=path,
+                            line=call["line"],
+                            character=call["character"],
+                            end_line=call["line"],
+                            end_character=call["end_character"],
+                            severity=Severity.ERROR,
+                            code="BSL230",
+                            message=(
+                                f'Отсутствует парный вызов "{pair_names[name_cf]}" '
+                                f'для метода "{call["name"]}"'
+                            ),
+                        )
+                    )
+        return diags
+
+    # ------------------------------------------------------------------
+    # BSL277 — WrongUseOfRollbackTransactionMethod
+    # ------------------------------------------------------------------
+
+    def _rule_bsl277_wrong_use_of_rollback_transaction(self, path: str, tree: Any) -> list[Diagnostic]:
+        """Detect RollbackTransaction/ОтменитьТранзакцию outside except or not first there."""
+        root = getattr(tree, "root_node", None)
+        if root is None or not isinstance(getattr(root, "text", None), (bytes, bytearray)):
+            return []
+
+        line_texts = _ts_node_text(root).splitlines()
+        rollback_names = {"отменитьтранзакцию", "rollbacktransaction"}
+        diags: list[Diagnostic] = []
+        rollback_in_except_ids: set[int] = set()
+
+        for node in _ts_walk(root):
+            if getattr(node, "type", None) != "try_statement":
+                continue
+            children = list(getattr(node, "children", []) or [])
+            except_idx = next(
+                (i for i, child in enumerate(children) if getattr(child, "type", None) == "EXCEPT_KEYWORD"),
+                None,
+            )
+            endtry_idx = next(
+                (i for i, child in enumerate(children) if getattr(child, "type", None) == "ENDTRY_KEYWORD"),
+                None,
+            )
+            if except_idx is None:
+                continue
+            if endtry_idx is None:
+                endtry_idx = len(children)
+            except_calls: list[dict[str, Any]] = []
+            for child in children[except_idx + 1 : endtry_idx]:
+                except_calls.extend(_ts_global_method_calls(child, line_texts))
+            if not except_calls:
+                continue
+            rollback_is_first = str(except_calls[0]["name"]).casefold() in rollback_names
+            for call in except_calls:
+                name_cf = str(call["name"]).casefold()
+                if name_cf not in rollback_names:
                     continue
-                if _re_begin.search(line):
-                    begin_count += 1
-                    if begin_line is None:
-                        begin_line = li
-                if _re_commit.search(line):
-                    commit_count += 1
-                if _re_rollback.search(line):
-                    rollback_count += 1
-
-            if begin_count > 0 and commit_count == 0 and rollback_count == 0:
+                rollback_in_except_ids.add(id(call["node"]))
+                if rollback_is_first:
+                    continue
                 diags.append(
                     Diagnostic(
                         file=path,
-                        line=(begin_line or proc.start_idx) + 1,
-                        character=0,
-                        end_line=(begin_line or proc.start_idx) + 1,
-                        end_character=len(lines[begin_line or proc.start_idx]),
+                        line=call["line"],
+                        character=call["character"],
+                        end_line=call["line"],
+                        end_character=call["end_character"],
                         severity=Severity.ERROR,
-                        code="BSL230",
+                        code="BSL277",
                         message=(
-                            "НачатьТранзакцию() без соответствующего "
-                            "ЗафиксироватьТранзакцию() или ОтменитьТранзакцию()"
+                            "Метод ОтменитьТранзакцию() должен быть в попытке и первым "
+                            "методом блока исключения"
                         ),
                     )
                 )
+
+        for call in _ts_global_method_calls(root, line_texts):
+            name_cf = str(call["name"]).casefold()
+            if name_cf not in rollback_names:
+                continue
+            if id(call["node"]) in rollback_in_except_ids:
+                continue
+            diags.append(
+                Diagnostic(
+                    file=path,
+                    line=call["line"],
+                    character=call["character"],
+                    end_line=call["line"],
+                    end_character=call["end_character"],
+                    severity=Severity.ERROR,
+                    code="BSL277",
+                    message=(
+                        "Метод ОтменитьТранзакцию() должен быть в попытке и первым "
+                        "методом блока исключения"
+                    ),
+                )
+            )
+
         return diags
 
     # ------------------------------------------------------------------

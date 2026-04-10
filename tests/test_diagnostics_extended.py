@@ -3347,6 +3347,66 @@ class TestBsl224NestedFunctionInParameters:
         assert bsl224[0].line == 2
 
 
+class TestBsl230PairingBrokenTransaction:
+    def test_rollback_without_begin_is_detected(self, tmp_path: Path) -> None:
+        content = """\
+Процедура Тест()
+    ОтменитьТранзакцию();
+КонецПроцедуры
+"""
+        diags = _check(content, tmp_path, select={"BSL230"})
+        assert "BSL230" in _codes(diags)
+
+    def test_begin_without_commit_is_detected(self, tmp_path: Path) -> None:
+        content = """\
+Процедура Тест()
+    НачатьТранзакцию();
+    Сообщить("ok");
+КонецПроцедуры
+"""
+        diags = _check(content, tmp_path, select={"BSL230"})
+        assert "BSL230" in _codes(diags)
+
+
+class TestBsl277WrongUseOfRollbackTransactionMethod:
+    def test_rollback_outside_except_is_detected(self, tmp_path: Path) -> None:
+        content = """\
+Процедура Тест()
+    ОтменитьТранзакцию();
+КонецПроцедуры
+"""
+        diags = _check(content, tmp_path, select={"BSL277"})
+        assert "BSL277" in _codes(diags)
+
+    def test_rollback_not_first_in_except_is_detected(self, tmp_path: Path) -> None:
+        content = """\
+Процедура Тест()
+    Попытка
+        Сообщить("ok");
+    Исключение
+        Сообщить("warn");
+        ОтменитьТранзакцию();
+    КонецПопытки;
+КонецПроцедуры
+"""
+        diags = _check(content, tmp_path, select={"BSL277"})
+        assert "BSL277" in _codes(diags)
+
+    def test_rollback_first_in_except_is_allowed(self, tmp_path: Path) -> None:
+        content = """\
+Процедура Тест()
+    Попытка
+        Сообщить("ok");
+    Исключение
+        ОтменитьТранзакцию();
+        Сообщить("warn");
+    КонецПопытки;
+КонецПроцедуры
+"""
+        diags = _check(content, tmp_path, select={"BSL277"})
+        assert "BSL277" not in _codes(diags)
+
+
 class TestBsl078RaiseWithoutMessage:
     def test_bare_raise_detected(self, tmp_path: Path) -> None:
         content = """\
