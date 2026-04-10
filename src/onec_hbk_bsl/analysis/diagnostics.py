@@ -1622,7 +1622,7 @@ RULE_METADATA: dict[str, dict] = {
         "sonar_type": "CODE_SMELL",
         "sonar_severity": "MINOR",
         "tags": ["deprecated", "compatibility"],
-        "implemented": False,
+        "implemented": True,
     },
     "BSL179": {
         "name": "DeprecatedTypeManagedForm",
@@ -2378,7 +2378,7 @@ RULE_METADATA: dict[str, dict] = {
         "sonar_type": "BUG",
         "sonar_severity": "MINOR",
         "tags": ["correctness", "logging"],
-        "implemented": False,
+        "implemented": True,
     },
     "BSL263": {
         "name": "UseLessForEach",
@@ -3906,12 +3906,13 @@ def _proc_containing_line(procs: list[_ProcInfo], line_idx: int) -> _ProcInfo | 
 
 def _comma_missing_space_after_col_in_line(line: str) -> int | None:
     """
-    0-based column of ``,`` when immediately followed by a token char (BSLLS MissingSpace),
+    0-based column of the last ``,`` immediately followed by a token char (BSLLS MissingSpace),
     only outside ``"..."`` string literals (positions must match *line* for overlap filter).
     """
     in_str = False
     i = 0
     n = len(line)
+    last_col: int | None = None
     while i < n - 1:
         ch = line[i]
         if ch == '"':
@@ -3926,9 +3927,9 @@ def _comma_missing_space_after_col_in_line(line: str) -> int | None:
             # BSLLS requires a space after comma; ,, (multiple commas) are also flagged.
             # Only allow whitespace, closing bracket/paren, or end-of-line after comma.
             if nxt not in " \t\n\r)]\n":
-                return i
+                last_col = i
         i += 1
-    return None
+    return last_col
 
 
 def _build_line_string_states(lines: list[str]) -> list[bool]:
@@ -3951,6 +3952,7 @@ _RE_BSL216_ASSIGN_NOSPACE = re.compile(r"\b(\w+)=(\w)", re.UNICODE)
 _RE_BSL216_PROC_HEADER = re.compile(
     r"^\s*(?:Процедура|Функция|Procedure|Function)\b", re.IGNORECASE
 )
+_RE_BSL216_BEFORE_THEN = re.compile(r"(?<=\S)(?:Тогда|Then)\b", re.IGNORECASE)
 # BSL215/BSL233 — compiler directive (e.g. &НаКлиенте) preceding a proc header
 _RE_COMPILER_DIRECTIVE = re.compile(r"^\s*&\w+\s*$")
 # BSL044 — function returns non-void value
@@ -5159,6 +5161,14 @@ def _ts_global_method_calls(node: Any, line_texts: list[str]) -> list[dict[str, 
     return out
 
 
+def _ts_method_call_arg_exprs(node: Any) -> list[Any]:
+    """Return expression arguments for a ``method_call`` node."""
+    args = _ts_child_of_type(node, "arguments")
+    if args is None:
+        return []
+    return [child for child in getattr(args, "children", []) or [] if child.type == "expression"]
+
+
 def _find_procedures_from_tree(tree: Any) -> list[_ProcInfo]:
     """Extract procedure/function definitions from a tree-sitter CST.
 
@@ -6028,7 +6038,7 @@ class DiagnosticEngine:
             "BSL175",  # DeprecatedAttributes8312 — TODO
             "BSL176",  # DeprecatedMethodCall — TODO
             "BSL177",  # DeprecatedMethods8310 — TODO
-            "BSL178",  # DeprecatedMethods8317 — TODO
+            # "BSL178" enabled — DeprecatedMethods8317 implemented
             "BSL179",  # DeprecatedTypeManagedForm — TODO
             "BSL180",  # DisableSafeMode — TODO
             "BSL181",  # DuplicatedInsertionIntoCollection — TODO
@@ -6111,7 +6121,7 @@ class DiagnosticEngine:
             "BSL259",  # UnknownPreprocessorSymbol — TODO
             "BSL260",  # UnsafeFindByCode — TODO
             "BSL261",  # UnsafeSafeModeMethodCall — TODO
-            "BSL262",  # UsageWriteLogEvent — TODO
+            # "BSL262" enabled — UsageWriteLogEvent implemented
             # "BSL263" enabled — UseLessForEach implemented
             "BSL264",  # UseSystemInformation — TODO
             # "BSL265" enabled — UselessTernaryOperator implemented
@@ -7025,6 +7035,10 @@ class DiagnosticEngine:
             _rule_tasks.append(
                 ("BSL197", lambda: self._rule_bsl197_if_else_duplicated_code_block(path, lines))
             )
+        if self._rule_enabled("BSL178"):
+            _rule_tasks.append(
+                ("BSL178", lambda: self._rule_bsl178_deprecated_methods_8317(path, tree))
+            )
         if self._rule_enabled("BSL198"):
             _rule_tasks.append(
                 ("BSL198", lambda: self._rule_bsl198_if_else_duplicated_condition(path, lines))
@@ -7068,6 +7082,10 @@ class DiagnosticEngine:
         if self._rule_enabled("BSL265"):
             _rule_tasks.append(
                 ("BSL265", lambda: self._rule_bsl265_useless_ternary_operator(path, lines))
+            )
+        if self._rule_enabled("BSL262"):
+            _rule_tasks.append(
+                ("BSL262", lambda: self._rule_bsl262_usage_write_log_event(path, tree))
             )
         if self._rule_enabled("BSL153"):
             _rule_tasks.append(
@@ -13797,6 +13815,7 @@ class DiagnosticEngine:
             if raw_content.startswith("|"):
                 raw_content = raw_content[1:]
             content = _RE_BSL149_INLINE_COMMENT.sub("", raw_content).rstrip()
+            content = content.lstrip()
 
             line_rs = line.rstrip()
             pipe_pos = line_rs.find("|")
@@ -13806,21 +13825,25 @@ class DiagnosticEngine:
             leading_ws = len(after_pipe) - len(after_pipe.lstrip())
             content_base = pipe_pos + 1 + leading_ws
 
-            tail_has_semi = ";" in content
-            head = content[: content.index(";")].rstrip() if tail_has_semi else content
+            quote_pos = content.find('"')
+            ended_query = quote_pos >= 0
+            content_scan = content[:quote_pos].rstrip() if ended_query else content
 
-            if '"' in content:
-                in_query = False
-                gp = 0
-                where_stack.clear()
-                continue
+            tail_has_semi = ";" in content_scan
+            head = content_scan[: content_scan.index(";")].rstrip() if tail_has_semi else content_scan
 
             if tail_has_semi and not head:
                 where_stack.clear()
                 gp = 0
+                if ended_query:
+                    in_query = False
                 continue
 
             if not head:
+                if ended_query:
+                    in_query = False
+                    gp = 0
+                    where_stack.clear()
                 continue
 
             if _RE_BSL149_UNION.search(head):
@@ -13858,6 +13881,10 @@ class DiagnosticEngine:
             if tail_has_semi:
                 where_stack.clear()
                 gp = 0
+            if ended_query:
+                in_query = False
+                gp = 0
+                where_stack.clear()
 
         return diags
 
@@ -14098,6 +14125,46 @@ class DiagnosticEngine:
                         ),
                     )
                 )
+        return diags
+
+    # ------------------------------------------------------------------
+    # BSL178 — DeprecatedMethods8317
+    # ------------------------------------------------------------------
+
+    def _rule_bsl178_deprecated_methods_8317(self, path: str, tree: Any) -> list[Diagnostic]:
+        """Detect methods deprecated since 8.3.17."""
+        root = getattr(tree, "root_node", None)
+        if root is None or not isinstance(getattr(root, "text", None), (bytes, bytearray)):
+            return []
+        line_texts = _ts_node_text(root).splitlines()
+        deprecated = {
+            "краткоепредставлениеошибки",
+            "brieferrordescription",
+            "подробноепредставлениеошибки",
+            "detailerrordescription",
+            "показатьинформациюобошибке",
+            "showerrorinfo",
+        }
+        diags: list[Diagnostic] = []
+        for call in _ts_global_method_calls(root, line_texts):
+            name_cf = str(call["name"]).casefold()
+            if name_cf not in deprecated:
+                continue
+            diags.append(
+                Diagnostic(
+                    file=path,
+                    line=call["line"],
+                    character=call["character"],
+                    end_line=call["line"],
+                    end_character=call["end_character"],
+                    severity=Severity.INFORMATION,
+                    code="BSL178",
+                    message=(
+                        f'Метод "{call["name"]}" устарел. Следует использовать одноименный '
+                        "метод объекта типа МенеджерОбработкиОшибок"
+                    ),
+                )
+            )
         return diags
 
     # ------------------------------------------------------------------
@@ -14634,6 +14701,21 @@ class DiagnosticEngine:
                         message=("Пропущен пробел после запятой — добавьте пробел для читаемости"),
                     )
                 )
+                continue
+            m_then = _RE_BSL216_BEFORE_THEN.search(clean)
+            if m_then:
+                diags.append(
+                    Diagnostic(
+                        file=path,
+                        line=idx + 1,
+                        character=m_then.start(),
+                        end_line=idx + 1,
+                        end_character=m_then.end(),
+                        severity=Severity.INFORMATION,
+                        code="BSL216",
+                        message=("Слева от 'Тогда' не хватает пробела"),
+                    )
+                )
         return diags
 
     # ------------------------------------------------------------------
@@ -15141,6 +15223,71 @@ class DiagnosticEngine:
                 )
             )
 
+        return diags
+
+    # ------------------------------------------------------------------
+    # BSL262 — UsageWriteLogEvent
+    # ------------------------------------------------------------------
+
+    def _rule_bsl262_usage_write_log_event(self, path: str, tree: Any) -> list[Diagnostic]:
+        """Detect WriteLogEvent/ЗаписьЖурналаРегистрации misuse inside except blocks."""
+        root = getattr(tree, "root_node", None)
+        if root is None or not isinstance(getattr(root, "text", None), (bytes, bytearray)):
+            return []
+
+        line_texts = _ts_node_text(root).splitlines()
+        diags: list[Diagnostic] = []
+        target_names = {"записьжурналарегистрации", "writelogevent"}
+        level_root_names = {"уровеньжурналарегистрации", "eventloglevel"}
+        error_level_names = {"ошибка", "error"}
+
+        def except_children(try_node: Any) -> list[Any]:
+            children = list(getattr(try_node, "children", []) or [])
+            except_idx = next(
+                (i for i, child in enumerate(children) if getattr(child, "type", None) == "EXCEPT_KEYWORD"),
+                None,
+            )
+            endtry_idx = next(
+                (i for i, child in enumerate(children) if getattr(child, "type", None) == "ENDTRY_KEYWORD"),
+                None,
+            )
+            if except_idx is None:
+                return []
+            if endtry_idx is None:
+                endtry_idx = len(children)
+            return children[except_idx + 1 : endtry_idx]
+
+        def arg_is_error_level(expr: Any) -> bool:
+            text = _ts_node_text(expr).casefold()
+            return any(root_name in text and level in text for root_name in level_root_names for level in error_level_names)
+
+        for node in _ts_walk(root):
+            if getattr(node, "type", None) != "try_statement":
+                continue
+            for child in except_children(node):
+                for call in _ts_global_method_calls(child, line_texts):
+                    if str(call["name"]).casefold() not in target_names:
+                        continue
+                    args = _ts_method_call_arg_exprs(call["node"])
+                    if len(args) < 2:
+                        continue
+                    if arg_is_error_level(args[1]):
+                        continue
+                    diags.append(
+                        Diagnostic(
+                            file=path,
+                            line=call["line"],
+                            character=call["character"],
+                            end_line=call["line"],
+                            end_character=call["end_character"],
+                            severity=Severity.INFORMATION,
+                            code="BSL262",
+                            message=(
+                                'Нужно указывать уровень "Ошибка" при записи в журнал '
+                                "регистрации внутри блока Исключение-КонецПопытки"
+                            ),
+                        )
+                    )
         return diags
 
     # ------------------------------------------------------------------

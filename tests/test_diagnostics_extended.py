@@ -3407,6 +3407,45 @@ class TestBsl277WrongUseOfRollbackTransactionMethod:
         assert "BSL277" not in _codes(diags)
 
 
+class TestBsl178DeprecatedMethods8317:
+    def test_deprecated_error_description_detected(self, tmp_path: Path) -> None:
+        content = """\
+Процедура Тест()
+    ПодробноеПредставлениеОшибки(ИнформацияОбОшибке());
+КонецПроцедуры
+"""
+        diags = _check(content, tmp_path, select={"BSL178"})
+        assert "BSL178" in _codes(diags)
+
+
+class TestBsl262UsageWriteLogEvent:
+    def test_write_log_event_with_warning_in_except_detected(self, tmp_path: Path) -> None:
+        content = """\
+Процедура Тест()
+    Попытка
+        Сообщить("ok");
+    Исключение
+        ЗаписьЖурналаРегистрации(Событие(), УровеньЖурналаРегистрации.Предупреждение, Метаданные, Неопределено, ТекстСообщения);
+    КонецПопытки;
+КонецПроцедуры
+"""
+        diags = _check(content, tmp_path, select={"BSL262"})
+        assert "BSL262" in _codes(diags)
+
+    def test_write_log_event_with_error_in_except_allowed(self, tmp_path: Path) -> None:
+        content = """\
+Процедура Тест()
+    Попытка
+        Сообщить("ok");
+    Исключение
+        ЗаписьЖурналаРегистрации(Событие(), УровеньЖурналаРегистрации.Ошибка, Метаданные, Неопределено, ТекстСообщения);
+    КонецПопытки;
+КонецПроцедуры
+"""
+        diags = _check(content, tmp_path, select={"BSL262"})
+        assert "BSL262" not in _codes(diags)
+
+
 class TestBsl078RaiseWithoutMessage:
     def test_bare_raise_detected(self, tmp_path: Path) -> None:
         content = """\
