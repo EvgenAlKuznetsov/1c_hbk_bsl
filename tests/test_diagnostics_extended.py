@@ -3248,21 +3248,103 @@ class TestBsl076NegativeConditionFirst:
         assert "BSL076" in _codes(diags)
 
 
-class TestBsl077SelectStar:
-    def test_select_star_detected(self, tmp_path: Path) -> None:
-        content = 'А = "ВЫБРАТЬ * ИЗ Документ.РасходнаяНакладная";\n'
+class TestBsl077SelectTopWithoutOrderBy:
+    def test_top_without_order_by_detected(self, tmp_path: Path) -> None:
+        content = '''\
+А = "ВЫБРАТЬ ПЕРВЫЕ 10
+|    Ссылка
+|ИЗ
+|    Документ.РасходнаяНакладная";
+'''
         diags = _check(content, tmp_path, select={"BSL077"})
         assert "BSL077" in _codes(diags)
 
-    def test_select_columns_no_warning(self, tmp_path: Path) -> None:
-        content = 'А = "ВЫБРАТЬ Ссылка, Номер ИЗ Документ.РасходнаяНакладная";\n'
+    def test_top_with_order_by_no_warning(self, tmp_path: Path) -> None:
+        content = '''\
+А = "ВЫБРАТЬ ПЕРВЫЕ 10
+|    Ссылка
+|ИЗ
+|    Документ.РасходнаяНакладная
+|УПОРЯДОЧИТЬ ПО
+|    Дата";
+'''
         diags = _check(content, tmp_path, select={"BSL077"})
         assert "BSL077" not in _codes(diags)
 
-    def test_english_select_star_detected(self, tmp_path: Path) -> None:
-        content = 'А = "SELECT * FROM Document.Invoice";\n'
+    def test_top_one_with_where_no_warning(self, tmp_path: Path) -> None:
+        content = '''\
+А = "SELECT TOP 1
+|    Ref
+|FROM
+|    Document.Invoice
+|WHERE
+|    Posted = TRUE";
+'''
         diags = _check(content, tmp_path, select={"BSL077"})
-        assert "BSL077" in _codes(diags)
+        assert "BSL077" not in _codes(diags)
+
+    def test_union_reports_each_top(self, tmp_path: Path) -> None:
+        content = '''\
+А =
+"ВЫБРАТЬ ПЕРВЫЕ 10
+|    Ссылка
+|ИЗ Справочник.Номенклатура
+|
+|ОБЪЕДИНИТЬ ВСЕ
+|
+|ВЫБРАТЬ ПЕРВЫЕ 20
+|    Ссылка
+|ИЗ Справочник.Склады";
+'''
+        diags = _check(content, tmp_path, select={"BSL077"})
+        assert _codes(diags).count("BSL077") == 2
+
+
+class TestBsl224NestedFunctionInParameters:
+    def test_multiline_nested_call_detected(self, tmp_path: Path) -> None:
+        content = """\
+Процедура Тест()
+    Результат = СокрЛП(СтрЗаменить(
+        Строка,
+        "а",
+        "б"));
+КонецПроцедуры
+"""
+        diags = _check(content, tmp_path, select={"BSL224"})
+        assert "BSL224" in _codes(diags)
+
+    def test_allowed_global_call_is_skipped(self, tmp_path: Path) -> None:
+        content = """\
+Процедура Тест()
+    Результат = СокрЛП(НСтр(
+        "ru='тест'"));
+КонецПроцедуры
+"""
+        diags = _check(content, tmp_path, select={"BSL224"})
+        assert "BSL224" not in _codes(diags)
+
+    def test_oneliner_nested_call_is_skipped(self, tmp_path: Path) -> None:
+        content = """\
+Процедура Тест()
+    Результат = СокрЛП(СтрЗаменить(Строка, "а", "б"));
+КонецПроцедуры
+"""
+        diags = _check(content, tmp_path, select={"BSL224"})
+        assert "BSL224" not in _codes(diags)
+
+    def test_method_call_through_object_is_detected(self, tmp_path: Path) -> None:
+        content = """\
+Процедура Тест()
+    Запрос.УстановитьПараметр(
+        "ПустыеСсылки",
+        ОбщегоНазначения.МассивПустыхЗначенийРеквизита(
+            Метаданные.Справочники.Номенклатура.Реквизиты.Ссылка));
+КонецПроцедуры
+"""
+        diags = _check(content, tmp_path, select={"BSL224"})
+        bsl224 = [d for d in diags if d.code == "BSL224"]
+        assert len(bsl224) == 1
+        assert bsl224[0].line == 2
 
 
 class TestBsl078RaiseWithoutMessage:

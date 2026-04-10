@@ -111,6 +111,7 @@ from onec_hbk_bsl.analysis.diagnostics_rule_registry import (
     build_enabled_invoke_snapshot,
 )
 from onec_hbk_bsl.analysis.formatter_structural import tree_has_errors
+from onec_hbk_bsl.analysis.lsp_positions import utf8_byte_offset_to_lsp_character
 from onec_hbk_bsl.parser.bsl_parser import BslParser
 
 # When a diagnostic span overlaps a "..." literal, drop the warning unless the rule
@@ -777,7 +778,7 @@ RULE_METADATA: dict[str, dict] = {
     },
     "BSL077": {
         "name": "SelectTopWithoutOrderBy",
-        "description": "SELECT */ВЫБРАТЬ * in a query — enumerate columns explicitly",
+        "description": "TOP/ПЕРВЫЕ is used in query text without ORDER BY/УПОРЯДОЧИТЬ",
         "severity": "WARNING",
         "sonar_type": "CODE_SMELL",
         "sonar_severity": "MAJOR",
@@ -2035,7 +2036,7 @@ RULE_METADATA: dict[str, dict] = {
         "sonar_type": "CODE_SMELL",
         "sonar_severity": "MINOR",
         "tags": ["readability", "brain-overload"],
-        "implemented": False,
+        "implemented": True,
     },
     "BSL225": {
         "name": "NumberOfValuesInStructureConstructor",
@@ -2622,7 +2623,7 @@ RULE_DESCRIPTIONS_RU: dict[str, str] = {
     "BSL068": "Слишком много ветвей «ИначеЕсли»",
     "BSL069": "Бесконечный цикл",
     "BSL070": "Пустое тело цикла",
-    "BSL077": "Запрос ВЫБРАТЬ * — перечислите колонки явно",
+    "BSL077": "Использование ПЕРВЫЕ/TOP без УПОРЯДОЧИТЬ/ORDER BY в запросе",
     "BSL097": "Использование «ТекущаяДата» — замените на «ТекущаяДатаСеанса»",
     "BSL111": "Смешение кириллицы и латиницы в имени идентификатора",
     "BSL117": "Результат вызова процедуры используется в выражении",
@@ -4114,6 +4115,23 @@ def _bsl149_append_missing_alias_diags(
             break
 
 
+def _iter_query_text_blocks(lines: list[str]):
+    """Yield query-like string blocks as ``(start_idx, block_lines)``."""
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        if not _RE_QUERY_TEXT_START.search(line):
+            i += 1
+            continue
+        block_lines = [line]
+        j = i + 1
+        while j < len(lines) and (lines[j].lstrip().startswith("|") or not lines[j].strip()):
+            block_lines.append(lines[j])
+            j += 1
+        yield i, block_lines
+        i = j
+
+
 # BSL190 — FormDataToValue / ДанныеФормыВЗначение
 _RE_BSL190_FORM_DATA = re.compile(r"\b(?:ДанныеФормыВЗначение|FormDataToValue)\s*\(", re.IGNORECASE)
 # BSL197 — duplicate if/elseif branch detection
@@ -4638,6 +4656,9 @@ _RE_QUERY_WHERE = re.compile(
     r"\b(?:ГДЕ|WHERE)\b",
     re.IGNORECASE,
 )
+_RE_QUERY_TOP = re.compile(r"\b(?:ПЕРВЫЕ|TOP)\s+(\d+)\b", re.IGNORECASE)
+_RE_QUERY_ORDER_BY = re.compile(r"\b(?:УПОРЯДОЧИТЬ|ORDER\s+BY)\b", re.IGNORECASE)
+_RE_QUERY_UNION = re.compile(r"\b(?:ОБЪЕДИНИТЬ|UNION)\b", re.IGNORECASE)
 _RE_QUERY_END_QUOTE = re.compile(r'[^|"]*"')
 
 # Unconditional exit from method body (for unreachable code detection)
@@ -5083,6 +5104,21 @@ def _ts_node_text(node: Any) -> str:
     if t is None:
         return ""
     return t.decode("utf-8", errors="replace") if isinstance(t, bytes) else str(t)
+
+
+def _ts_walk(node: Any):
+    """Yield *node* and all descendants depth-first."""
+    yield node
+    for child in getattr(node, "children", []) or []:
+        yield from _ts_walk(child)
+
+
+def _ts_child_of_type(node: Any, node_type: str) -> Any | None:
+    """First direct child of *node* with ``type == node_type``."""
+    for child in getattr(node, "children", []) or []:
+        if getattr(child, "type", None) == node_type:
+            return child
+    return None
 
 
 def _find_procedures_from_tree(tree: Any) -> list[_ProcInfo]:
@@ -5999,7 +6035,7 @@ class DiagnosticEngine:
             "BSL221",  # MultilingualStringHasAllDeclaredLanguages — TODO
             "BSL222",  # MultilingualStringUsingWithTemplate — TODO
             "BSL223",  # NestedConstructorsInStructureDeclaration — TODO
-            "BSL224",  # NestedFunctionInParameters — TODO
+            # "BSL224" enabled — NestedFunctionInParameters implemented
             "BSL225",  # NumberOfValuesInStructureConstructor — TODO
             "BSL226",  # OSUsersMethod — TODO
             # "BSL227" enabled — OneStatementPerLine implemented
@@ -6593,7 +6629,9 @@ class DiagnosticEngine:
                 ("BSL076", lambda: self._rule_bsl076_negative_condition_first(path, lines))
             )
         if self._rule_enabled("BSL077"):
-            _rule_tasks.append(("BSL077", lambda: self._rule_bsl077_select_star(path, lines)))
+            _rule_tasks.append(
+                ("BSL077", lambda: self._rule_bsl077_select_top_without_order_by(path, lines))
+            )
         if self._rule_enabled("BSL078"):
             _rule_tasks.append(
                 ("BSL078", lambda: self._rule_bsl078_raise_without_message(path, lines))
@@ -7007,6 +7045,10 @@ class DiagnosticEngine:
                     "BSL215",
                     lambda: self._rule_bsl215_missing_parameter_description(path, lines, procs),
                 )
+            )
+        if self._rule_enabled("BSL224"):
+            _rule_tasks.append(
+                ("BSL224", lambda: self._rule_bsl224_nested_function_in_parameters(path, tree))
             )
         if self._rule_enabled("BSL233"):
             _rule_tasks.append(
@@ -10475,28 +10517,65 @@ class DiagnosticEngine:
         return diags
 
     # ------------------------------------------------------------------
-    # BSL077 — SELECT * in query
+    # BSL077 — SelectTopWithoutOrderBy
     # ------------------------------------------------------------------
 
-    def _rule_bsl077_select_star(self, path: str, lines: list[str]) -> list[Diagnostic]:
-        """Flag ВЫБРАТЬ */SELECT * in query text strings."""
+    def _rule_bsl077_select_top_without_order_by(
+        self,
+        path: str,
+        lines: list[str],
+    ) -> list[Diagnostic]:
+        """Flag query text with TOP/ПЕРВЫЕ used without ORDER BY/УПОРЯДОЧИТЬ."""
         diags: list[Diagnostic] = []
-        for idx, line in enumerate(lines):
-            m = _RE_SELECT_STAR.search(line)
-            if m:
+        for start_idx, block_lines in _iter_query_text_blocks(lines):
+            query_text = "\n".join(block_lines)
+            top_matches = list(_RE_QUERY_TOP.finditer(query_text))
+            if not top_matches:
+                continue
+            has_union = bool(_RE_QUERY_UNION.search(query_text))
+            has_where = bool(_RE_QUERY_WHERE.search(query_text))
+            if not has_union and _RE_QUERY_ORDER_BY.search(query_text):
+                continue
+
+            for top_match in top_matches:
+                next_union = _RE_QUERY_UNION.search(query_text, top_match.end())
+                segment_end = next_union.start() if next_union else len(query_text)
+                segment_text = query_text[top_match.start() : segment_end]
+                top_limit = top_match.group(1)
+                if _RE_QUERY_ORDER_BY.search(segment_text):
+                    continue
+                if not has_union and top_limit in {"0", "1"} and has_where:
+                    continue
+
+                rel_pos = top_match.start()
+                passed = 0
+                line_idx = start_idx
+                col = 0
+                end_col = 0
+                for offset, raw_line in enumerate(block_lines):
+                    line_len = len(raw_line)
+                    if rel_pos <= passed + line_len:
+                        line_idx = start_idx + offset
+                        col = max(0, rel_pos - passed)
+                        local_match = _RE_QUERY_TOP.search(raw_line[col:])
+                        if local_match:
+                            col += local_match.start()
+                            end_col = col + (local_match.end() - local_match.start())
+                        else:
+                            end_col = min(len(raw_line), col + len(top_match.group(0)))
+                        break
+                    passed += line_len + 1
+
                 diags.append(
                     Diagnostic(
                         file=path,
-                        line=idx + 1,
-                        character=m.start(),
-                        end_line=idx + 1,
-                        end_character=m.end(),
+                        line=line_idx + 1,
+                        character=col,
+                        end_line=line_idx + 1,
+                        end_character=end_col,
                         severity=Severity.WARNING,
                         code="BSL077",
-                        message=(
-                            "ВЫБРАТЬ */SELECT * retrieves all columns — "
-                            "list columns explicitly for better performance and maintainability."
-                        ),
+                        message="Использование ПЕРВЫЕ/TOP без УПОРЯДОЧИТЬ/ORDER BY в запросе",
                     )
                 )
         return diags
@@ -14752,6 +14831,101 @@ class DiagnosticEngine:
             )
             for d in rows
         ]
+
+    # ------------------------------------------------------------------
+    # BSL224 — NestedFunctionInParameters
+    # ------------------------------------------------------------------
+
+    def _rule_bsl224_nested_function_in_parameters(self, path: str, tree: Any) -> list[Diagnostic]:
+        """Detect multiline calls with nested calls in argument list."""
+        root = getattr(tree, "root_node", None)
+        if root is None or not isinstance(getattr(root, "text", None), (bytes, bytearray)):
+            return []
+
+        allowed_names = {
+            "нстр",
+            "nstr",
+            "предопределенноезначение",
+            "predefinedvalue",
+        }
+        line_texts = _ts_node_text(root).splitlines()
+        diags: list[Diagnostic] = []
+
+        def call_name_and_args(
+            node: Any,
+        ) -> tuple[str, Any | None, Any | None, Any | None, Any | None]:
+            if getattr(node, "type", None) == "call_expression":
+                method_node = _ts_child_of_type(node, "method_call")
+                if method_node is not None:
+                    name, _, args, _, name_node = call_name_and_args(method_node)
+                    return name, name_node, args, method_node, name_node
+                return "", None, None, None, None
+            ident = _ts_child_of_type(node, "identifier")
+            args = _ts_child_of_type(node, "arguments")
+            return _ts_node_text(ident), ident, args, node, ident
+
+        def arg_expr_nodes(args: Any) -> list[Any]:
+            return [child for child in getattr(args, "children", []) or [] if child.type == "expression"]
+
+        def contains_forbidden_nested_call(args: Any) -> bool:
+            for child in _ts_walk(args):
+                node_type = getattr(child, "type", None)
+                if node_type == "call_expression":
+                    return True
+                if node_type == "method_call":
+                    name, _, _, _, _ = call_name_and_args(child)
+                    if name.casefold() not in allowed_names:
+                        return True
+                elif node_type == "new_expression":
+                    _, _, nested_args, _, _ = call_name_and_args(child)
+                    if nested_args is not None and arg_expr_nodes(nested_args):
+                        return True
+            return False
+
+        for node in _ts_walk(root):
+            node_type = getattr(node, "type", None)
+            if node_type not in {"call_expression", "method_call", "new_expression"}:
+                continue
+            if node_type == "method_call" and getattr(getattr(node, "parent", None), "type", None) == "call_expression":
+                continue
+            if node.start_point[0] == node.end_point[0]:
+                continue
+
+            name, anchor, args, call_node, name_node = call_name_and_args(node)
+            if anchor is None or args is None or call_node is None or name_node is None:
+                continue
+
+            exprs = arg_expr_nodes(args)
+            if not exprs:
+                continue
+            if not any(expr.start_point[0] != expr.end_point[0] for expr in exprs):
+                continue
+            if not contains_forbidden_nested_call(args):
+                continue
+
+            start_line_idx = anchor.start_point[0]
+            end_line_idx = name_node.end_point[0]
+            start_line_text = line_texts[start_line_idx] if start_line_idx < len(line_texts) else ""
+            end_line_text = line_texts[end_line_idx] if end_line_idx < len(line_texts) else ""
+
+            diags.append(
+                Diagnostic(
+                    file=path,
+                    line=start_line_idx + 1,
+                    character=utf8_byte_offset_to_lsp_character(
+                        start_line_text, anchor.start_point[1]
+                    ),
+                    end_line=end_line_idx + 1,
+                    end_character=utf8_byte_offset_to_lsp_character(
+                        end_line_text, name_node.end_point[1]
+                    ),
+                    severity=Severity.INFORMATION,
+                    code="BSL224",
+                    message=f"Вложенный вызов функции в параметрах метода «{name}»",
+                )
+            )
+
+        return diags
 
     # ------------------------------------------------------------------
     # BSL230 — PairingBrokenTransaction
