@@ -10598,12 +10598,13 @@ class DiagnosticEngine:
                 continue
 
             for top_match in top_matches:
-                next_union = _RE_QUERY_UNION.search(query_text, top_match.end())
-                segment_end = next_union.start() if next_union else len(query_text)
-                segment_text = query_text[top_match.start() : segment_end]
                 top_limit = top_match.group(1)
-                if _RE_QUERY_ORDER_BY.search(segment_text):
-                    continue
+                if not has_union:
+                    next_union = _RE_QUERY_UNION.search(query_text, top_match.end())
+                    segment_end = next_union.start() if next_union else len(query_text)
+                    segment_text = query_text[top_match.start() : segment_end]
+                    if _RE_QUERY_ORDER_BY.search(segment_text):
+                        continue
                 if not has_union and top_limit in {"0", "1"} and has_where:
                     continue
 
@@ -13183,14 +13184,13 @@ class DiagnosticEngine:
                     break
                 if not found_try:
                     col = len(line) - len(line.lstrip())
-                    m = _re_begin.search(line)
                     diags.append(
                         Diagnostic(
                             file=path,
                             line=idx + 1,
-                            character=m.start() if m else col,
+                            character=col,
                             end_line=idx + 1,
-                            end_character=(m.end() if m else col + 20),
+                            end_character=col + len("НачатьТранзакцию"),
                             severity=Severity.ERROR,
                             code="BSL151",
                             message=(
@@ -13960,18 +13960,32 @@ class DiagnosticEngine:
     ) -> list[Diagnostic]:
         """Detect identical code blocks in consecutive If/ElseIf branches."""
         diags: list[Diagnostic] = []
+        comment_re = re.compile(r"^\s*//")
         i = 0
         while i < len(lines):
             if not _RE_BSL197_IF.match(lines[i]):
                 i += 1
                 continue
 
-            # Collect branches: list of (start_line, list_of_body_lines)
-            branches: list[tuple[int, list[str]]] = []
+            # Collect branches: list of (body_lines, (diag_line, diag_col, diag_end))
+            branches: list[tuple[list[str], tuple[int, int, int] | None]] = []
             branch_start = i
+            branch_header = lines[i]
             depth = 1
             j = i + 1
             current_body: list[str] = []
+
+            def _normalize_body(body: list[str]) -> list[str]:
+                return [entry.strip() for entry in body if entry.strip() and not comment_re.match(entry)]
+
+            def _diag_span_for_body(body: list[str], start: int, header: str) -> tuple[int, int, int]:
+                for offset, raw in enumerate(body, start=1):
+                    stripped = raw.strip()
+                    if stripped and not comment_re.match(raw):
+                        col = len(raw) - len(raw.lstrip())
+                        return start + offset, col, len(raw.rstrip())
+                col = len(header) - len(header.lstrip())
+                return start, col, len(header.rstrip())
 
             while j < len(lines) and depth > 0:
                 bl = lines[j]
@@ -13980,39 +13994,53 @@ class DiagnosticEngine:
                 elif _RE_BSL197_ENDIF.match(bl):
                     depth -= 1
                     if depth == 0:
-                        branches.append((branch_start, current_body[:]))
+                        branches.append(
+                            (
+                                _normalize_body(current_body),
+                                _diag_span_for_body(current_body, branch_start, branch_header),
+                            )
+                        )
                         break
                 if depth == 1 and (_RE_BSL197_ELSEIF.match(bl) or _RE_BSL197_ELSE.match(bl)):
-                    branches.append((branch_start, current_body[:]))
+                    branches.append(
+                        (
+                            _normalize_body(current_body),
+                            _diag_span_for_body(current_body, branch_start, branch_header),
+                        )
+                    )
                     current_body = []
                     branch_start = j
+                    branch_header = bl
                 else:
                     if depth == 1:
-                        current_body.append(bl.strip())
+                        current_body.append(bl)
                 j += 1
 
-            # Check for duplicate bodies (normalize whitespace)
-            seen: dict[str, int] = {}
-            for b_start, b_body in branches:
+            # Align with BSLLS: report the first duplicated block rather than later aliases.
+            seen: dict[str, tuple[int, int, int] | None] = {}
+            reported: set[str] = set()
+            for b_body, span in branches:
                 key = "\n".join(b_body)
-                if len(b_body) >= 1 and key and key in seen:
+                if key and key in seen and key not in reported:
+                    first_span = seen[key]
+                    if first_span is None:
+                        continue
+                    line_no, col, end_col = first_span
                     diags.append(
                         Diagnostic(
                             file=path,
-                            line=b_start + 1,
-                            character=0,
-                            end_line=b_start + 1,
-                            end_character=len(lines[b_start]),
+                            line=line_no + 1,
+                            character=col,
+                            end_line=line_no + 1,
+                            end_character=end_col,
                             severity=Severity.WARNING,
                             code="BSL197",
-                            message=(
-                                "Тело этой ветки «ИначеЕсли/Иначе» идентично "
-                                f"телу ветки на строке {seen[key] + 1}"
-                            ),
+                            message="Есть повторяющийся блок кода в условном операторе",
                         )
                     )
+                    reported.add(key)
                 else:
-                    seen[key] = b_start
+                    seen[key] = span
             i = j + 1
         return diags
 

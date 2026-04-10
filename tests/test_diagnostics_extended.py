@@ -3299,6 +3299,37 @@ class TestBsl077SelectTopWithoutOrderBy:
         diags = _check(content, tmp_path, select={"BSL077"})
         assert _codes(diags).count("BSL077") == 2
 
+    def test_union_with_final_order_by_still_reports_each_top(self, tmp_path: Path) -> None:
+        content = '''\
+А =
+"ВЫБРАТЬ ПЕРВЫЕ 10
+|    Ссылка
+|ИЗ Справочник.Номенклатура
+|
+|ОБЪЕДИНИТЬ ВСЕ
+|
+|ВЫБРАТЬ ПЕРВЫЕ 20
+|    Ссылка
+|ИЗ Справочник.Склады
+|УПОРЯДОЧИТЬ ПО
+|    Ссылка";
+'''
+        diags = _check(content, tmp_path, select={"BSL077"})
+        assert _codes(diags).count("BSL077") == 2
+
+
+class TestBsl151BeginTransactionBeforeTry:
+    def test_diagnostic_starts_at_indent_not_column_zero(self, tmp_path: Path) -> None:
+        content = """\
+Процедура Тест()
+\t\tНачатьТранзакцию();
+\t\tСообщить("ok");
+КонецПроцедуры
+"""
+        diags = [d for d in _check(content, tmp_path, select={"BSL151"}) if d.code == "BSL151"]
+        assert len(diags) == 1
+        assert diags[0].character == 2
+
 
 class TestBsl224NestedFunctionInParameters:
     def test_multiline_nested_call_detected(self, tmp_path: Path) -> None:
@@ -3356,6 +3387,29 @@ class TestBsl230PairingBrokenTransaction:
 """
         diags = _check(content, tmp_path, select={"BSL230"})
         assert "BSL230" in _codes(diags)
+
+
+class TestBsl197IfElseDuplicatedCodeBlock:
+    def test_duplicate_branch_with_comments_and_blank_lines(self, tmp_path: Path) -> None:
+        content = """\
+Процедура Тест(Знач Флаг)
+    Если Флаг Тогда
+        // первый комментарий
+        Результат = 1;
+
+        Возврат Результат;
+    ИначеЕсли Не Флаг Тогда
+        // другой комментарий
+        Результат = 1;
+
+        Возврат Результат;
+    КонецЕсли;
+КонецПроцедуры
+"""
+        diags = [d for d in _check(content, tmp_path, select={"BSL197"}) if d.code == "BSL197"]
+        assert len(diags) == 1
+        assert diags[0].line == 4
+        assert diags[0].character == 8
 
     def test_begin_without_commit_is_detected(self, tmp_path: Path) -> None:
         content = """\
